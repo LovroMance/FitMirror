@@ -1,0 +1,5 @@
+/* FitMirror 全局样式入口 */
+@import './variables.css';
+@import './reset.css';
+@import './utilities.css';
+@import './dark.css';
