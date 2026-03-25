@@ -1,0 +1,46 @@
+/* FitMirror theme tokens and Element Plus theme bridge */
+:root,
+:root[data-theme='dark'] {
+  --color-primary: #32d583;
+  --color-primary-soft: #43e196;
+  --color-success: #32d583;
+  --color-warning: #f5b14f;
+  --color-danger: #ff6b6b;
+  --color-info: #8b8b92;
+
+  --color-bg-page: #050507;
+  --color-bg-screen: #0b0b0e;
+  --color-surface: #121419;
+  --color-surface-soft: #161a20;
+  --color-border: #262a31;
+
+  --color-text-primary: #fafaf9;
+  --color-text-secondary: #a4a4aa;
+  --color-text-muted: #6b6b70;
+
+  --spacing-base: 16px;
+  --radius-card: 24px;
+  --radius-control: 16px;
+  --shadow-card: 0 18px 36px rgba(0, 0, 0, 0.22);
+  --shadow-primary: 0 14px 28px rgba(50, 213, 131, 0.18);
+
+  --el-color-primary: #32d583;
+  --el-color-primary-light-3: #61dfa0;
+  --el-color-primary-light-5: #84e8b8;
+  --el-color-primary-light-7: #b2f1d3;
+  --el-color-primary-light-8: #ccf6e0;
+  --el-color-primary-light-9: #e6fbef;
+  --el-color-primary-dark-2: #28aa69;
+  --el-bg-color: #121419;
+  --el-bg-color-overlay: #171b21;
+  --el-fill-color-blank: #121419;
+  --el-fill-color-light: #171b21;
+  --el-fill-color-lighter: #1d2229;
+  --el-border-color: #262a31;
+  --el-border-color-light: #2f343d;
+  --el-text-color-primary: #fafaf9;
+  --el-text-color-regular: #c5c6cb;
+  --el-text-color-secondary: #8b8b92;
+  --el-mask-color: rgba(0, 0, 0, 0.72);
+  --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.22);
+}

@@ -1,0 +1,15 @@
+{
+  "name": "fitmirror",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "lint:backend": "npm --prefix backend run lint",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "format:frontend": "npm --prefix frontend run format",
+    "format:backend": "npm --prefix backend run format",
+    "format": "npm run format:frontend && npm run format:backend",
+    "test:frontend": "npm --prefix frontend run test",
+    "test:backend": "npm --prefix backend run test"
+  }
+}

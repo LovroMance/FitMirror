@@ -1,0 +1,133 @@
+/* Element Plus overrides scoped for FitMirror pages */
+.fm-auth-form .el-form-item__label {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.fm-auth-form .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label::before {
+  color: #8b8b92;
+}
+
+.fm-input .el-input__wrapper {
+  min-height: 52px;
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  box-shadow: 0 0 0 1px var(--color-border) inset;
+}
+
+.fm-input .el-input__wrapper.is-focus {
+  box-shadow:
+    0 0 0 1px var(--color-primary) inset,
+    0 0 0 3px rgba(50, 213, 131, 0.08);
+}
+
+.fm-input .el-input__inner {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+.fm-input .el-input__inner::placeholder {
+  color: var(--color-text-muted);
+}
+
+.fm-input .el-input__icon {
+  color: var(--color-text-muted);
+}
+
+.fm-textarea .el-textarea__inner {
+  min-height: 112px;
+  border-radius: 18px;
+  background: #13151a;
+  border-color: #23252b;
+  color: var(--color-text-primary);
+  box-shadow: none;
+  line-height: 1.6;
+}
+
+.fm-textarea .el-textarea__inner:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(50, 213, 131, 0.08);
+}
+
+.fm-textarea .el-textarea__inner::placeholder {
+  color: #64646c;
+}
+
+.fm-button-primary {
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+  --el-button-hover-bg-color: var(--color-primary-soft);
+  --el-button-hover-border-color: var(--color-primary-soft);
+  --el-button-active-bg-color: #28c274;
+  --el-button-active-border-color: #28c274;
+  --el-button-text-color: #0b0b0e;
+  box-shadow: var(--shadow-primary);
+  color: #0b0b0e;
+}
+
+.fm-button-secondary {
+  --el-button-bg-color: var(--color-surface-soft);
+  --el-button-border-color: var(--color-border);
+  --el-button-hover-bg-color: #1b2027;
+  --el-button-hover-border-color: #313743;
+  --el-button-hover-text-color: var(--color-text-primary);
+  --el-button-text-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+}
+
+.fm-auth-form .el-form-item__error {
+  color: #ff8e8e;
+}
+
+.fm-checkbox .el-checkbox {
+  align-items: flex-start;
+  height: auto;
+}
+
+.fm-checkbox .el-checkbox__label {
+  padding-left: 10px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.fm-checkbox .el-checkbox__inner {
+  width: 18px;
+  height: 18px;
+  border-color: var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.fm-checkbox .el-checkbox__input.is-checked .el-checkbox__inner {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.fm-checkbox .el-checkbox__input.is-checked + .el-checkbox__label {
+  color: var(--color-text-primary);
+}
+
+.fm-checkbox .el-checkbox__input.is-focus .el-checkbox__inner {
+  border-color: var(--color-primary);
+}
+
+.fm-card {
+  --el-card-border-color: transparent;
+  --el-card-padding: 20px;
+  --el-card-bg-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, rgba(27, 30, 34, 0.9) 0%, rgba(18, 19, 24, 0.96) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.fm-card .el-card__header {
+  padding-bottom: 16px;
+  border-bottom: 0;
+}
+
+.fm-card .el-card__body {
+  padding-top: 0;
+}

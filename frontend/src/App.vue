@@ -1,8 +1,5 @@
 <template>
-  <HelloBox />
+  <router-view />
 </template>
 
-<script setup lang="ts">
-</script>
-
-<style src="@/assets/styles/main.css"></style>
+<script setup lang="ts"></script>

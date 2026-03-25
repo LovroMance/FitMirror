@@ -1,4 +1,4 @@
-/* CSS Reset */
+/* Base reset and document defaults */
 html,
 body,
 div,
@@ -86,4 +86,29 @@ video {
   font-size: 100%;
   font: inherit;
   vertical-align: baseline;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  background: var(--color-bg-page);
+}
+
+body {
+  color: var(--color-text-primary);
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
 }
