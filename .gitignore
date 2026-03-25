@@ -18,3 +18,10 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Browser temp
+.chrome-tmp/
+.edge-tmp/
+
+# Local screenshots
+tmp-*.png
