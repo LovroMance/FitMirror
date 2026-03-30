@@ -53,9 +53,15 @@
           <p>Day5 先用模拟入口写训练记录，后续接真实训练流程。</p>
         </div>
         <div class="workout-log__actions">
-          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(10)">模拟完成 10 分钟</el-button>
-          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(20)">模拟完成 20 分钟</el-button>
-          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(30)">模拟完成 30 分钟</el-button>
+          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(10)">
+            模拟完成 10 分钟
+          </el-button>
+          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(20)">
+            模拟完成 20 分钟
+          </el-button>
+          <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(30)">
+            模拟完成 30 分钟
+          </el-button>
         </div>
       </el-card>
 
@@ -67,7 +73,11 @@
         <p class="workout-log__detail-date">{{ selectedDate }}</p>
         <template v-if="dayDetails.length > 0">
           <ul class="workout-log__detail-list">
-            <li v-for="detail in dayDetails" :key="`${detail.id ?? detail.date}-${detail.duration}`" class="workout-log__detail-item">
+            <li
+              v-for="detail in dayDetails"
+              :key="`${detail.id ?? detail.date}-${detail.duration}`"
+              class="workout-log__detail-item"
+            >
               <span>{{ detail.completed ? '已完成' : '未完成' }}</span>
               <strong>{{ detail.duration }} 分钟</strong>
             </li>
@@ -108,6 +118,7 @@ const selectedDate = ref('');
 const dayDetails = ref<WorkoutRecordEntity[]>([]);
 const isMockWriting = ref(false);
 const lastMockWriteAt = ref(0);
+const detailRequestToken = ref(0);
 const MOCK_WRITE_GAP_MS = 900;
 
 const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
@@ -134,13 +145,17 @@ const refreshRecords = async (): Promise<void> => {
     const loaded = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
     records.value = loaded;
     dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '读取训练记录失败';
-    ElMessage.error(message);
+  } catch {
+    ElMessage.error('读取训练记录失败，请稍后重试');
   }
 };
 
 const mockAddRecord = async (duration: number): Promise<void> => {
+  if (!Number.isFinite(duration) || duration <= 0) {
+    ElMessage.warning('训练时长异常，请稍后重试');
+    return;
+  }
+
   const now = Date.now();
   if (isMockWriting.value || now - lastMockWriteAt.value < MOCK_WRITE_GAP_MS) {
     ElMessage.warning('请稍后再试，避免重复写入');
@@ -165,15 +180,19 @@ const mockAddRecord = async (duration: number): Promise<void> => {
     await refreshRecords();
     lastMockWriteAt.value = Date.now();
     ElMessage.success(`已写入 ${duration} 分钟训练记录`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '写入训练记录失败';
-    ElMessage.error(message);
+  } catch {
+    ElMessage.error('写入训练记录失败，请稍后重试');
   } finally {
     isMockWriting.value = false;
   }
 };
 
 const openDayDetail = async (date: string): Promise<void> => {
+  if (!dayjs(date, 'YYYY-MM-DD', true).isValid()) {
+    ElMessage.warning('日期数据异常，请刷新后重试');
+    return;
+  }
+
   const userId = resolveUserId();
   if (!userId) {
     return;
@@ -182,11 +201,22 @@ const openDayDetail = async (date: string): Promise<void> => {
   selectedDate.value = date;
   detailVisible.value = true;
 
+  const requestToken = detailRequestToken.value + 1;
+  detailRequestToken.value = requestToken;
+
   try {
-    dayDetails.value = await workoutRecordsRepository.listRecordsByDay(userId, date);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '读取当天详情失败';
-    ElMessage.error(message);
+    const details = await workoutRecordsRepository.listRecordsByDay(userId, date);
+    if (requestToken !== detailRequestToken.value) {
+      return;
+    }
+
+    dayDetails.value = details;
+  } catch {
+    if (requestToken !== detailRequestToken.value) {
+      return;
+    }
+
+    ElMessage.error('读取当天详情失败，请稍后重试');
     dayDetails.value = [];
   }
 };
@@ -364,7 +394,3 @@ onMounted(async () => {
   border: 0;
 }
 </style>
-
-
-
-

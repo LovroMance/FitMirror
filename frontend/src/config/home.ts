@@ -9,7 +9,7 @@ export interface RecommendationItem {
 export interface BottomTabItem {
   label: string;
   icon: 'home' | 'train' | 'log' | 'me';
-  routeName: 'Home' | 'PlanGenerator' | 'WorkoutLog';
+  routeName: 'Home' | 'PlanGenerator' | 'WorkoutLog' | 'Exercises';
 }
 
 export const homeRecommendations: RecommendationItem[] = [
@@ -33,5 +33,5 @@ export const homeTabs: BottomTabItem[] = [
   { label: 'HOME', icon: 'home', routeName: 'Home' },
   { label: 'TRAIN', icon: 'train', routeName: 'PlanGenerator' },
   { label: 'LOG', icon: 'log', routeName: 'WorkoutLog' },
-  { label: 'ME', icon: 'me', routeName: 'Home' }
+  { label: 'LIB', icon: 'me', routeName: 'Exercises' }
 ];

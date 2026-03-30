@@ -22,6 +22,24 @@ const getIntensityLevel = (count: number, totalDuration: number): 0 | 1 | 2 | 3 
   return 1;
 };
 
+const isValidDate = (value: unknown): value is string =>
+  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const sanitizeRecord = (record: WorkoutRecordEntity): WorkoutRecordEntity | null => {
+  if (!isValidDate(record.date)) {
+    return null;
+  }
+
+  if (!Number.isFinite(record.duration) || record.duration <= 0) {
+    return null;
+  }
+
+  return {
+    ...record,
+    completed: Boolean(record.completed)
+  };
+};
+
 export const getRecentDateRange = (days: number): { startDate: string; endDate: string; dates: string[] } => {
   const end = dayjs().startOf('day');
   const start = end.subtract(days - 1, 'day');
@@ -45,9 +63,14 @@ export const buildDailyHeatmapPoints = (
   const grouped = new Map<string, WorkoutRecordEntity[]>();
 
   records.forEach((record) => {
-    const list = grouped.get(record.date) ?? [];
-    list.push(record);
-    grouped.set(record.date, list);
+    const sanitized = sanitizeRecord(record);
+    if (!sanitized) {
+      return;
+    }
+
+    const list = grouped.get(sanitized.date) ?? [];
+    list.push(sanitized);
+    grouped.set(sanitized.date, list);
   });
 
   return orderedDates.map((date) => {

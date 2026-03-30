@@ -74,6 +74,7 @@
               <p class="home-view__section-eyebrow">Move Better</p>
               <h2 class="home-view__section-title">推荐动作</h2>
             </div>
+            <el-button text class="home-view__library-link" @click="handleOpenLibrary">查看动作库</el-button>
           </div>
 
           <el-card v-for="card in homeRecommendations" :key="card.title" shadow="never" class="fm-card recommend-card">
@@ -188,6 +189,10 @@ const handleGeneratePlan = () => {
   }
 
   router.push({ name: 'PlanGenerator', query: { goal } });
+};
+
+const handleOpenLibrary = (): void => {
+  router.push({ name: 'Exercises' });
 };
 
 const isTabActive = (routeName: string): boolean => route.name === routeName;
@@ -408,6 +413,18 @@ onMounted(async () => {
   background: var(--color-primary);
 }
 
+.home-view__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.home-view__library-link {
+  color: var(--color-primary);
+  font-size: 12px;
+  padding-right: 0;
+}
 .home-view__recommend {
   display: grid;
   gap: 14px;
@@ -525,4 +542,9 @@ onMounted(async () => {
   }
 }
 </style>
+
+
+
+
+
 

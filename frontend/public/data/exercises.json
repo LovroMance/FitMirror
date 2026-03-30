@@ -1,0 +1,1002 @@
+[
+  {
+    "tags": [
+      "核心",
+      "稳定",
+      "无器械"
+    ],
+    "reps": "30-45秒",
+    "tips": [
+      "先保证姿势再延长时间",
+      "呼吸保持均匀"
+    ],
+    "description": "核心稳定基础动作",
+    "id": "ex-001",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "平板支撑",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "前臂撑地保持身体一条线",
+      "收紧腹部与臀部",
+      "避免塌腰或抬臀"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "腹部",
+      "无器械"
+    ],
+    "reps": "15-20次",
+    "tips": [
+      "双手轻扶耳侧不拉颈",
+      "下背尽量贴地"
+    ],
+    "description": "腹直肌激活动作",
+    "id": "ex-002",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "卷腹",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "仰卧屈膝脚掌踩地",
+      "腹部发力卷起上背",
+      "缓慢回落不砸地"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "下腹",
+      "控制",
+      "无器械"
+    ],
+    "reps": "每侧12-16次",
+    "tips": [
+      "腰部不适时减小幅度",
+      "全程核心收紧"
+    ],
+    "description": "下腹与髋屈肌协同训练",
+    "id": "ex-003",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "仰卧交替抬腿",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "仰卧双手放髋侧",
+      "交替抬腿至约60度",
+      "下降阶段保持控制"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "腹斜肌",
+      "旋转",
+      "无器械"
+    ],
+    "reps": "每侧16次",
+    "tips": [
+      "动作放慢更有效",
+      "可先脚跟着地"
+    ],
+    "description": "腹斜肌旋转能力训练",
+    "id": "ex-004",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "俄罗斯转体",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "屈膝坐姿微后仰",
+      "左右转体触碰地面",
+      "保持胸椎旋转而非甩手"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "侧向",
+      "稳定"
+    ],
+    "reps": "每侧30秒",
+    "tips": [
+      "肩部不适可缩短时长",
+      "保持颈部中立"
+    ],
+    "description": "侧向核心稳定训练",
+    "id": "ex-005",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "侧桥支撑",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "侧卧前臂支撑",
+      "抬髋保持头肩髋踝成线",
+      "左右交替完成"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "康复",
+      "稳定"
+    ],
+    "reps": "每侧12次",
+    "tips": [
+      "腰部全程贴地",
+      "动作越慢越好"
+    ],
+    "description": "核心抗伸展动作",
+    "id": "ex-006",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "死虫",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "仰卧双臂上举双腿90度",
+      "对侧手腿缓慢伸展",
+      "回到中位后换边"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "背部",
+      "平衡"
+    ],
+    "reps": "每侧12次",
+    "tips": [
+      "髋部不要旋转",
+      "保持呼吸"
+    ],
+    "description": "核心与背部协同稳定",
+    "id": "ex-007",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "鸟狗",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "四点跪姿保持脊柱中立",
+      "对侧手腿同时伸展",
+      "控制回收不晃动"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "臀部",
+      "下肢",
+      "无器械"
+    ],
+    "reps": "15次",
+    "tips": [
+      "避免腰部代偿",
+      "膝盖朝脚尖方向"
+    ],
+    "description": "臀部基础激活",
+    "id": "ex-008",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "仰卧臀桥",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "仰卧屈膝脚跟靠近臀部",
+      "臀部发力抬髋",
+      "顶峰停顿1秒再下放"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "腿部",
+      "基础",
+      "无器械"
+    ],
+    "reps": "15次",
+    "tips": [
+      "膝盖不内扣",
+      "先追求深度稳定"
+    ],
+    "description": "下肢基础复合动作",
+    "id": "ex-009",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "徒手深蹲",
+    "durationMinutes": 12,
+    "level": "beginner",
+    "instructions": [
+      "双脚与肩同宽",
+      "屈髋屈膝下蹲",
+      "脚掌全程踩稳"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "腿部",
+      "单侧",
+      "平衡"
+    ],
+    "reps": "每侧12次",
+    "tips": [
+      "躯干保持直立",
+      "步幅不宜过短"
+    ],
+    "description": "下肢单侧稳定训练",
+    "id": "ex-010",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "反向弓步",
+    "durationMinutes": 12,
+    "level": "beginner",
+    "instructions": [
+      "站姿后撤一步下蹲",
+      "前腿发力回到起始位",
+      "左右交替"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "腿部",
+      "高强度",
+      "单侧"
+    ],
+    "reps": "每侧10次",
+    "tips": [
+      "先空手熟悉动作",
+      "注意膝盖轨迹"
+    ],
+    "description": "高强度单腿力量",
+    "id": "ex-011",
+    "bodyPart": "lower",
+    "equipment": "chair",
+    "name": "保加利亚分腿蹲",
+    "durationMinutes": 12,
+    "level": "advanced",
+    "instructions": [
+      "后脚放在凳上",
+      "前腿屈膝下蹲",
+      "前腿发力起身"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "小腿",
+      "耐力",
+      "无器械"
+    ],
+    "reps": "20次",
+    "tips": [
+      "动作全程控制",
+      "避免弹震"
+    ],
+    "description": "小腿耐力与稳定",
+    "id": "ex-012",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "提踵",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "站立脚尖发力抬跟",
+      "顶峰停顿后缓慢下放",
+      "可扶墙保持平衡"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "胸肩臂",
+      "入门",
+      "无器械"
+    ],
+    "reps": "10-15次",
+    "tips": [
+      "核心收紧避免塌腰",
+      "肘部约45度"
+    ],
+    "description": "上肢推力入门动作",
+    "id": "ex-013",
+    "bodyPart": "upper",
+    "equipment": "none",
+    "name": "跪姿俯卧撑",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "双手略宽于肩",
+      "身体从膝到头成线",
+      "屈肘下降后推起"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "胸肌",
+      "肱三头",
+      "核心"
+    ],
+    "reps": "10-15次",
+    "tips": [
+      "不要耸肩",
+      "保持臀部与核心稳定"
+    ],
+    "description": "经典上肢复合动作",
+    "id": "ex-014",
+    "bodyPart": "upper",
+    "equipment": "none",
+    "name": "标准俯卧撑",
+    "durationMinutes": 12,
+    "level": "intermediate",
+    "instructions": [
+      "支撑姿势身体一条线",
+      "下降至胸部接近地面",
+      "呼气推起"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "手臂",
+      "高强度",
+      "推"
+    ],
+    "reps": "8-12次",
+    "tips": [
+      "手腕不适可改拳撑",
+      "注意肩部稳定"
+    ],
+    "description": "更强调肱三头",
+    "id": "ex-015",
+    "bodyPart": "upper",
+    "equipment": "none",
+    "name": "窄距俯卧撑",
+    "durationMinutes": 10,
+    "level": "advanced",
+    "instructions": [
+      "双手靠近胸前",
+      "肘部贴近身体下放",
+      "控制推起节奏"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "肱三头",
+      "椅子",
+      "居家"
+    ],
+    "reps": "12次",
+    "tips": [
+      "肩部不适缩小幅度",
+      "下放慢推起稳"
+    ],
+    "description": "肱三头肌训练",
+    "id": "ex-016",
+    "bodyPart": "upper",
+    "equipment": "chair",
+    "name": "椅上臂屈伸",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "双手撑椅沿坐位前移",
+      "屈肘下降身体",
+      "伸肘回到起始"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "背部",
+      "体态",
+      "后链"
+    ],
+    "reps": "15次",
+    "tips": [
+      "避免过度仰头",
+      "动作以控制为主"
+    ],
+    "description": "后链激活与体态改善",
+    "id": "ex-017",
+    "bodyPart": "upper",
+    "equipment": "none",
+    "name": "超人挺身",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "俯卧双臂前伸",
+      "抬起手臂与双腿",
+      "停顿后缓慢放下"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "肩部",
+      "体态",
+      "灵活"
+    ],
+    "reps": "12次",
+    "tips": [
+      "动作范围可逐步增加",
+      "专注肩胛发力"
+    ],
+    "description": "肩胛控制与灵活性",
+    "id": "ex-018",
+    "bodyPart": "upper",
+    "equipment": "none",
+    "name": "靠墙天使",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "背部贴墙站立",
+      "手臂贴墙上下滑动",
+      "保持腰背中立"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "背部",
+      "弹力带",
+      "拉"
+    ],
+    "reps": "15次",
+    "tips": [
+      "避免耸肩",
+      "胸部保持打开"
+    ],
+    "description": "背部拉力训练",
+    "id": "ex-019",
+    "bodyPart": "upper",
+    "equipment": "band",
+    "name": "弹力带划船",
+    "durationMinutes": 12,
+    "level": "intermediate",
+    "instructions": [
+      "弹力带固定于前方",
+      "肘向后拉至躯干两侧",
+      "控制回放"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "肩部",
+      "弹力带",
+      "稳定"
+    ],
+    "reps": "12次",
+    "tips": [
+      "动作缓慢",
+      "重在肩胛后缩"
+    ],
+    "description": "后束三角与肩袖稳定",
+    "id": "ex-020",
+    "bodyPart": "upper",
+    "equipment": "band",
+    "name": "弹力带面拉",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "弹力带与脸同高",
+      "向两侧后拉",
+      "肘抬平肩"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "有氧",
+      "燃脂",
+      "热身"
+    ],
+    "reps": "40秒",
+    "tips": [
+      "落地轻缓减少冲击",
+      "可改低冲击版本"
+    ],
+    "description": "全身有氧激活",
+    "id": "ex-021",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "开合跳",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "双脚分合跳动",
+      "双臂同步上举下放",
+      "保持均匀呼吸"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "有氧",
+      "爆发",
+      "燃脂"
+    ],
+    "reps": "30秒",
+    "tips": [
+      "核心收紧避免后仰",
+      "速度由慢到快"
+    ],
+    "description": "心肺与下肢爆发",
+    "id": "ex-022",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "高抬腿",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "原地快速交替抬膝",
+      "大臂同步摆动",
+      "躯干保持直立"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "核心",
+      "有氧",
+      "HIIT"
+    ],
+    "reps": "30秒",
+    "tips": [
+      "避免塌腰",
+      "手腕不适可垫高"
+    ],
+    "description": "核心+心肺复合",
+    "id": "ex-023",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "登山跑",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "俯撑姿势交替提膝",
+      "保持肩髋稳定",
+      "节奏均匀"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "全身",
+      "高强度",
+      "燃脂"
+    ],
+    "reps": "10-12次",
+    "tips": [
+      "先分解动作学习",
+      "膝踝不适谨慎"
+    ],
+    "description": "高强度全身训练",
+    "id": "ex-024",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "波比跳",
+    "durationMinutes": 10,
+    "level": "advanced",
+    "instructions": [
+      "下蹲撑地后跳到平板",
+      "回跳收腿并起跳",
+      "落地缓冲"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "爆发",
+      "下肢",
+      "HIIT"
+    ],
+    "reps": "12次",
+    "tips": [
+      "控制落地声音",
+      "疲劳时改普通深蹲"
+    ],
+    "description": "下肢爆发力训练",
+    "id": "ex-025",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "深蹲跳",
+    "durationMinutes": 8,
+    "level": "advanced",
+    "instructions": [
+      "深蹲后快速起跳",
+      "落地立即缓冲",
+      "保持膝盖稳定"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "协调",
+      "核心",
+      "全身"
+    ],
+    "reps": "20米",
+    "tips": [
+      "步幅小而稳",
+      "避免屏息"
+    ],
+    "description": "全身协调与核心稳定",
+    "id": "ex-026",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "熊爬",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "四点支撑膝离地",
+      "对侧手脚交替前进",
+      "保持髋部稳定"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "耐力",
+      "腿部",
+      "静力"
+    ],
+    "reps": "40秒",
+    "tips": [
+      "膝盖疼痛缩小角度",
+      "核心持续收紧"
+    ],
+    "description": "腿部等长耐力",
+    "id": "ex-027",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "靠墙静蹲",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "背靠墙下滑至大腿平行地面",
+      "保持膝盖与脚尖同向",
+      "稳定呼吸"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "臀部",
+      "单侧",
+      "稳定"
+    ],
+    "reps": "每侧12次",
+    "tips": [
+      "骨盆保持水平",
+      "动作节奏慢"
+    ],
+    "description": "单侧臀部稳定",
+    "id": "ex-028",
+    "bodyPart": "lower",
+    "equipment": "none",
+    "name": "臀桥单腿",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "单腿抬起另一腿发力",
+      "抬髋至躯干成线",
+      "缓慢回落"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "动态",
+      "HIIT"
+    ],
+    "reps": "30秒",
+    "tips": [
+      "不要塌腰",
+      "可先减速完成"
+    ],
+    "description": "核心抗旋转与心肺",
+    "id": "ex-029",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "平板支撑开合",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "平板支撑位双脚开合",
+      "躯干保持稳定",
+      "呼吸均匀"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "核心",
+      "进阶",
+      "腹部"
+    ],
+    "reps": "12次",
+    "tips": [
+      "可先做屈膝版",
+      "避免颈部代偿"
+    ],
+    "description": "核心高难度收缩",
+    "id": "ex-030",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "V字卷腹",
+    "durationMinutes": 8,
+    "level": "advanced",
+    "instructions": [
+      "仰卧同时抬手腿成V形",
+      "腹部发力顶峰停顿",
+      "缓慢回落"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "核心",
+      "抗旋转",
+      "稳定"
+    ],
+    "reps": "每侧15次",
+    "tips": [
+      "双脚可稍分开提升稳定",
+      "动作慢而稳"
+    ],
+    "description": "抗旋转稳定训练",
+    "id": "ex-031",
+    "bodyPart": "core",
+    "equipment": "none",
+    "name": "平板支撑触肩",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "高位平板支撑",
+      "交替触碰对侧肩",
+      "保持髋部稳定"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "腿部",
+      "心肺",
+      "居家"
+    ],
+    "reps": "每侧15次",
+    "tips": [
+      "保持台阶稳固",
+      "膝盖方向与脚尖一致"
+    ],
+    "description": "腿部力量与心肺",
+    "id": "ex-032",
+    "bodyPart": "lower",
+    "equipment": "chair",
+    "name": "台阶蹬踏",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "单脚踏上稳固台阶",
+      "另一脚跟进再下台",
+      "左右交替"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "肩部",
+      "哑铃",
+      "力量"
+    ],
+    "reps": "12次",
+    "tips": [
+      "核心收紧避免后仰",
+      "重量循序渐进"
+    ],
+    "description": "肩部与三头推力",
+    "id": "ex-033",
+    "bodyPart": "upper",
+    "equipment": "dumbbell",
+    "name": "哑铃推举",
+    "durationMinutes": 10,
+    "level": "intermediate",
+    "instructions": [
+      "双手持哑铃于肩侧",
+      "向上推至手臂伸直",
+      "控制下放"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "背部",
+      "哑铃",
+      "拉"
+    ],
+    "reps": "每侧12次",
+    "tips": [
+      "避免借力耸肩",
+      "脊柱保持中立"
+    ],
+    "description": "背阔肌与菱形肌",
+    "id": "ex-034",
+    "bodyPart": "upper",
+    "equipment": "dumbbell",
+    "name": "哑铃划船",
+    "durationMinutes": 12,
+    "level": "intermediate",
+    "instructions": [
+      "俯身一手支撑",
+      "另一手向髋部方向拉",
+      "慢速下放"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "腿部",
+      "哑铃",
+      "复合"
+    ],
+    "reps": "12次",
+    "tips": [
+      "先轻重量学习动作",
+      "注意膝髋同步"
+    ],
+    "description": "负重下肢复合动作",
+    "id": "ex-035",
+    "bodyPart": "lower",
+    "equipment": "dumbbell",
+    "name": "哑铃杯式深蹲",
+    "durationMinutes": 12,
+    "level": "intermediate",
+    "instructions": [
+      "哑铃抱于胸前",
+      "下蹲至舒适深度",
+      "脚掌稳踩地面"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "腿部",
+      "弹力带",
+      "激活"
+    ],
+    "reps": "15次",
+    "tips": [
+      "全程保持带子张力",
+      "避免膝内扣"
+    ],
+    "description": "弹力辅助下肢激活",
+    "id": "ex-036",
+    "bodyPart": "lower",
+    "equipment": "band",
+    "name": "弹力带深蹲",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "弹力带绕腿上方",
+      "下蹲时膝盖外推",
+      "起身时臀腿发力"
+    ],
+    "sets": 3
+  },
+  {
+    "tags": [
+      "有氧",
+      "燃脂",
+      "入门"
+    ],
+    "reps": "40秒",
+    "tips": [
+      "脚跟轻落地",
+      "先以中速开始"
+    ],
+    "description": "低门槛心肺训练",
+    "id": "ex-037",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "原地快步跑",
+    "durationMinutes": 8,
+    "level": "beginner",
+    "instructions": [
+      "原地快速小步跑",
+      "手臂自然摆动",
+      "保持呼吸节奏"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "上肢",
+      "有氧",
+      "模拟"
+    ],
+    "reps": "30秒",
+    "tips": [
+      "肩部放松避免耸肩",
+      "控制动作幅度"
+    ],
+    "description": "无器械上肢心肺模拟",
+    "id": "ex-038",
+    "bodyPart": "full_body",
+    "equipment": "none",
+    "name": "战绳模拟摆臂",
+    "durationMinutes": 8,
+    "level": "intermediate",
+    "instructions": [
+      "半蹲位快速上下摆臂",
+      "核心保持稳定",
+      "节奏均匀"
+    ],
+    "sets": 4
+  },
+  {
+    "tags": [
+      "热身",
+      "灵活性",
+      "恢复"
+    ],
+    "reps": "每动作40秒",
+    "tips": [
+      "不追求幅度极限",
+      "全程可控无痛"
+    ],
+    "description": "训练前动态热身组合",
+    "id": "ex-039",
+    "bodyPart": "mobility",
+    "equipment": "none",
+    "name": "动态拉伸流",
+    "durationMinutes": 10,
+    "level": "beginner",
+    "instructions": [
+      "包含髋部绕环与腿后侧激活",
+      "胸椎旋转与肩关节活动",
+      "动作连续完成"
+    ],
+    "sets": 2
+  },
+  {
+    "tags": [
+      "放松",
+      "灵活性",
+      "恢复"
+    ],
+    "reps": "60秒",
+    "tips": [
+      "与呼吸同步",
+      "范围由小到大"
+    ],
+    "description": "脊柱活动与放松",
+    "id": "ex-040",
+    "bodyPart": "mobility",
+    "equipment": "mat",
+    "name": "猫牛式",
+    "durationMinutes": 6,
+    "level": "beginner",
+    "instructions": [
+      "四点跪姿吸气塌腰抬头",
+      "呼气拱背收下巴",
+      "动作缓慢连贯"
+    ],
+    "sets": 2
+  }
+]

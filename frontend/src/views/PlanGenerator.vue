@@ -23,6 +23,7 @@
             size="large"
             class="fm-button-primary plan-generator__submit"
             :loading="loading"
+            :disabled="loading || deleting"
             @click="handleGenerate"
           >
             {{ loading ? '生成中...' : '生成计划' }}
@@ -38,21 +39,27 @@
           <h2 class="plan-generator__plan-title">{{ plan.title }}</h2>
           <p class="plan-generator__plan-meta">{{ levelText }} · {{ plan.durationMinutes }} 分钟</p>
           <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
-          <el-button
-            text
-            type="danger"
-            class="plan-generator__delete"
-            :loading="deleting"
-            @click="handleDeleteLatest"
-          >
-            {{ deleting ? '删除中...' : '删除最近计划' }}
-          </el-button>
+          <div class="plan-generator__plan-actions">
+            <el-button text class="plan-generator__library-link" @click="openExerciseLibrary()">浏览动作库</el-button>
+            <el-button
+              text
+              type="danger"
+              class="plan-generator__delete"
+              :loading="deleting"
+              :disabled="loading || deleting"
+              @click="handleDeleteLatest"
+            >
+              {{ deleting ? '删除中...' : '删除最近计划' }}
+            </el-button>
+          </div>
         </div>
 
         <ul class="plan-generator__exercise-list">
           <li v-for="exercise in plan.exercises" :key="exercise.name" class="plan-generator__exercise-item">
             <div class="plan-generator__exercise-top">
-              <h3>{{ exercise.name }}</h3>
+              <button type="button" class="plan-generator__exercise-link" @click="openExerciseLibrary(exercise.name)">
+                {{ exercise.name }}
+              </button>
               <span>{{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}</span>
             </div>
             <p>{{ exercise.instruction }}</p>
@@ -70,7 +77,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { generatePlanApi } from '@/api/plans';
 import { useAuthStore } from '@/store/auth';
-import type { TrainingPlan } from '@/types/plan';
+import type { PlanExercise, TrainingPlan } from '@/types/plan';
 import { plansRepository } from '@/repositories';
 
 const router = useRouter();
@@ -85,7 +92,56 @@ const plan = ref<TrainingPlan | null>(null);
 const latestPlanId = ref<number | null>(null);
 
 const currentUserId = computed(() => authStore.currentUser?.id ?? null);
-const levelText = computed(() => (plan.value?.level === 'beginner' ? '入门级' : '进阶级'));
+const levelText = computed(() => {
+  if (!plan.value) {
+    return '未知难度';
+  }
+
+  if (plan.value.level === 'beginner') {
+    return '入门级';
+  }
+
+  if (plan.value.level === 'intermediate') {
+    return '进阶级';
+  }
+
+  return '未知难度';
+});
+
+const isValidExercise = (value: unknown): value is PlanExercise => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const item = value as Partial<PlanExercise>;
+  return (
+    typeof item.name === 'string' &&
+    item.name.trim().length > 0 &&
+    typeof item.instruction === 'string' &&
+    item.instruction.trim().length > 0 &&
+    typeof item.restSeconds === 'number' &&
+    Number.isFinite(item.restSeconds)
+  );
+};
+
+const isValidPlan = (value: unknown): value is TrainingPlan => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const candidate = value as Partial<TrainingPlan>;
+  return (
+    typeof candidate.title === 'string' &&
+    candidate.title.trim().length > 0 &&
+    typeof candidate.durationMinutes === 'number' &&
+    Number.isFinite(candidate.durationMinutes) &&
+    candidate.durationMinutes > 0 &&
+    typeof candidate.summary === 'string' &&
+    Array.isArray(candidate.exercises) &&
+    candidate.exercises.length > 0 &&
+    candidate.exercises.every((exercise) => isValidExercise(exercise))
+  );
+};
 
 const resolveCurrentUserId = (): number | null => {
   const userId = currentUserId.value;
@@ -97,7 +153,16 @@ const resolveCurrentUserId = (): number | null => {
   return userId;
 };
 
+const openExerciseLibrary = (keyword = ''): void => {
+  const query = keyword ? { q: keyword } : {};
+  router.push({ name: 'Exercises', query });
+};
+
 const handleGenerate = async (): Promise<void> => {
+  if (loading.value || deleting.value) {
+    return;
+  }
+
   const userId = resolveCurrentUserId();
   if (!userId) {
     return;
@@ -114,6 +179,10 @@ const handleGenerate = async (): Promise<void> => {
 
   try {
     const generatedPlan = await generatePlanApi(trimmedGoal);
+    if (!isValidPlan(generatedPlan)) {
+      throw new Error('计划数据异常，请重试');
+    }
+
     plan.value = generatedPlan;
 
     const saved = await plansRepository.saveLatestPlan({
@@ -134,6 +203,10 @@ const handleGenerate = async (): Promise<void> => {
 };
 
 const handleDeleteLatest = async (): Promise<void> => {
+  if (loading.value || deleting.value) {
+    return;
+  }
+
   const userId = resolveCurrentUserId();
   if (!userId) {
     return;
@@ -168,14 +241,22 @@ const restoreLatestPlan = async (): Promise<void> => {
       return;
     }
 
+    if (!isValidPlan(latest.planJson)) {
+      errorMessage.value = '最近计划数据异常，已忽略旧数据';
+      plan.value = null;
+      latestPlanId.value = null;
+      ElMessage.warning('最近计划数据异常，请重新生成');
+      return;
+    }
+
     latestPlanId.value = latest.id ?? null;
     if (!goalText.value) {
       goalText.value = latest.goalText;
     }
     plan.value = latest.planJson;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : '读取本地计划失败';
-    errorMessage.value = message;
+  } catch {
+    errorMessage.value = '读取本地计划失败，但你仍可继续生成新计划';
+    ElMessage.warning('读取本地计划失败，但不影响继续使用');
   }
 };
 
@@ -283,9 +364,19 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.plan-generator__delete {
-  justify-self: start;
+.plan-generator__plan-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-generator__library-link {
+  color: var(--color-primary);
   padding-left: 0;
+}
+
+.plan-generator__delete {
+  padding-right: 0;
 }
 
 .plan-generator__exercise-list {
@@ -310,9 +401,18 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.plan-generator__exercise-top h3 {
-  margin: 0;
+.plan-generator__exercise-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-primary);
   font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.plan-generator__exercise-link:hover {
+  color: var(--color-primary);
 }
 
 .plan-generator__exercise-top span {
@@ -333,3 +433,4 @@ onMounted(async () => {
   font-size: 12px;
 }
 </style>
+
