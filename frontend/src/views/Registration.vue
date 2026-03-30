@@ -65,12 +65,16 @@
       </el-form-item>
 
       <el-form-item prop="agreed" class="fm-checkbox register-view__agreement">
-        <el-checkbox v-model="form.agreed" size="large">
-          我同意服务条款和隐私政策
-        </el-checkbox>
+        <el-checkbox v-model="form.agreed" size="large">我同意服务条款和隐私政策</el-checkbox>
       </el-form-item>
 
-      <el-button type="primary" size="large" class="fm-button-primary register-view__primary" @click="handleRegister">
+      <el-button
+        type="primary"
+        size="large"
+        class="fm-button-primary register-view__primary"
+        :loading="submitting"
+        @click="handleRegister"
+      >
         注册并开始训练
       </el-button>
 
@@ -88,6 +92,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import AuthScreen from '@/components/layout/AuthScreen.vue';
+import { useAuthStore } from '@/store/auth';
 
 interface RegisterForm {
   username: string;
@@ -98,7 +103,9 @@ interface RegisterForm {
 }
 
 const router = useRouter();
+const authStore = useAuthStore();
 const formRef = ref<FormInstance>();
+const submitting = ref(false);
 
 const form = reactive<RegisterForm>({
   username: '',
@@ -153,13 +160,21 @@ const rules: FormRules<RegisterForm> = {
 
 const handleRegister = async () => {
   const valid = await formRef.value?.validate().catch(() => false);
-
-  if (!valid) {
+  if (!valid || submitting.value) {
     return;
   }
 
-  ElMessage.success('注册信息已通过校验');
-  router.push('/login');
+  submitting.value = true;
+  try {
+    await authStore.register(form.email, form.username, form.password);
+    ElMessage.success('注册成功，已自动登录');
+    router.push('/');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '注册失败，请稍后再试';
+    ElMessage.error(message);
+  } finally {
+    submitting.value = false;
+  }
 };
 </script>
 

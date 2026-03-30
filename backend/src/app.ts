@@ -1,21 +1,29 @@
-import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import express from 'express';
+import { env, validateRequiredEnv } from './config/env';
+import { errorHandler, notFoundHandler } from './middlewares/error-handler';
+import { authRouter } from './modules/auth/auth.router';
+import { plansRouter } from './modules/plans/plans.router';
+import { sendSuccess } from './utils/response';
 
 dotenv.config();
+validateRequiredEnv();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 路由注册
-// ...existing code...
+app.use('/api/auth', authRouter);
+app.use('/api/plans', plansRouter);
 
-app.get('/api/health', (req: express.Request, res: express.Response) => {
-    res.json({ code: 0, message: 'success', data: { status: 'ok' } });
+app.get('/api/health', (_req: express.Request, res: express.Response) => {
+  sendSuccess(res, { status: 'ok' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`[FitMirror] 后端服务已启动，端口: ${PORT}`);
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+app.listen(env.port, () => {
+  console.log('[FitMirror] backend started on port: ' + env.port);
 });

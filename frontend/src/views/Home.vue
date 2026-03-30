@@ -47,13 +47,17 @@
             <div class="home-view__card-header">
               <div>
                 <h2 class="home-view__section-title home-view__section-title--card">打卡记录</h2>
-                <p class="home-view__card-note">连续打卡 5 天</p>
+                <p class="home-view__card-note">连续打卡 {{ summary.streakDays }} 天</p>
               </div>
-              <span class="home-view__card-badge">5D</span>
+              <span class="home-view__card-badge">{{ summary.streakDays }}D</span>
             </div>
           </template>
           <div class="heatmap" aria-label="最近六周训练热力图">
-            <div v-for="(column, columnIndex) in homeHeatmap" :key="`col-${columnIndex}`" class="heatmap__column">
+            <div
+              v-for="(column, columnIndex) in homeHeatmapColumns"
+              :key="`col-${columnIndex}`"
+              class="heatmap__column"
+            >
               <span
                 v-for="(level, rowIndex) in column"
                 :key="`cell-${columnIndex}-${rowIndex}`"
@@ -92,7 +96,8 @@
           :key="item.label"
           type="button"
           class="home-view__tabbar-item"
-          :class="{ 'is-active': item.active }"
+          :class="{ 'is-active': isTabActive(item.routeName) }"
+          @click="handleTabClick(item.routeName)"
         >
           <span class="home-view__tabbar-icon" aria-hidden="true">
             <svg v-if="item.icon === 'home'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -123,15 +128,81 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { homeHeatmap, homeRecommendations, homeTabs } from '@/config/home';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/store/auth';
+import { workoutRecordsRepository } from '@/repositories';
+import { homeRecommendations, homeTabs } from '@/config/home';
+import {
+  buildDailyHeatmapPoints,
+  buildHeatmapColumnsFromRows,
+  buildHeatmapRows,
+  calculateWorkoutSummary,
+  getRecentDateRange
+} from '@/utils/workout-heatmap';
+
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
 
 const planPrompt = ref('');
+const homeHeatmapColumns = ref<Array<Array<0 | 1 | 2 | 3 | 4>>>([]);
+const summary = ref({ trainingDays: 0, totalDuration: 0, streakDays: 0 });
+
+const resolveUserId = (): number | null => {
+  const userId = authStore.currentUser?.id ?? null;
+  if (!userId) {
+    ElMessage.error('登录状态失效，请重新登录');
+    return null;
+  }
+
+  return userId;
+};
+
+const loadHeatmap = async (): Promise<void> => {
+  const userId = resolveUserId();
+  if (!userId) {
+    return;
+  }
+
+  try {
+    const { startDate, endDate, dates } = getRecentDateRange(42);
+    const records = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
+    const points = buildDailyHeatmapPoints(records, dates);
+    const rows = buildHeatmapRows(points);
+    homeHeatmapColumns.value = buildHeatmapColumnsFromRows(rows);
+    summary.value = calculateWorkoutSummary(points);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '读取打卡记录失败';
+    ElMessage.error(message);
+  }
+};
 
 const handleGeneratePlan = () => {
-  ElMessage.success(planPrompt.value ? '已根据你的目标生成训练建议' : '先输入一个训练目标吧');
+  const goal = planPrompt.value.trim();
+
+  if (!goal) {
+    ElMessage.warning('先输入一个训练目标吧');
+    return;
+  }
+
+  router.push({ name: 'PlanGenerator', query: { goal } });
 };
+
+const isTabActive = (routeName: string): boolean => route.name === routeName;
+
+const handleTabClick = (routeName: string): void => {
+  if (route.name === routeName) {
+    return;
+  }
+
+  router.push({ name: routeName });
+};
+
+onMounted(async () => {
+  await loadHeatmap();
+});
 </script>
 
 <style scoped>
@@ -454,3 +525,4 @@ const handleGeneratePlan = () => {
   }
 }
 </style>
+

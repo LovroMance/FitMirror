@@ -45,7 +45,13 @@
         <button type="button" class="login-view__text-button">忘记密码</button>
       </div>
 
-      <el-button type="primary" size="large" class="fm-button-primary login-view__primary" @click="handleLogin">
+      <el-button
+        type="primary"
+        size="large"
+        class="fm-button-primary login-view__primary"
+        :loading="submitting"
+        @click="handleLogin"
+      >
         登录
       </el-button>
 
@@ -78,6 +84,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import AuthScreen from '@/components/layout/AuthScreen.vue';
+import { useAuthStore } from '@/store/auth';
 
 interface LoginForm {
   account: string;
@@ -85,7 +92,9 @@ interface LoginForm {
 }
 
 const router = useRouter();
+const authStore = useAuthStore();
 const formRef = ref<FormInstance>();
+const submitting = ref(false);
 
 const form = reactive<LoginForm>({
   account: '',
@@ -105,13 +114,21 @@ const rules: FormRules<LoginForm> = {
 
 const handleLogin = async () => {
   const valid = await formRef.value?.validate().catch(() => false);
-
-  if (!valid) {
+  if (!valid || submitting.value) {
     return;
   }
 
-  ElMessage.success('登录信息已通过校验');
-  router.push('/');
+  submitting.value = true;
+  try {
+    await authStore.login(form.account, form.password);
+    ElMessage.success('登录成功');
+    router.push('/');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '登录失败，请稍后再试';
+    ElMessage.error(message);
+  } finally {
+    submitting.value = false;
+  }
 };
 </script>
 

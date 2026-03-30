@@ -9,18 +9,8 @@ export interface RecommendationItem {
 export interface BottomTabItem {
   label: string;
   icon: 'home' | 'train' | 'log' | 'me';
-  active: boolean;
+  routeName: 'Home' | 'PlanGenerator' | 'WorkoutLog';
 }
-
-export const homeHeatmap = [
-  [0, 1, 0, 2, 1, 0],
-  [1, 2, 1, 3, 2, 1],
-  [0, 1, 2, 2, 1, 0],
-  [1, 3, 2, 4, 3, 1],
-  [0, 2, 1, 3, 2, 0],
-  [1, 2, 3, 2, 1, 0],
-  [0, 1, 0, 2, 1, 0]
-];
 
 export const homeRecommendations: RecommendationItem[] = [
   {
@@ -40,8 +30,8 @@ export const homeRecommendations: RecommendationItem[] = [
 ];
 
 export const homeTabs: BottomTabItem[] = [
-  { label: 'HOME', icon: 'home', active: true },
-  { label: 'TRAIN', icon: 'train', active: false },
-  { label: 'LOG', icon: 'log', active: false },
-  { label: 'ME', icon: 'me', active: false }
+  { label: 'HOME', icon: 'home', routeName: 'Home' },
+  { label: 'TRAIN', icon: 'train', routeName: 'PlanGenerator' },
+  { label: 'LOG', icon: 'log', routeName: 'WorkoutLog' },
+  { label: 'ME', icon: 'me', routeName: 'Home' }
 ];
