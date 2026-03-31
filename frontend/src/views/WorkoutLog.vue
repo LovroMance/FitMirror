@@ -56,7 +56,9 @@
           v-else-if="recordsState === 'empty'"
           variant="empty"
           title="还没有训练记录"
-          description="先用下方按钮写入一条记录，热图会立即展示。"
+          description="先完成一次真实训练，或在下方手动补录一条记录。"
+          action-label="去开始训练"
+          @action="router.push({ name: 'PlanGenerator' })"
         />
         <div v-else class="workout-log__heatmap" role="grid" aria-label="训练热图">
           <div v-for="(row, rowIndex) in heatmapRows" :key="`row-${rowIndex}`" class="workout-log__heatmap-row">
@@ -77,18 +79,18 @@
 
       <el-card shadow="never" class="fm-card workout-log__card">
         <div class="workout-log__card-head">
-          <h2>模拟写入</h2>
-          <p>Day5 先用模拟入口写训练记录，后续接真实训练流程。</p>
+          <h2>手动补录</h2>
+          <p>真实训练完成会自动写入热图；这里保留手动补录作为补记和调试入口。</p>
         </div>
         <div class="workout-log__actions">
           <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(10)">
-            模拟完成 10 分钟
+            补录 10 分钟
           </el-button>
           <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(20)">
-            模拟完成 20 分钟
+            补录 20 分钟
           </el-button>
           <el-button class="fm-button-primary" :loading="isMockWriting" :disabled="isMockWriting" @click="mockAddRecord(30)">
-            模拟完成 30 分钟
+            补录 30 分钟
           </el-button>
         </div>
       </el-card>

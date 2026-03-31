@@ -96,4 +96,11 @@ describe('plansRepository', () => {
 
     expect(dbMocks.delete).toHaveBeenCalledWith(8);
   });
+
+  it('returns a plan by id only when it belongs to the current user', async () => {
+    dbMocks.get.mockResolvedValue({ id: 12, userId: 7, goalText: '目标', planJson: samplePlan, createdAt: '2026-03-31' });
+
+    await expect(plansRepository.getPlanById(7, 12)).resolves.toMatchObject({ id: 12 });
+    await expect(plansRepository.getPlanById(8, 12)).resolves.toBeNull();
+  });
 });

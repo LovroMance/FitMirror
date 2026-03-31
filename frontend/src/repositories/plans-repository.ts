@@ -88,6 +88,19 @@ export const plansRepository = {
     }
   },
 
+  async getPlanById(userId: number, planId: number): Promise<PlanEntity | null> {
+    try {
+      const target = await fitMirrorDb.plans.get(planId);
+      if (!target || target.userId !== userId) {
+        return null;
+      }
+
+      return target;
+    } catch (error) {
+      throw toRepositoryError('getPlanById', error);
+    }
+  },
+
   async deletePlan(userId: number, planId?: number): Promise<void> {
     try {
       if (typeof planId === 'number') {

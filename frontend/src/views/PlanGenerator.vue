@@ -60,6 +60,13 @@
           </div>
           <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
           <div class="plan-generator__plan-actions">
+            <el-button
+              class="fm-button-primary plan-generator__start"
+              :disabled="loading || deleting || !latestPlanId"
+              @click="startWorkout"
+            >
+              开始训练
+            </el-button>
             <el-button text class="plan-generator__library-link" @click="openExerciseLibrary()">浏览动作库</el-button>
             <el-button
               text
@@ -225,6 +232,18 @@ const resolveCurrentUserId = (): number | null => {
 const openExerciseLibrary = (keyword = ''): void => {
   const query = keyword ? { q: keyword } : {};
   router.push({ name: 'Exercises', query });
+};
+
+const startWorkout = async (): Promise<void> => {
+  if (!latestPlanId.value) {
+    ElMessage.warning('当前计划尚未保存，请先生成或恢复计划');
+    return;
+  }
+
+  await router.push({
+    name: 'WorkoutSession',
+    query: { planId: String(latestPlanId.value) }
+  });
 };
 
 const handleGenerate = async (): Promise<void> => {
@@ -542,6 +561,12 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-generator__start {
+  min-height: 42px;
+  border-radius: 14px;
 }
 
 .plan-generator__library-link {
