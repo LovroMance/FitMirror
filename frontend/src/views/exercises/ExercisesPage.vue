@@ -47,6 +47,48 @@
         </div>
       </el-card>
 
+      <el-card shadow="never" class="fm-card exercises-view__card">
+        <div class="exercises-view__card-head">
+          <div>
+            <h2>我的收藏</h2>
+            <p>把常用动作留下来，下次更快开始。</p>
+          </div>
+        </div>
+        <p v-if="favoriteExercises.length === 0" class="exercises-view__empty-tip">还没有收藏动作，看到适合的就先收起来。</p>
+        <div v-else class="exercises-view__chips">
+          <button
+            v-for="item in favoriteExercises"
+            :key="`favorite-${item.id}`"
+            type="button"
+            class="exercises-view__chip"
+            @click="openExercise(item)"
+          >
+            {{ item.name }}
+          </button>
+        </div>
+      </el-card>
+
+      <el-card shadow="never" class="fm-card exercises-view__card">
+        <div class="exercises-view__card-head">
+          <div>
+            <h2>最近查看</h2>
+            <p>最近看过的动作会保留在这里，方便继续复练。</p>
+          </div>
+        </div>
+        <p v-if="recentViewedExercises.length === 0" class="exercises-view__empty-tip">最近查看为空，打开一个动作详情后就会出现在这里。</p>
+        <div v-else class="exercises-view__chips">
+          <button
+            v-for="item in recentViewedExercises"
+            :key="`recent-${item.id}`"
+            type="button"
+            class="exercises-view__chip exercises-view__chip--muted"
+            @click="openExercise(item)"
+          >
+            {{ item.name }}
+          </button>
+        </div>
+      </el-card>
+
       <StatePanel
         v-if="loading"
         variant="loading"
@@ -82,7 +124,18 @@
         >
           <div class="exercises-view__item-top">
             <h3>{{ item.name }}</h3>
-            <span>{{ levelLabel[item.level] }}</span>
+            <div class="exercises-view__item-actions">
+              <button
+                type="button"
+                class="exercises-view__favorite-btn"
+                :class="{ 'is-active': item.isFavorite }"
+                :aria-pressed="item.isFavorite"
+                @click.stop="toggleFavorite(item)"
+              >
+                {{ item.isFavorite ? '已收藏' : '收藏' }}
+              </button>
+              <span>{{ levelLabel[item.level] }}</span>
+            </div>
           </div>
           <p>{{ item.description }}</p>
           <div class="exercises-view__meta">
@@ -98,7 +151,12 @@
 
     <el-dialog v-model="detailVisible" title="动作详情" width="92%" align-center class="exercises-view__dialog">
       <template v-if="selectedExercise">
-        <h3 class="exercises-view__dialog-title">{{ selectedExercise.name }}</h3>
+        <div class="exercises-view__dialog-top">
+          <h3 class="exercises-view__dialog-title">{{ selectedExercise.name }}</h3>
+          <el-button text class="exercises-view__dialog-favorite" @click="toggleFavorite(selectedExercise)">
+            {{ selectedExercise.isFavorite ? '取消收藏' : '加入收藏' }}
+          </el-button>
+        </div>
         <p class="exercises-view__dialog-meta">
           {{ bodyPartLabel[selectedExercise.bodyPart] }} · {{ levelLabel[selectedExercise.level] }} ·
           {{ equipmentLabel[selectedExercise.equipment] }}
@@ -137,14 +195,17 @@ const {
   detailVisible,
   equipmentLabel,
   errorMessage,
+  favoriteExercises,
   filteredExercises,
   filters,
   levelLabel,
   loadExercises,
   loading,
   openExercise,
+  recentViewedExercises,
   resetFilters,
-  selectedExercise
+  selectedExercise,
+  toggleFavorite
 } = useExerciseLibrary();
 </script>
 
@@ -224,6 +285,57 @@ const {
   font-size: 12px;
 }
 
+.exercises-view__card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exercises-view__card-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-family: 'Fraunces', 'Times New Roman', serif;
+}
+
+.exercises-view__card-head p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.exercises-view__empty-tip {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.exercises-view__chips {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exercises-view__chip {
+  border: 1px solid rgba(50, 213, 131, 0.18);
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.08);
+  color: var(--color-primary);
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exercises-view__chip--muted {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary);
+}
+
 .exercises-view__clear-btn {
   font-size: 12px;
   font-weight: 600;
@@ -252,6 +364,12 @@ const {
   gap: 12px;
 }
 
+.exercises-view__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .exercises-view__item-top h3 {
   margin: 0;
   font-size: 17px;
@@ -263,6 +381,23 @@ const {
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.exercises-view__favorite-btn {
+  border: 1px solid rgba(50, 213, 131, 0.16);
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.08);
+  color: var(--color-text-secondary);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exercises-view__favorite-btn.is-active {
+  color: var(--color-primary);
+  background: rgba(50, 213, 131, 0.16);
 }
 
 .exercises-view__item p {
@@ -295,6 +430,17 @@ const {
 .exercises-view__dialog-title {
   margin: 0;
   font-size: 22px;
+}
+
+.exercises-view__dialog-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.exercises-view__dialog-favorite {
+  padding-right: 0;
 }
 
 .exercises-view__dialog-meta {

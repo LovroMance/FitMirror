@@ -17,6 +17,15 @@ export interface WorkoutRecordEntity {
   planId?: number;
 }
 
+export interface ExercisePreferenceEntity {
+  id?: number;
+  userId: number;
+  exerciseId: string;
+  isFavorite: boolean;
+  lastViewedAt?: string;
+  updatedAt: string;
+}
+
 export interface UserSettingsEntity {
   userId: number;
   theme: 'dark' | 'light';

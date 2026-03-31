@@ -23,3 +23,8 @@ export interface ExerciseFilters {
   level: ExerciseLevel | 'all';
   equipment: ExerciseEquipment | 'all';
 }
+
+export interface ExerciseLibraryItemView extends ExerciseItem {
+  isFavorite: boolean;
+  lastViewedAt: string | null;
+}
