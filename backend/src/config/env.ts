@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const parsePort = (value: string | undefined, fallback: number): number => {
+const parseNumber = (value: string | undefined, fallback: number): number => {
   if (!value) {
     return fallback;
   }
@@ -15,11 +15,17 @@ const parsePort = (value: string | undefined, fallback: number): number => {
   return parsed;
 };
 
+const trimTrailingSlash = (value: string): string => value.replace(/\/$/, '');
+
 export const env = {
-  port: parsePort(process.env.PORT, 3000),
+  port: parseNumber(process.env.PORT, 3000),
   databaseUrl: process.env.DATABASE_URL ?? '',
   jwtSecret: process.env.JWT_SECRET ?? '',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d'
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? '',
+  deepseekBaseUrl: trimTrailingSlash(process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com/v1'),
+  deepseekModel: process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
+  deepseekTimeoutMs: parseNumber(process.env.DEEPSEEK_TIMEOUT_MS, 10000)
 };
 
 export const validateRequiredEnv = (): void => {

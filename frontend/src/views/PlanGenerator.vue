@@ -31,13 +31,27 @@
           <el-button text class="plan-generator__back" @click="router.push({ name: 'Home' })">返回首页</el-button>
         </div>
 
+        <p v-if="loading" class="plan-generator__progress">{{ progressLabel }}</p>
         <p v-if="errorMessage" class="plan-generator__error">{{ errorMessage }}</p>
+        <el-button
+          v-if="errorMessage && !loading && goalText.trim()"
+          text
+          class="plan-generator__retry"
+          @click="handleGenerate"
+        >
+          重试生成
+        </el-button>
       </el-card>
 
       <el-card v-if="plan" shadow="never" class="fm-card plan-generator__card">
         <div class="plan-generator__plan-head">
           <h2 class="plan-generator__plan-title">{{ plan.title }}</h2>
           <p class="plan-generator__plan-meta">{{ levelText }} · {{ plan.durationMinutes }} 分钟</p>
+          <div class="plan-generator__source">
+            <span class="plan-generator__source-tag" :class="`plan-generator__source-tag--${sourceTagClass}`">
+              {{ sourceLabel }}
+            </span>
+          </div>
           <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
           <div class="plan-generator__plan-actions">
             <el-button text class="plan-generator__library-link" @click="openExerciseLibrary()">浏览动作库</el-button>
@@ -75,9 +89,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { generatePlanApi } from '@/api/plans';
+import { generatePlanApiWithSource, generatePlanStream } from '@/api/plans';
 import { useAuthStore } from '@/store/auth';
-import type { PlanExercise, TrainingPlan } from '@/types/plan';
+import type { PlanExercise, PlanSource, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { plansRepository } from '@/repositories';
 
 const router = useRouter();
@@ -90,6 +104,8 @@ const deleting = ref(false);
 const errorMessage = ref('');
 const plan = ref<TrainingPlan | null>(null);
 const latestPlanId = ref<number | null>(null);
+const planSource = ref<PlanSource | null>(null);
+const progressState = ref<PlanStreamEvent['type'] | null>(null);
 
 const currentUserId = computed(() => authStore.currentUser?.id ?? null);
 const levelText = computed(() => {
@@ -106,6 +122,49 @@ const levelText = computed(() => {
   }
 
   return '未知难度';
+});
+
+const progressLabel = computed(() => {
+  switch (progressState.value) {
+    case 'queued':
+      return '准备中...';
+    case 'llm_start':
+      return 'AI 生成中...';
+    case 'llm_done':
+      return '结果校验中...';
+    case 'llm_failed':
+      return 'AI 生成失败，正在切换模板...';
+    case 'fallback_start':
+      return '模板回退中...';
+    case 'completed':
+      return '已完成';
+    default:
+      return '生成中...';
+  }
+});
+
+const sourceLabel = computed(() => {
+  if (planSource.value === 'deepseek') {
+    return 'AI 生成';
+  }
+
+  if (planSource.value === 'template') {
+    return '模板回退';
+  }
+
+  return '本地恢复';
+});
+
+const sourceTagClass = computed(() => {
+  if (planSource.value === 'deepseek') {
+    return 'ai';
+  }
+
+  if (planSource.value === 'template') {
+    return 'fallback';
+  }
+
+  return 'restored';
 });
 
 const isValidExercise = (value: unknown): value is PlanExercise => {
@@ -176,25 +235,54 @@ const handleGenerate = async (): Promise<void> => {
 
   loading.value = true;
   errorMessage.value = '';
+  progressState.value = 'queued';
 
   try {
-    const generatedPlan = await generatePlanApi(trimmedGoal);
-    if (!isValidPlan(generatedPlan)) {
+    const streamed = await generatePlanStream(trimmedGoal, (event) => {
+      progressState.value = event.type;
+    });
+
+    if (!isValidPlan(streamed.plan)) {
       throw new Error('计划数据异常，请重试');
     }
 
-    plan.value = generatedPlan;
+    plan.value = streamed.plan;
+    planSource.value = streamed.source ?? null;
+  } catch {
+    try {
+      const fallback = await generatePlanApiWithSource(trimmedGoal);
+
+      if (!isValidPlan(fallback.plan)) {
+        throw new Error('计划数据异常，请重试');
+      }
+
+      plan.value = fallback.plan;
+      planSource.value = fallback.source ?? 'template';
+      progressState.value = 'completed';
+      ElMessage.warning('已自动切换到稳定生成通道');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '计划生成失败，请稍后重试';
+      errorMessage.value = message;
+      ElMessage.error(message);
+      loading.value = false;
+      return;
+    }
+  }
+
+  try {
+    const persistedPlan = JSON.parse(JSON.stringify(plan.value)) as TrainingPlan;
 
     const saved = await plansRepository.saveLatestPlan({
       userId,
       goalText: trimmedGoal,
-      plan: generatedPlan
+      plan: persistedPlan
     });
 
     latestPlanId.value = saved.id ?? null;
+    progressState.value = 'completed';
     ElMessage.success('计划已生成并保存');
   } catch (error) {
-    const message = error instanceof Error ? error.message : '计划生成失败，请稍后重试';
+    const message = error instanceof Error ? error.message : '计划保存失败，请稍后重试';
     errorMessage.value = message;
     ElMessage.error(message);
   } finally {
@@ -219,6 +307,7 @@ const handleDeleteLatest = async (): Promise<void> => {
     await plansRepository.deletePlan(userId, latestPlanId.value ?? undefined);
     latestPlanId.value = null;
     plan.value = null;
+    planSource.value = null;
     ElMessage.success('最近计划已删除');
   } catch (error) {
     const message = error instanceof Error ? error.message : '删除失败，请稍后重试';
@@ -245,6 +334,7 @@ const restoreLatestPlan = async (): Promise<void> => {
       errorMessage.value = '最近计划数据异常，已忽略旧数据';
       plan.value = null;
       latestPlanId.value = null;
+      planSource.value = null;
       ElMessage.warning('最近计划数据异常，请重新生成');
       return;
     }
@@ -254,6 +344,7 @@ const restoreLatestPlan = async (): Promise<void> => {
       goalText.value = latest.goalText;
     }
     plan.value = latest.planJson;
+    planSource.value = null;
   } catch {
     errorMessage.value = '读取本地计划失败，但你仍可继续生成新计划';
     ElMessage.warning('读取本地计划失败，但不影响继续使用');
@@ -334,10 +425,21 @@ onMounted(async () => {
   color: var(--color-text-secondary);
 }
 
+.plan-generator__progress {
+  margin: 10px 0 0;
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
 .plan-generator__error {
   margin: 10px 0 0;
   color: var(--color-danger);
   font-size: 13px;
+}
+
+.plan-generator__retry {
+  margin-top: 8px;
+  padding-left: 0;
 }
 
 .plan-generator__plan-head {
@@ -356,6 +458,33 @@ onMounted(async () => {
   color: var(--color-primary);
   font-size: 14px;
   font-weight: 600;
+}
+
+.plan-generator__source {
+  display: flex;
+  align-items: center;
+}
+
+.plan-generator__source-tag {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.plan-generator__source-tag--ai {
+  color: #0c2f1d;
+  background: rgba(50, 213, 131, 0.9);
+}
+
+.plan-generator__source-tag--fallback {
+  color: #f5c451;
+  background: rgba(245, 196, 81, 0.16);
+}
+
+.plan-generator__source-tag--restored {
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .plan-generator__plan-summary {
@@ -433,4 +562,5 @@ onMounted(async () => {
   font-size: 12px;
 }
 </style>
+
 

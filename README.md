@@ -30,6 +30,12 @@ DATABASE_URL=mysql://root:1234@127.0.0.1:3306/fitmirror
 JWT_SECRET=fitmirror-local-dev-secret-2026
 JWT_EXPIRES_IN=7d
 PORT=3000
+
+# Day8 DeepSeek 计划生成（可选；未配置时自动回退模板）
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_TIMEOUT_MS=10000
 ```
 
 前端 `frontend/.env`：
@@ -37,6 +43,12 @@ PORT=3000
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:3000/api
 ```
+
+## Day8 说明（计划生成）
+
+- `POST /api/plans/generate` 采用“DeepSeek 优先 + 模板兜底”。
+- 当 `DEEPSEEK_API_KEY` 缺失、无效或响应结构异常时，后端会自动返回模板计划，前端无需改动。
+- 默认模型为 `deepseek-chat`，后续切换模型只需改 `DEEPSEEK_MODEL`。
 
 ## Day7 演示脚本（1-2-3）
 
