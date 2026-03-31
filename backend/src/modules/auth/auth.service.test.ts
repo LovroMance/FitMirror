@@ -9,13 +9,12 @@ const authMocks = vi.hoisted(() => ({
   sign: vi.fn()
 }));
 
-vi.mock('../../lib/prisma', () => ({
-  prisma: {
-    user: {
-      findFirst: authMocks.findFirst,
-      findUnique: authMocks.findUnique,
-      create: authMocks.create
-    }
+vi.mock('./auth.repository', () => ({
+  authRepository: {
+    findByEmailOrUsername: authMocks.findFirst,
+    findByAccount: authMocks.findFirst,
+    findById: authMocks.findUnique,
+    createUser: authMocks.create
   }
 }));
 
