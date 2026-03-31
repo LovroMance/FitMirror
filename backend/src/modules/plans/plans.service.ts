@@ -57,6 +57,10 @@ interface DeepSeekPlanResult {
 const DEFAULT_DURATION_MINUTES = 12;
 const MIN_DURATION_MINUTES = 6;
 const MAX_DURATION_MINUTES = 45;
+const MIN_EXERCISE_ITEMS = 5;
+const MAX_EXERCISE_ITEMS = 7;
+const SUMMARY_MAX_CHARS = 360;
+const TITLE_MAX_CHARS = 100;
 
 const parseDuration = (goalText: string): number => {
   const matched = goalText.match(/(\d{1,2})\s*分钟/);
@@ -94,33 +98,46 @@ const buildExercises = (
   durationMinutes: number,
   noEquipment: boolean
 ): PlanExercise[] => {
-  const durationSeconds = Math.floor((durationMinutes * 60) / 4);
+  const exerciseCount = durationMinutes >= 20 ? 6 : 5;
+  const durationSeconds = Math.floor((durationMinutes * 60) / exerciseCount);
 
   if (goalType === 'core') {
     return [
       {
-        name: '平板支撑',
-        durationSeconds: Math.max(30, Math.min(durationSeconds, 75)),
-        restSeconds: 20,
-        instruction: '收紧核心，避免塌腰，保持颈部中立。'
+        name: '动态热身-猫牛式与躯干激活',
+        durationSeconds: Math.max(35, Math.min(durationSeconds, 90)),
+        restSeconds: 15,
+        instruction: '以呼吸带动脊柱活动，完成猫牛式和躯干旋转。动作过程中保持骨盆稳定，为核心训练建立发力感。'
       },
       {
-        name: '卷腹',
-        reps: '15-20 次',
+        name: '平板支撑',
+        durationSeconds: Math.max(35, Math.min(durationSeconds, 80)),
+        restSeconds: 20,
+        instruction: '前臂推地、肩胛外展，收紧腹部和臀部。全程保持身体成一直线，出现塌腰时缩短时长但保持标准动作。'
+      },
+      {
+        name: '死虫式',
+        reps: '左右各 10-12 次',
         restSeconds: 25,
-        instruction: '下背贴地，发力集中在腹部，不要借力甩头。'
+        instruction: '下背部贴地，肋骨微收，手脚对侧缓慢伸展。每次回收时主动收紧腹部，避免利用惯性摆动。'
       },
       {
         name: noEquipment ? '仰卧交替抬腿' : '悬垂举腿',
         reps: '12-16 次',
         restSeconds: 25,
-        instruction: '动作放慢，控制下放过程，保持腹部紧张。'
+        instruction: '上抬时呼气并主动卷腹，下放时控制 2-3 秒。注意下背不要离地或大幅反弓，保持核心持续紧张。'
       },
       {
         name: '侧桥支撑',
-        durationSeconds: 35,
+        durationSeconds: 40,
         restSeconds: 20,
-        instruction: '左右各做一组，髋部保持稳定，不要前后晃动。'
+        instruction: '左右两侧交替进行，肩-髋-踝保持同轴。髋部不要下沉，顶部腿可微抬提升臀中肌参与。'
+      },
+      {
+        name: '放松-仰卧抱膝与腹式呼吸',
+        durationSeconds: 50,
+        restSeconds: 15,
+        instruction: '以慢呼吸降低心率，拉伸腰背与髋屈肌。最后进行 6-8 次深呼吸，帮助核心区放松恢复。'
       }
     ];
   }
@@ -128,56 +145,80 @@ const buildExercises = (
   if (goalType === 'fat-loss') {
     return [
       {
-        name: '开合跳',
+        name: '动态热身-原地快走与开肩',
         durationSeconds: Math.max(35, Math.min(durationSeconds, 90)),
+        restSeconds: 15,
+        instruction: '先提升心率，再活动肩髋关节。热身阶段保持轻快节奏，为后续间歇训练做准备。'
+      },
+      {
+        name: '开合跳',
+        durationSeconds: Math.max(40, Math.min(durationSeconds, 95)),
         restSeconds: 20,
-        instruction: '落地轻缓，膝盖微屈，节奏均匀。'
+        instruction: '落地脚掌先接触地面，膝盖微屈减震。通过稳定频率维持中高心率，不要忽快忽慢。'
       },
       {
         name: '深蹲',
-        reps: '15 次',
+        reps: '15-18 次',
         restSeconds: 25,
-        instruction: '臀部后坐，膝盖与脚尖方向一致。'
+        instruction: '臀部向后坐，胸腔打开，膝盖跟随脚尖方向。起身阶段主动收紧臀腿，避免借腰发力。'
       },
       {
         name: '高抬腿',
-        durationSeconds: 40,
+        durationSeconds: 45,
         restSeconds: 25,
-        instruction: '抬腿至髋部高度，核心收紧。'
+        instruction: '膝盖抬至接近髋部高度，核心收紧防止躯干后仰。落地后立刻切换另一侧，保证节奏连续。'
       },
       {
         name: '登山跑',
-        durationSeconds: 35,
+        durationSeconds: 40,
         restSeconds: 20,
-        instruction: '双手稳定支撑，保持身体一条线。'
+        instruction: '肩膀垂直于手腕，腹部发力带动腿部交替。避免臀部过高或塌腰，尽量保持平板姿势。'
+      },
+      {
+        name: '放松-股四头肌与小腿拉伸',
+        durationSeconds: 55,
+        restSeconds: 15,
+        instruction: '逐步放慢呼吸，拉伸大腿前侧与小腿后侧。每个部位保持 15-20 秒，帮助训练后恢复。'
       }
     ];
   }
 
   return [
     {
+      name: '动态热身-肩髋联动',
+      durationSeconds: Math.max(35, Math.min(durationSeconds, 85)),
+      restSeconds: 15,
+      instruction: '进行肩部环绕、髋关节外展与轻度深蹲热身。让上肢与下肢进入稳定发力状态。'
+    },
+    {
       name: '徒手深蹲',
-      reps: '15 次',
+      reps: '15-18 次',
       restSeconds: 25,
-      instruction: '脚掌全程踩稳，膝盖不过度内扣。'
+      instruction: '脚掌全程踩稳，重心在中后足。下蹲时控制离心速度，起身时主动收紧臀部与核心。'
     },
     {
       name: noEquipment ? '跪姿俯卧撑' : '俯卧撑',
-      reps: '10-12 次',
+      reps: '10-14 次',
       restSeconds: 30,
-      instruction: '下降吸气、推起呼气，保持核心稳定。'
+      instruction: '下降时吸气并保持肘部约 45 度，推起时呼气。全程保持躯干稳定，避免腰部下塌。'
     },
     {
       name: '反向弓步',
       reps: '左右各 12 次',
       restSeconds: 25,
-      instruction: '躯干保持直立，前脚发力回到起始位。'
+      instruction: '后撤腿轻触地面后迅速前推回位，重心保持在前腿。躯干直立，避免前倾借力。'
     },
     {
       name: '平板支撑',
       durationSeconds: 45,
       restSeconds: 20,
-      instruction: '肩、髋、踝保持同一直线，不要耸肩。'
+      instruction: '肩、髋、踝保持同一直线，不要耸肩。通过腹压控制身体稳定，出现抖动可缩短时长。'
+    },
+    {
+      name: '放松-胸背与髋屈肌拉伸',
+      durationSeconds: 55,
+      restSeconds: 15,
+      instruction: '训练后拉伸胸背和髋前侧，恢复关节活动度。配合均匀呼吸，降低肌肉紧张感。'
     }
   ];
 };
@@ -232,11 +273,15 @@ const normalizeExercise = (value: unknown): PlanExercise | null => {
 
   const candidate = value as Record<string, unknown>;
   const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
-  const instruction = typeof candidate.instruction === 'string' ? candidate.instruction.trim() : '';
+  const instructionRaw = typeof candidate.instruction === 'string' ? candidate.instruction.trim() : '';
 
-  if (!name || !instruction) {
+  if (!name || !instructionRaw) {
     return null;
   }
+  const instruction =
+    instructionRaw.length >= 20
+      ? instructionRaw
+      : `${instructionRaw} 动作过程中保持呼吸稳定，优先保证动作标准和节奏控制。`;
 
   const restSecondsRaw = toFiniteNumber(candidate.restSeconds);
   const restSeconds = Math.min(Math.max(Math.round(restSecondsRaw ?? 20), 10), 120);
@@ -275,9 +320,9 @@ const normalizePlan = (value: unknown, goalText: string): GeneratedPlan | null =
   const exercises = exercisesRaw
     .map((item) => normalizeExercise(item))
     .filter((item): item is PlanExercise => item !== null)
-    .slice(0, 5);
+    .slice(0, MAX_EXERCISE_ITEMS);
 
-  if (exercises.length < 3) {
+  if (exercises.length < MIN_EXERCISE_ITEMS) {
     return null;
   }
 
@@ -289,13 +334,17 @@ const normalizePlan = (value: unknown, goalText: string): GeneratedPlan | null =
 
   const title =
     typeof candidate.title === 'string' && candidate.title.trim()
-      ? candidate.title.trim().slice(0, 80)
+      ? candidate.title.trim().slice(0, TITLE_MAX_CHARS)
       : `${durationMinutes}分钟个性化训练计划`;
 
-  const summary =
+  const summaryRaw =
     typeof candidate.summary === 'string' && candidate.summary.trim()
-      ? candidate.summary.trim().slice(0, 140)
+      ? candidate.summary.trim().slice(0, SUMMARY_MAX_CHARS)
       : '根据你的目标生成了可执行的训练安排。';
+  const summary =
+    summaryRaw.length >= 70
+      ? summaryRaw
+      : `${summaryRaw} 训练前先做热身，训练中保持呼吸节奏，训练后进行拉伸放松，以提升执行质量与恢复效率。`;
 
   return {
     title,
@@ -335,11 +384,14 @@ const extractContentText = (content: unknown): string => {
 
 const buildDeepSeekPrompt = (goalText: string): string => {
   return [
-    '请根据用户目标生成可执行的健身训练计划。',
+    '请根据用户目标生成详细且可执行的健身训练计划。',
     '只返回 JSON，不要返回 markdown，不要额外解释。',
     'JSON 字段必须包含：title, level, durationMinutes, summary, exercises。',
     '其中 level 只能是 beginner 或 intermediate。',
-    'exercises 必须是 3 到 5 项数组，每项字段：name, instruction, restSeconds，以及 durationSeconds 或 reps 二选一。',
+    'summary 用中文，建议 120-220 字，包含训练重点、节奏建议、动作标准和恢复提示。',
+    'exercises 必须是 5 到 7 项数组，顺序建议包含热身、主训练和放松。',
+    '每项字段必须包含：name, instruction, restSeconds，以及 durationSeconds 或 reps 二选一。',
+    'instruction 用中文完整句子，建议 40 字以上，描述发力要点、动作标准和常见错误规避。',
     `用户目标：${goalText}`
   ].join('\n');
 };
@@ -481,8 +533,8 @@ export const generatePlanFromGoal = (goalText: string): GeneratedPlan => {
   const title = `${durationMinutes}分钟${titlePrefix}训练`;
 
   const summary = noEquipment
-    ? '本计划以徒手动作为主，适合居家快速完成。'
-    : '本计划可结合基础器械，强度更均衡。';
+    ? '本计划以徒手动作为主，采用“热身-主训练-放松”结构，适合居家场景快速执行。训练中请优先保证动作质量与呼吸节奏，出现明显代偿时可适当降低次数或缩短时长。'
+    : '本计划结合基础器械与自重动作，采用分段推进的节奏安排，兼顾强度与恢复。建议训练前后保留充足热身与放松时间，确保动作稳定并降低受伤风险。';
 
   return {
     title,
