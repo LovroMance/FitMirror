@@ -134,5 +134,10 @@ describe('plans api', () => {
       plan: samplePlan,
       source: 'template'
     });
+    expect(postMock).toHaveBeenCalledWith(
+      '/plans/generate',
+      { goalText: '目标' },
+      expect.objectContaining({ timeout: 20000 })
+    );
   });
 });

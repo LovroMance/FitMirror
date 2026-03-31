@@ -16,6 +16,7 @@ interface GeneratePlanResult {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api';
 const TOKEN_KEY = 'fitmirror_token';
+const PLAN_FALLBACK_REQUEST_TIMEOUT_MS = 20000;
 
 const unwrapResponse = <T>(response: ApiResponse<T>): T => {
   if (response.code !== 0 || !response.data) {
@@ -120,7 +121,11 @@ const readSseStream = async (
 
 export const generatePlanApiWithSource = async (goalText: string): Promise<GeneratePlanResult> => {
   try {
-    const { data } = await http.post<ApiResponse<GeneratePlanPayload>>('/plans/generate', { goalText });
+    const { data } = await http.post<ApiResponse<GeneratePlanPayload>>(
+      '/plans/generate',
+      { goalText },
+      { timeout: PLAN_FALLBACK_REQUEST_TIMEOUT_MS }
+    );
     const payload = unwrapResponse(data);
     return {
       plan: payload.plan,

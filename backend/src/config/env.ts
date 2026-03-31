@@ -15,6 +15,11 @@ const parseNumber = (value: string | undefined, fallback: number): number => {
   return parsed;
 };
 
+const parseNumberInRange = (value: string | undefined, fallback: number, min: number, max: number): number => {
+  const parsed = parseNumber(value, fallback);
+  return Math.min(Math.max(parsed, min), max);
+};
+
 const trimTrailingSlash = (value: string): string => value.replace(/\/$/, '');
 
 export const env = {
@@ -25,7 +30,7 @@ export const env = {
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? '',
   deepseekBaseUrl: trimTrailingSlash(process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com/v1'),
   deepseekModel: process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
-  deepseekTimeoutMs: parseNumber(process.env.DEEPSEEK_TIMEOUT_MS, 10000)
+  deepseekTimeoutMs: parseNumberInRange(process.env.DEEPSEEK_TIMEOUT_MS, 8000, 3000, 15000)
 };
 
 export const validateRequiredEnv = (): void => {
