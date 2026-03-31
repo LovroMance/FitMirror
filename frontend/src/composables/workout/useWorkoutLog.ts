@@ -6,12 +6,13 @@ import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
 import type { WorkoutRecordEntity } from '@/types/local-db';
 import type { PageState } from '@/types/ui';
-import type { DailyHeatmapPoint } from '@/types/workout';
+import type { DailyHeatmapPoint, WorkoutPeriod } from '@/types/workout';
 import {
   buildDailyHeatmapPoints,
   buildHeatmapRows,
+  calculateWorkoutTrendSummary,
   calculateWorkoutSummary,
-  getRecentDateRange
+  getDateRangeByPeriod
 } from '@/utils/workout-heatmap';
 
 const MOCK_WRITE_GAP_MS = 900;
@@ -33,15 +34,15 @@ export const useWorkoutLog = () => {
   const detailRequestToken = ref(0);
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
+  const selectedPeriod = ref<WorkoutPeriod>('week');
 
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
+  const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
   const heatmapRows = computed(() => buildHeatmapRows(dailyPoints.value));
+  const periodTitle = computed(() => (selectedPeriod.value === 'month' ? '近 30 天' : '近 6 周'));
   const dateRangeLabel = computed(() => {
     if (dailyPoints.value.length === 0) {
-      const { dates } = getRecentDateRange(42);
-      const start = dayjs(dates[0]).format('MM.DD');
-      const end = dayjs(dates[dates.length - 1]).format('MM.DD');
-      return `${start}-${end}`;
+      return getDateRangeByPeriod(selectedPeriod.value).label;
     }
 
     const start = dayjs(dailyPoints.value[0].date).format('MM.DD');
@@ -70,7 +71,7 @@ export const useWorkoutLog = () => {
     }
 
     try {
-      const { startDate, endDate, dates } = getRecentDateRange(42);
+      const { startDate, endDate, dates } = getDateRangeByPeriod(selectedPeriod.value);
       const loaded = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
       records.value = loaded;
       dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
@@ -192,6 +193,15 @@ export const useWorkoutLog = () => {
     await router.push({ name: 'PlanGenerator' });
   };
 
+  const changePeriod = async (period: WorkoutPeriod): Promise<void> => {
+    if (selectedPeriod.value === period) {
+      return;
+    }
+
+    selectedPeriod.value = period;
+    await refreshRecords();
+  };
+
   onMounted(async () => {
     await refreshRecords();
   });
@@ -208,11 +218,15 @@ export const useWorkoutLog = () => {
     isMockWriting,
     mockAddRecord,
     openDayDetail,
+    periodTitle,
     recordsError,
     recordsState,
     refreshRecords,
     retryDayDetail,
+    selectedPeriod,
     selectedDate,
-    summary
+    summary,
+    trendSummary,
+    changePeriod
   };
 };

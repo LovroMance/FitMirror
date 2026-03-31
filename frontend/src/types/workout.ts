@@ -14,3 +14,12 @@ export interface WorkoutSummary {
   totalDuration: number;
   streakDays: number;
 }
+
+export type WorkoutPeriod = 'week' | 'month';
+
+export interface WorkoutTrendSummary {
+  trainingDays: number;
+  totalDuration: number;
+  averageDuration: number;
+  busiestDate: string | null;
+}

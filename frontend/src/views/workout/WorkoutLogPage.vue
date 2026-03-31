@@ -25,16 +25,56 @@
       </el-card>
 
       <el-card shadow="never" class="fm-card workout-log__card">
+        <div class="workout-log__trend-grid">
+          <div class="workout-log__trend-item">
+            <p class="workout-log__metric-label">{{ periodTitle }}训练天数</p>
+            <p class="workout-log__metric-value">{{ trendSummary.trainingDays }}</p>
+          </div>
+          <div class="workout-log__trend-item">
+            <p class="workout-log__metric-label">{{ periodTitle }}总时长</p>
+            <p class="workout-log__metric-value">{{ trendSummary.totalDuration }} min</p>
+          </div>
+          <div class="workout-log__trend-item">
+            <p class="workout-log__metric-label">平均单次时长</p>
+            <p class="workout-log__metric-value">{{ trendSummary.averageDuration }} min</p>
+          </div>
+        </div>
+        <p class="workout-log__trend-note">
+          最活跃训练日：{{ trendSummary.busiestDate || '当前周期暂无训练记录' }}
+        </p>
+      </el-card>
+
+      <el-card shadow="never" class="fm-card workout-log__card">
         <div class="workout-log__card-head">
           <div>
             <h2>训练热图</h2>
             <p>{{ dateRangeLabel }} · 点击方格查看当天详情</p>
           </div>
-          <div class="workout-log__legend">
-            <span class="workout-log__legend-cell workout-log__legend-cell--0"></span>
-            <span class="workout-log__legend-cell workout-log__legend-cell--1"></span>
-            <span class="workout-log__legend-cell workout-log__legend-cell--2"></span>
-            <span class="workout-log__legend-cell workout-log__legend-cell--3"></span>
+          <div class="workout-log__head-actions">
+            <div class="workout-log__period-toggle" role="tablist" aria-label="热图时间范围">
+              <button
+                type="button"
+                class="workout-log__period-button"
+                :class="{ 'is-active': selectedPeriod === 'week' }"
+                @click="changePeriod('week')"
+              >
+                近 6 周
+              </button>
+              <button
+                type="button"
+                class="workout-log__period-button"
+                :class="{ 'is-active': selectedPeriod === 'month' }"
+                @click="changePeriod('month')"
+              >
+                近 30 天
+              </button>
+            </div>
+            <div class="workout-log__legend">
+              <span class="workout-log__legend-cell workout-log__legend-cell--0"></span>
+              <span class="workout-log__legend-cell workout-log__legend-cell--1"></span>
+              <span class="workout-log__legend-cell workout-log__legend-cell--2"></span>
+              <span class="workout-log__legend-cell workout-log__legend-cell--3"></span>
+            </div>
           </div>
         </div>
 
@@ -152,12 +192,16 @@ const {
   isMockWriting,
   mockAddRecord,
   openDayDetail,
+  periodTitle,
   recordsError,
   recordsState,
   refreshRecords,
   retryDayDetail,
+  selectedPeriod,
   selectedDate,
-  summary
+  summary,
+  trendSummary,
+  changePeriod
 } = useWorkoutLog();
 </script>
 
@@ -248,6 +292,57 @@ const {
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.workout-log__head-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.workout-log__period-toggle {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workout-log__period-button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workout-log__period-button.is-active {
+  background: rgba(50, 213, 131, 0.16);
+  color: var(--color-primary);
+}
+
+.workout-log__trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workout-log__trend-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-log__trend-note {
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .workout-log__legend {
@@ -388,6 +483,11 @@ const {
     gap: 8px;
   }
 
+  .workout-log__trend-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   .workout-log__metric-value {
     font-size: 18px;
   }
@@ -410,6 +510,16 @@ const {
 
   .workout-log__card-head h2 {
     font-size: 20px;
+  }
+
+  .workout-log__head-actions {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .workout-log__period-toggle {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 </style>

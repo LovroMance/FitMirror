@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import type { WorkoutRecordEntity } from '@/types/local-db';
-import type { DailyHeatmapPoint, WorkoutSummary } from '@/types/workout';
+import type { DailyHeatmapPoint, WorkoutPeriod, WorkoutSummary, WorkoutTrendSummary } from '@/types/workout';
 
 const getIntensityLevel = (count: number, totalDuration: number): 0 | 1 | 2 | 3 | 4 => {
   if (count <= 0) {
@@ -53,6 +53,20 @@ export const getRecentDateRange = (days: number): { startDate: string; endDate: 
     startDate: start.format('YYYY-MM-DD'),
     endDate: end.format('YYYY-MM-DD'),
     dates
+  };
+};
+
+export const getDateRangeByPeriod = (
+  period: WorkoutPeriod
+): { startDate: string; endDate: string; dates: string[]; label: string; title: string } => {
+  const days = period === 'month' ? 30 : 42;
+  const range = getRecentDateRange(days);
+  const title = period === 'month' ? '近 30 天训练热图' : '近 6 周训练热图';
+
+  return {
+    ...range,
+    label: `${dayjs(range.startDate).format('MM.DD')}-${dayjs(range.endDate).format('MM.DD')}`,
+    title
   };
 };
 
@@ -133,5 +147,28 @@ export const calculateWorkoutSummary = (points: DailyHeatmapPoint[]): WorkoutSum
     trainingDays,
     totalDuration,
     streakDays
+  };
+};
+
+export const calculateWorkoutTrendSummary = (points: DailyHeatmapPoint[]): WorkoutTrendSummary => {
+  const trainingDays = points.filter((point) => point.count > 0).length;
+  const totalDuration = points.reduce((sum, point) => sum + point.totalDuration, 0);
+  const averageDuration = trainingDays > 0 ? Math.round(totalDuration / trainingDays) : 0;
+
+  const busiestPoint = [...points]
+    .filter((point) => point.count > 0)
+    .sort((a, b) => {
+      if (b.totalDuration !== a.totalDuration) {
+        return b.totalDuration - a.totalDuration;
+      }
+
+      return b.count - a.count;
+    })[0];
+
+  return {
+    trainingDays,
+    totalDuration,
+    averageDuration,
+    busiestDate: busiestPoint?.date ?? null
   };
 };
