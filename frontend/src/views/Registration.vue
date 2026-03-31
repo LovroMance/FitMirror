@@ -186,6 +186,7 @@ const handleRegister = async () => {
   gap: 8px;
   color: var(--color-text-muted);
   font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -198,40 +199,42 @@ const handleRegister = async () => {
   margin: 0;
   color: var(--color-text-primary);
   font-family: 'Fraunces', 'Times New Roman', serif;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 500;
   letter-spacing: -0.04em;
+  line-height: 1.08;
 }
 
 .register-view__subtitle {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 280px;
 }
 
 .register-view__form {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 8px 24px 40px;
+  padding: 10px 24px 34px;
   box-sizing: border-box;
 }
 
 .register-view__item {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .register-view__agreement {
-  margin: 6px 0 8px;
+  margin: 8px 0 10px;
 }
 
 .register-view__primary {
   width: 100%;
-  height: 56px;
+  height: 54px;
   margin: 4px 0 0;
-  border-radius: 16px;
-  font-size: 16px;
+  border-radius: 18px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -239,13 +242,28 @@ const handleRegister = async () => {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: var(--color-text-muted);
   font-size: 13px;
 }
 
 .register-view__footer-link {
   color: var(--color-primary);
+  font-weight: 600;
   text-decoration: none;
+}
+
+@media (max-width: 390px) {
+  .register-view__title {
+    font-size: 31px;
+  }
+
+  .register-view__subtitle {
+    font-size: 14px;
+  }
+
+  .register-view__form {
+    padding: 8px 14px 22px;
+  }
 }
 </style>

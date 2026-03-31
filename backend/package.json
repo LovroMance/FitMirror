@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "format": "prettier --write .",
-    "test": "vitest"
+    "test": "vitest run --config vitest.config.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.1",

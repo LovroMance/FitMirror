@@ -134,47 +134,49 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-view__logo {
-  width: 60px;
-  height: 60px;
+  width: 66px;
+  height: 66px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
+  border-radius: 20px;
   background: linear-gradient(180deg, var(--color-primary-soft) 0%, var(--color-primary) 100%);
   box-shadow: var(--shadow-primary);
 }
 
 .login-view__logo svg {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
 
 .login-view__brand-name {
   margin: 0;
   color: var(--color-text-primary);
   font-family: 'Fraunces', 'Times New Roman', serif;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 500;
   letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
 .login-view__tagline {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 260px;
 }
 
 .login-view__form {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 32px 24px 40px;
+  padding: 30px 24px 36px;
   box-sizing: border-box;
 }
 
 .login-view__item {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .login-view__actions {
@@ -182,13 +184,14 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: -2px 0 18px;
+  margin: 2px 0 18px;
 }
 
 .login-view__link,
 .login-view__text-button {
   color: var(--color-primary);
   font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -203,10 +206,10 @@ const handleLogin = async () => {
 .login-view__primary,
 .login-view__secondary {
   width: 100%;
-  height: 56px;
+  height: 54px;
   margin: 0;
-  border-radius: 16px;
-  font-size: 16px;
+  border-radius: 18px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -221,7 +224,7 @@ const handleLogin = async () => {
   grid-template-columns: 1fr auto 1fr;
   gap: 12px;
   align-items: center;
-  margin: 18px 0;
+  margin: 16px 0;
 }
 
 .login-view__divider span {
@@ -239,8 +242,27 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: var(--color-text-muted);
   font-size: 13px;
+}
+
+@media (max-width: 390px) {
+  .login-view__brand-name {
+    font-size: 31px;
+  }
+
+  .login-view__tagline {
+    font-size: 14px;
+  }
+
+  .login-view__form {
+    padding: 24px 14px 24px;
+  }
+
+  .login-view__primary,
+  .login-view__secondary {
+    height: 52px;
+  }
 }
 </style>

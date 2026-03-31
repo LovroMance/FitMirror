@@ -44,11 +44,13 @@ DEEPSEEK_TIMEOUT_MS=10000
 VITE_API_BASE_URL=http://127.0.0.1:3000/api
 ```
 
-## Day8 说明（计划生成）
+## Day8+ 说明（计划生成）
 
 - `POST /api/plans/generate` 采用“DeepSeek 优先 + 模板兜底”。
 - 当 `DEEPSEEK_API_KEY` 缺失、无效或响应结构异常时，后端会自动返回模板计划，前端无需改动。
 - 默认模型为 `deepseek-chat`，后续切换模型只需改 `DEEPSEEK_MODEL`。
+- 已支持流式接口：`GET /api/plans/generate/stream?goalText=...`。
+- 当前默认输出“详细版训练计划”：更长 summary、5-7 个动作、包含热身/主训练/放松结构（失败时模板回退也为详细版）。
 
 ## Day7 演示脚本（1-2-3）
 
@@ -84,6 +86,15 @@ VITE_API_BASE_URL=http://127.0.0.1:3000/api
 4. 页面空白或数据异常
 - 先看终端报错，再看浏览器控制台报错。
 - 重新登录后重试关键路径：计划生成 -> 写入记录 -> 热图查看。
+
+5. Windows 下前端偶发 `vite spawn EPERM`
+- 现象：前端 dev 启动失败，页面可能显示 502。
+- 处理：重启前端服务；必要时使用提权方式启动（项目已按该方式完成回归）。
+
+## P0 收口资料
+
+- 当前进度与后续：`docs/当前进度与后续工作.md`
+- 协作进度记录：`docs/协作进度记录.md`
 
 ## 主要技术栈
 

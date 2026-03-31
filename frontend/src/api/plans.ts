@@ -149,9 +149,13 @@ export const generatePlanStream = async (
   const timeoutMs = options?.timeoutMs ?? 12000;
   const requestUrl = `${API_BASE_URL}/plans/generate/stream?goalText=${encodeURIComponent(goalText)}`;
   const abortController = new AbortController();
-  const timerId = window.setTimeout(() => {
-    abortController.abort();
-  }, timeoutMs);
+  let timerId = 0;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timerId = window.setTimeout(() => {
+      abortController.abort();
+      reject(new Error('生成超时，已切换稳定通道重试'));
+    }, timeoutMs);
+  });
 
   let response: Response;
   try {
@@ -171,7 +175,6 @@ export const generatePlanStream = async (
     throw error;
   }
 
-  window.clearTimeout(timerId);
   try {
     if (!response.ok) {
       try {
@@ -190,8 +193,15 @@ export const generatePlanStream = async (
       throw new Error('流式响应不可用，请稍后重试');
     }
 
-    return await readSseStream(response.body, onEvent);
+    return await Promise.race([readSseStream(response.body, onEvent), timeoutPromise]);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('生成超时，已切换稳定通道重试');
+    }
+
+    throw error;
   } finally {
+    window.clearTimeout(timerId);
     abortController.abort();
   }
 };

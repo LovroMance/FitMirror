@@ -2597,6 +2597,186 @@
               ]
             }
           ]
+        },
+        {
+          "type": "frame",
+          "id": "GQium",
+          "x": 1750,
+          "y": 0,
+          "name": "Plan Generator Screen",
+          "clip": true,
+          "width": 402,
+          "height": 1000,
+          "fill": "#0B0B0E",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "zw04i",
+              "name": "Header Block",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [
+                32,
+                24,
+                24,
+                24
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "QrEGF",
+                  "name": "pgTitle",
+                  "fill": "#FAFAF9",
+                  "content": "生成训练计划",
+                  "fontFamily": "Fraunces",
+                  "fontSize": 28,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "p5cJ0",
+                  "name": "pgSubtitle",
+                  "fill": "#6B6B70",
+                  "content": "根据你的目标，定制专属AI训练方案",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xQbhb",
+              "name": "Plan Form",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                8,
+                24,
+                24,
+                24
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "M9sTX",
+                  "name": "goalLabel",
+                  "fill": "#FAFAF9",
+                  "content": "训练目标",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 16,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "iSZO1",
+                  "name": "goalInput",
+                  "width": "fill_container",
+                  "height": 48,
+                  "fill": "#16161A",
+                  "cornerRadius": 18,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#2A2A2E"
+                  },
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qhtiz",
+                      "fill": "#4A4A50",
+                      "content": "例如：我想瘦肚子，每天10分钟，无器械",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ey361",
+                  "name": "Generate Button",
+                  "width": "fill_container",
+                  "height": 56,
+                  "fill": "#32D583",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#32D58333",
+                    "offset": {
+                      "x": 0,
+                      "y": 8
+                    },
+                    "blur": 24
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "s8ZAq",
+                      "fill": "#0B0B0E",
+                      "content": "生成计划",
+                      "fontFamily": "DM Sans",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p6WpL",
+                  "name": "Progress Bar",
+                  "width": "fill_container",
+                  "height": 8,
+                  "fill": "#16161A",
+                  "cornerRadius": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "0PraR",
+                      "name": "Progress",
+                      "width": 0,
+                      "height": 8,
+                      "fill": "#32D583",
+                      "cornerRadius": 4
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pgwvN",
+              "name": "Plan Card",
+              "width": "fill_container",
+              "fill": "#16161A",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BM52j",
+                  "fill": "#6B6B70",
+                  "content": "训练计划将展示在这里",
+                  "fontFamily": "DM Sans",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
