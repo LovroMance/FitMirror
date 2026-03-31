@@ -5,43 +5,43 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('@/views/Home.vue'),
+    component: () => import('@/views/home/HomePage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/plans/generate',
     name: 'PlanGenerator',
-    component: () => import('@/views/PlanGenerator.vue'),
+    component: () => import('@/views/plan/PlanGeneratorPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/records',
     name: 'WorkoutLog',
-    component: () => import('@/views/WorkoutLog.vue'),
+    component: () => import('@/views/workout/WorkoutLogPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/workouts/session',
     name: 'WorkoutSession',
-    component: () => import('@/views/WorkoutSession.vue'),
+    component: () => import('@/views/workout/WorkoutSessionPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/exercises',
     name: 'Exercises',
-    component: () => import('@/views/Exercises.vue'),
+    component: () => import('@/views/exercises/ExercisesPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/views/auth/LoginPage.vue'),
     meta: { guestOnly: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/Registration.vue'),
+    component: () => import('@/views/auth/RegistrationPage.vue'),
     meta: { guestOnly: true }
   }
 ];
