@@ -92,6 +92,10 @@ export const useHomeDashboard = () => {
     await safePush('Exercises');
   };
 
+  const handleOpenPlanHistory = async (): Promise<void> => {
+    await safePush('PlanHistory');
+  };
+
   const isTabActive = (routeName: string): boolean => activeRouteName.value === routeName;
 
   const handleTabClick = async (routeName: string): Promise<void> => {
@@ -109,6 +113,7 @@ export const useHomeDashboard = () => {
   return {
     handleGeneratePlan,
     handleOpenLibrary,
+    handleOpenPlanHistory,
     handleTabClick,
     heatmapError,
     heatmapState,

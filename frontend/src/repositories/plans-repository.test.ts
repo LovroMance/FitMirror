@@ -103,4 +103,19 @@ describe('plansRepository', () => {
     await expect(plansRepository.getPlanById(7, 12)).resolves.toMatchObject({ id: 12 });
     await expect(plansRepository.getPlanById(8, 12)).resolves.toBeNull();
   });
+
+  it('lists plans by user in reverse chronological order', async () => {
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        sortBy: vi.fn().mockResolvedValue([
+          { id: 1, userId: 7, goalText: '旧计划', planJson: samplePlan, createdAt: '2026-03-19T00:00:00.000Z' },
+          { id: 2, userId: 7, goalText: '新计划', planJson: samplePlan, createdAt: '2026-03-21T00:00:00.000Z' }
+        ])
+      })
+    });
+
+    const result = await plansRepository.listPlansByUser(7);
+
+    expect(result.map((item) => item.id)).toEqual([2, 1]);
+  });
 });

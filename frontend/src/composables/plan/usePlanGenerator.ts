@@ -132,6 +132,10 @@ export const usePlanGenerator = () => {
     router.push({ name: 'Exercises', query });
   };
 
+  const goToPlanHistory = async (): Promise<void> => {
+    await router.push({ name: 'PlanHistory' });
+  };
+
   const startWorkout = async (): Promise<void> => {
     if (!latestPlanId.value) {
       ElMessage.warning('当前计划尚未保存，请先生成或恢复计划');
@@ -336,6 +340,7 @@ export const usePlanGenerator = () => {
     latestPlanId,
     levelText,
     loading,
+    goToPlanHistory,
     openExerciseLibrary,
     plan,
     progressLabel,

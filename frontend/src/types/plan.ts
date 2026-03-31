@@ -27,6 +27,19 @@ export interface PersistedPlan {
   plan: TrainingPlan;
 }
 
+export interface PlanHistoryItemView {
+  id: number;
+  goalText: string;
+  createdAt: string;
+  title: string;
+  durationMinutes: number;
+  level: TrainingPlan['level'];
+  summary: string;
+  exercises: PlanExercise[];
+  exerciseCount: number;
+  isValid: boolean;
+}
+
 export type PlanStreamStatus =
   | 'queued'
   | 'llm_start'

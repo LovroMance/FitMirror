@@ -28,6 +28,7 @@
           >
             {{ loading ? '生成中...' : '生成计划' }}
           </el-button>
+          <el-button text class="plan-generator__history-link" @click="goToPlanHistory">查看历史计划</el-button>
           <el-button text class="plan-generator__back" @click="goHome">返回首页</el-button>
         </div>
 
@@ -113,6 +114,7 @@ const {
   latestPlanId,
   levelText,
   loading,
+  goToPlanHistory,
   openExerciseLibrary,
   plan,
   progressLabel,
@@ -185,6 +187,10 @@ const {
 
 .plan-generator__back {
   color: var(--color-text-secondary);
+}
+
+.plan-generator__history-link {
+  color: var(--color-primary);
 }
 
 .plan-generator__status-wrap {
@@ -356,6 +362,10 @@ const {
   }
 
   .plan-generator__back {
+    align-self: flex-start;
+  }
+
+  .plan-generator__history-link {
     align-self: flex-start;
   }
 

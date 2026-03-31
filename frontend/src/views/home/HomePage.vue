@@ -22,6 +22,7 @@
                 <h2 class="home-view__section-title home-view__section-title--card">今日训练计划</h2>
                 <p class="home-view__card-note">一句话描述目标，马上获得可执行训练方案。</p>
               </div>
+              <el-button text class="home-view__history-link" @click="handleOpenPlanHistory">历史计划</el-button>
             </div>
           </template>
           <el-input
@@ -168,6 +169,7 @@ import { useHomeDashboard } from '@/composables/home/useHomeDashboard';
 const {
   handleGeneratePlan,
   handleOpenLibrary,
+  handleOpenPlanHistory,
   handleTabClick,
   heatmapError,
   heatmapState,
@@ -338,6 +340,11 @@ const {
   color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.home-view__history-link {
+  color: var(--color-primary);
+  padding-right: 0;
 }
 
 .home-view__card-badge {

@@ -15,6 +15,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/plans/history',
+    name: 'PlanHistory',
+    component: () => import('@/views/plan/PlanHistoryPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/records',
     name: 'WorkoutLog',
     component: () => import('@/views/workout/WorkoutLogPage.vue'),
