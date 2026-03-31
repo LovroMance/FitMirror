@@ -2,45 +2,50 @@
 :root,
 :root[data-theme='dark'] {
   --color-primary: #32d583;
-  --color-primary-soft: #43e196;
+  --color-primary-hover: #24c06f;
+  --color-primary-soft: #6ee7a8;
   --color-success: #32d583;
-  --color-warning: #f5b14f;
-  --color-danger: #ff6b6b;
-  --color-info: #8b8b92;
+  --color-warning: #f5c451;
+  --color-danger: #ff5a36;
+  --color-info: #6ee7a8;
 
-  --color-bg-page: #050507;
+  --color-bg-page: #0b0b0e;
   --color-bg-screen: #0b0b0e;
-  --color-surface: #121419;
-  --color-surface-soft: #161a20;
-  --color-border: #262a31;
+  --color-surface: #16161a;
+  --color-surface-soft: #121316;
+  --color-border: #2a2a2e;
+  --color-divider: #2a2a2e;
 
   --color-text-primary: #fafaf9;
-  --color-text-secondary: #a4a4aa;
+  --color-text-secondary: #6b6b70;
   --color-text-muted: #6b6b70;
+  --color-text-tertiary: #4a4a50;
 
   --spacing-base: 16px;
-  --radius-card: 24px;
+  --radius-card: 18px;
   --radius-control: 16px;
-  --shadow-card: 0 18px 36px rgba(0, 0, 0, 0.22);
-  --shadow-primary: 0 14px 28px rgba(50, 213, 131, 0.18);
+  --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.28);
+  --shadow-primary: 0 10px 24px rgba(50, 213, 131, 0.22);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
 
   --el-color-primary: #32d583;
-  --el-color-primary-light-3: #61dfa0;
+  --el-color-primary-light-3: #6ee7a8;
   --el-color-primary-light-5: #84e8b8;
   --el-color-primary-light-7: #b2f1d3;
   --el-color-primary-light-8: #ccf6e0;
   --el-color-primary-light-9: #e6fbef;
-  --el-color-primary-dark-2: #28aa69;
-  --el-bg-color: #121419;
-  --el-bg-color-overlay: #171b21;
-  --el-fill-color-blank: #121419;
-  --el-fill-color-light: #171b21;
-  --el-fill-color-lighter: #1d2229;
-  --el-border-color: #262a31;
-  --el-border-color-light: #2f343d;
+  --el-color-primary-dark-2: #24c06f;
+  --el-bg-color: #16161a;
+  --el-bg-color-overlay: #16161a;
+  --el-fill-color-blank: #16161a;
+  --el-fill-color-light: #121316;
+  --el-fill-color-lighter: #1a1b20;
+  --el-border-color: #2a2a2e;
+  --el-border-color-light: #2a2a2e;
   --el-text-color-primary: #fafaf9;
-  --el-text-color-regular: #c5c6cb;
-  --el-text-color-secondary: #8b8b92;
+  --el-text-color-regular: #fafaf9;
+  --el-text-color-secondary: #6b6b70;
   --el-mask-color: rgba(0, 0, 0, 0.72);
-  --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.22);
+  --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.26);
 }

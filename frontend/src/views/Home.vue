@@ -20,6 +20,7 @@
               <div>
                 <p class="home-view__section-eyebrow">Plan Today</p>
                 <h2 class="home-view__section-title home-view__section-title--card">今日训练计划</h2>
+                <p class="home-view__card-note">一句话描述目标，马上获得可执行训练方案。</p>
               </div>
             </div>
           </template>
@@ -52,7 +53,39 @@
               <span class="home-view__card-badge">{{ summary.streakDays }}D</span>
             </div>
           </template>
-          <div class="heatmap" aria-label="最近六周训练热力图">
+          <div class="home-view__summary-row">
+            <div class="home-view__summary-item">
+              <span>训练天数</span>
+              <strong>{{ summary.trainingDays }}</strong>
+            </div>
+            <div class="home-view__summary-item">
+              <span>总时长</span>
+              <strong>{{ summary.totalDuration }} min</strong>
+            </div>
+          </div>
+          <StatePanel
+            v-if="heatmapState === 'loading'"
+            variant="loading"
+            title="正在加载训练热图"
+            description="稍等片刻，我们正在读取你的最近训练记录。"
+          />
+          <StatePanel
+            v-else-if="heatmapState === 'error'"
+            variant="error"
+            title="热图加载失败"
+            :description="heatmapError"
+            action-label="重试加载"
+            @action="loadHeatmap"
+          />
+          <StatePanel
+            v-else-if="heatmapState === 'empty'"
+            variant="empty"
+            title="今天还没有训练记录"
+            description="先完成一次训练，热图会自动点亮。"
+            action-label="去生成训练计划"
+            @action="handleGeneratePlan"
+          />
+          <div v-else class="heatmap" aria-label="最近六周训练热力图">
             <div
               v-for="(column, columnIndex) in homeHeatmapColumns"
               :key="`col-${columnIndex}`"
@@ -134,7 +167,9 @@ import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
+import StatePanel from '@/components/common/StatePanel.vue';
 import { homeRecommendations, homeTabs } from '@/config/home';
+import type { PageState } from '@/types/ui';
 import {
   buildDailyHeatmapPoints,
   buildHeatmapColumnsFromRows,
@@ -150,6 +185,8 @@ const authStore = useAuthStore();
 const planPrompt = ref('');
 const homeHeatmapColumns = ref<Array<Array<0 | 1 | 2 | 3 | 4>>>([]);
 const summary = ref({ trainingDays: 0, totalDuration: 0, streakDays: 0 });
+const heatmapState = ref<PageState>('idle');
+const heatmapError = ref('暂时无法读取训练记录，请稍后重试。');
 
 const resolveUserId = (): number | null => {
   const userId = authStore.currentUser?.id ?? null;
@@ -167,6 +204,10 @@ const loadHeatmap = async (): Promise<void> => {
     return;
   }
 
+  if (homeHeatmapColumns.value.length === 0) {
+    heatmapState.value = 'loading';
+  }
+
   try {
     const { startDate, endDate, dates } = getRecentDateRange(42);
     const records = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
@@ -174,35 +215,53 @@ const loadHeatmap = async (): Promise<void> => {
     const rows = buildHeatmapRows(points);
     homeHeatmapColumns.value = buildHeatmapColumnsFromRows(rows);
     summary.value = calculateWorkoutSummary(points);
+    heatmapState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
+    heatmapError.value = '';
   } catch (error) {
     const message = error instanceof Error ? error.message : '读取打卡记录失败';
-    ElMessage.error(message);
+    heatmapError.value = message;
+    if (homeHeatmapColumns.value.length > 0) {
+      heatmapState.value = 'ready';
+      ElMessage.warning('热图更新失败，已保留上次可用数据');
+      return;
+    }
+
+    heatmapState.value = 'error';
+    ElMessage.error('读取训练记录失败，请重试');
   }
 };
 
-const handleGeneratePlan = () => {
-  const goal = planPrompt.value.trim();
+const safePush = async (routeName: string, query?: Record<string, string>): Promise<void> => {
+  try {
+    await router.push({ name: routeName, query });
+  } catch {
+    ElMessage.error('页面跳转失败，请稍后重试');
+  }
+};
 
-  if (!goal) {
+const handleGeneratePlan = async (): Promise<void> => {
+  const goal = planPrompt.value.trim();
+  if (!goal && heatmapState.value !== 'empty') {
     ElMessage.warning('先输入一个训练目标吧');
     return;
   }
 
-  router.push({ name: 'PlanGenerator', query: { goal } });
+  const query = goal ? { goal } : undefined;
+  await safePush('PlanGenerator', query);
 };
 
-const handleOpenLibrary = (): void => {
-  router.push({ name: 'Exercises' });
+const handleOpenLibrary = async (): Promise<void> => {
+  await safePush('Exercises');
 };
 
 const isTabActive = (routeName: string): boolean => route.name === routeName;
 
-const handleTabClick = (routeName: string): void => {
+const handleTabClick = async (routeName: string): Promise<void> => {
   if (route.name === routeName) {
     return;
   }
 
-  router.push({ name: routeName });
+  await safePush(routeName);
 };
 
 onMounted(async () => {
@@ -217,7 +276,7 @@ onMounted(async () => {
   justify-content: center;
   background: var(--color-bg-page);
   color: var(--color-text-primary);
-  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-family: 'DM Sans', 'PingFang SC', 'MiSans', 'Source Han Sans SC', sans-serif;
 }
 
 .home-view__screen {
@@ -232,7 +291,7 @@ onMounted(async () => {
 
 .home-view__hero {
   position: relative;
-  height: 280px;
+  height: 318px;
   overflow: hidden;
 }
 
@@ -289,10 +348,10 @@ onMounted(async () => {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 30px;
+  bottom: 34px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   padding: 0 24px;
 }
 
@@ -316,25 +375,25 @@ onMounted(async () => {
 }
 
 .home-view__hero-title {
-  max-width: 220px;
-  font-size: 32px;
-  line-height: 1.05;
+  max-width: 258px;
+  font-size: 36px;
+  line-height: 1.06;
 }
 
 .home-view__hero-description {
   margin: 0;
-  max-width: 236px;
+  max-width: 272px;
   color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .home-view__content {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 24px;
-  padding: 20px 20px 108px;
+  gap: 20px;
+  padding: 16px 20px 116px;
 }
 
 .home-view__card-header {
@@ -346,22 +405,27 @@ onMounted(async () => {
 
 .home-view__primary-button {
   width: 100%;
-  height: 52px;
-  margin-top: 14px;
-  border-radius: 16px;
-  font-size: 15px;
+  height: 56px;
+  margin-top: 16px;
+  border-radius: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 
+.home-view__primary-button:disabled {
+  opacity: 0.62;
+}
+
 .home-view__section-title--card {
-  font-size: 24px;
+  font-size: 26px;
   letter-spacing: -0.03em;
 }
 
 .home-view__card-note {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--color-text-secondary);
   font-size: 13px;
+  line-height: 1.45;
 }
 
 .home-view__card-badge {
@@ -378,56 +442,85 @@ onMounted(async () => {
   font-weight: 700;
 }
 
+.home-view__summary-row {
+  margin: 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.home-view__summary-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.home-view__summary-item span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home-view__summary-item strong {
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .heatmap {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .heatmap__column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .heatmap__cell {
   aspect-ratio: 1;
-  border-radius: 10px;
-  background: #17191e;
+  border-radius: 9px;
+  background: #16161a;
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .heatmap__cell--level-1 {
-  background: rgba(50, 213, 131, 0.16);
+  background: #244436;
 }
 
 .heatmap__cell--level-2 {
-  background: rgba(50, 213, 131, 0.32);
+  background: #24c06f;
 }
 
 .heatmap__cell--level-3 {
-  background: rgba(50, 213, 131, 0.56);
+  background: #32d583;
 }
 
 .heatmap__cell--level-4 {
-  background: var(--color-primary);
+  background: #6ee7a8;
 }
 
 .home-view__section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
 }
 
 .home-view__library-link {
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: 13px;
   padding-right: 0;
 }
 .home-view__recommend {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .recommend-card :deep(.el-card__body) {
@@ -457,7 +550,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   padding: 18px 16px 18px 0;
 }
 
@@ -476,22 +569,26 @@ onMounted(async () => {
 
 .recommend-card__meta {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   color: var(--color-text-secondary);
   font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .home-view__tabbar {
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  bottom: 14px;
   z-index: 3;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 16px 18px calc(16px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: linear-gradient(180deg, rgba(11, 11, 14, 0.88) 0%, rgba(11, 11, 14, 0.98) 100%);
-  backdrop-filter: blur(16px);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: min(366px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(11, 11, 14, 0.86) 0%, rgba(11, 11, 14, 0.96) 100%);
+  backdrop-filter: blur(14px);
 }
 
 .home-view__tabbar-item {
@@ -499,13 +596,16 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 8px 0;
+  padding: 10px 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: transparent;
   color: #64646c;
   font: inherit;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .home-view__tabbar-item.is-active {
@@ -533,12 +633,36 @@ onMounted(async () => {
 }
 
 @media (max-width: 420px) {
+  .home-view__content {
+    padding: 14px 14px 110px;
+    gap: 16px;
+  }
+
   .recommend-card :deep(.el-card__body) {
     grid-template-columns: 102px minmax(0, 1fr);
   }
 
   .home-view__hero-title {
-    font-size: 30px;
+    font-size: 32px;
+  }
+
+  .home-view__hero-description {
+    max-width: 236px;
+  }
+
+  .home-view__tabbar {
+    width: calc(100% - 16px);
+    bottom: 8px;
+    border-radius: 18px;
+  }
+
+  .home-view__tabbar-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .home-view__summary-item strong {
+    font-size: 14px;
   }
 }
 </style>

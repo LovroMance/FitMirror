@@ -138,39 +138,61 @@ export const generatePlanApi = async (goalText: string): Promise<TrainingPlan> =
 
 export const generatePlanStream = async (
   goalText: string,
-  onEvent: (event: PlanStreamEvent) => void
+  onEvent: (event: PlanStreamEvent) => void,
+  options?: { timeoutMs?: number }
 ): Promise<GeneratePlanResult> => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) {
     throw new Error('登录状态已失效，请重新登录');
   }
 
+  const timeoutMs = options?.timeoutMs ?? 12000;
   const requestUrl = `${API_BASE_URL}/plans/generate/stream?goalText=${encodeURIComponent(goalText)}`;
+  const abortController = new AbortController();
+  const timerId = window.setTimeout(() => {
+    abortController.abort();
+  }, timeoutMs);
 
-  const response = await fetch(requestUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`
+  let response: Response;
+  try {
+    response = await fetch(requestUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      signal: abortController.signal
+    });
+  } catch (error) {
+    window.clearTimeout(timerId);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('生成超时，已切换稳定通道重试');
     }
-  });
 
-  if (!response.ok) {
-    try {
-      const body = (await response.json()) as ApiResponse<never>;
-      throw new Error(body.error || body.message || '计划生成失败，请稍后重试');
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
+    throw error;
+  }
+
+  window.clearTimeout(timerId);
+  try {
+    if (!response.ok) {
+      try {
+        const body = (await response.json()) as ApiResponse<never>;
+        throw new Error(body.error || body.message || '计划生成失败，请稍后重试');
+      } catch (error) {
+        if (error instanceof Error) {
+          throw error;
+        }
+
+        throw new Error('计划生成失败，请稍后重试');
       }
-
-      throw new Error('计划生成失败，请稍后重试');
     }
-  }
 
-  if (!response.body) {
-    throw new Error('流式响应不可用，请稍后重试');
-  }
+    if (!response.body) {
+      throw new Error('流式响应不可用，请稍后重试');
+    }
 
-  return readSseStream(response.body, onEvent);
+    return await readSseStream(response.body, onEvent);
+  } finally {
+    abortController.abort();
+  }
 };
 

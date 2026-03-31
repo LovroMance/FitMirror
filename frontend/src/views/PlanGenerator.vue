@@ -31,23 +31,29 @@
           <el-button text class="plan-generator__back" @click="router.push({ name: 'Home' })">返回首页</el-button>
         </div>
 
-        <p v-if="loading" class="plan-generator__progress">{{ progressLabel }}</p>
-        <p v-if="errorMessage" class="plan-generator__error">{{ errorMessage }}</p>
-        <el-button
-          v-if="errorMessage && !loading && goalText.trim()"
-          text
-          class="plan-generator__retry"
-          @click="handleGenerate"
-        >
-          重试生成
-        </el-button>
+        <div class="plan-generator__status-wrap">
+          <StatePanel
+            v-if="loading"
+            variant="loading"
+            :title="progressLabel"
+            description="保持当前页面，生成完成后会自动保存最近一次计划。"
+          />
+          <StatePanel
+            v-if="errorMessage"
+            variant="error"
+            title="生成失败"
+            :description="errorMessage"
+            :action-label="goalText.trim() ? '重试生成' : ''"
+            @action="handleGenerate"
+          />
+        </div>
       </el-card>
 
       <el-card v-if="plan" shadow="never" class="fm-card plan-generator__card">
         <div class="plan-generator__plan-head">
           <h2 class="plan-generator__plan-title">{{ plan.title }}</h2>
-          <p class="plan-generator__plan-meta">{{ levelText }} · {{ plan.durationMinutes }} 分钟</p>
-          <div class="plan-generator__source">
+          <div class="plan-generator__plan-meta-row">
+            <p class="plan-generator__plan-meta">{{ levelText }} · {{ plan.durationMinutes }} 分钟</p>
             <span class="plan-generator__source-tag" :class="`plan-generator__source-tag--${sourceTagClass}`">
               {{ sourceLabel }}
             </span>
@@ -69,8 +75,9 @@
         </div>
 
         <ul class="plan-generator__exercise-list">
-          <li v-for="exercise in plan.exercises" :key="exercise.name" class="plan-generator__exercise-item">
+          <li v-for="(exercise, idx) in plan.exercises" :key="exercise.name" class="plan-generator__exercise-item">
             <div class="plan-generator__exercise-top">
+              <span class="plan-generator__exercise-index">#{{ idx + 1 }}</span>
               <button type="button" class="plan-generator__exercise-link" @click="openExerciseLibrary(exercise.name)">
                 {{ exercise.name }}
               </button>
@@ -91,6 +98,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { generatePlanApiWithSource, generatePlanStream } from '@/api/plans';
 import { useAuthStore } from '@/store/auth';
+import StatePanel from '@/components/common/StatePanel.vue';
 import type { PlanExercise, PlanSource, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { plansRepository } from '@/repositories';
 
@@ -106,6 +114,7 @@ const plan = ref<TrainingPlan | null>(null);
 const latestPlanId = ref<number | null>(null);
 const planSource = ref<PlanSource | null>(null);
 const progressState = ref<PlanStreamEvent['type'] | null>(null);
+const generationRound = ref(0);
 
 const currentUserId = computed(() => authStore.currentUser?.id ?? null);
 const levelText = computed(() => {
@@ -178,6 +187,7 @@ const isValidExercise = (value: unknown): value is PlanExercise => {
     item.name.trim().length > 0 &&
     typeof item.instruction === 'string' &&
     item.instruction.trim().length > 0 &&
+    (typeof item.reps === 'string' || typeof item.durationSeconds === 'number') &&
     typeof item.restSeconds === 'number' &&
     Number.isFinite(item.restSeconds)
   );
@@ -236,11 +246,25 @@ const handleGenerate = async (): Promise<void> => {
   loading.value = true;
   errorMessage.value = '';
   progressState.value = 'queued';
+  const currentRound = generationRound.value + 1;
+  generationRound.value = currentRound;
 
   try {
-    const streamed = await generatePlanStream(trimmedGoal, (event) => {
-      progressState.value = event.type;
-    });
+    const streamed = await generatePlanStream(
+      trimmedGoal,
+      (event) => {
+        if (currentRound !== generationRound.value) {
+          return;
+        }
+
+        progressState.value = event.type;
+      },
+      { timeoutMs: 12000 }
+    );
+
+    if (currentRound !== generationRound.value) {
+      return;
+    }
 
     if (!isValidPlan(streamed.plan)) {
       throw new Error('计划数据异常，请重试');
@@ -251,6 +275,9 @@ const handleGenerate = async (): Promise<void> => {
   } catch {
     try {
       const fallback = await generatePlanApiWithSource(trimmedGoal);
+      if (currentRound !== generationRound.value) {
+        return;
+      }
 
       if (!isValidPlan(fallback.plan)) {
         throw new Error('计划数据异常，请重试');
@@ -261,6 +288,10 @@ const handleGenerate = async (): Promise<void> => {
       progressState.value = 'completed';
       ElMessage.warning('已自动切换到稳定生成通道');
     } catch (error) {
+      if (currentRound !== generationRound.value) {
+        return;
+      }
+
       const message = error instanceof Error ? error.message : '计划生成失败，请稍后重试';
       errorMessage.value = message;
       ElMessage.error(message);
@@ -270,6 +301,10 @@ const handleGenerate = async (): Promise<void> => {
   }
 
   try {
+    if (!plan.value) {
+      throw new Error('计划生成失败，请稍后重试');
+    }
+
     const persistedPlan = JSON.parse(JSON.stringify(plan.value)) as TrainingPlan;
 
     const saved = await plansRepository.saveLatestPlan({
@@ -278,15 +313,25 @@ const handleGenerate = async (): Promise<void> => {
       plan: persistedPlan
     });
 
+    if (currentRound !== generationRound.value) {
+      return;
+    }
+
     latestPlanId.value = saved.id ?? null;
     progressState.value = 'completed';
     ElMessage.success('计划已生成并保存');
   } catch (error) {
+    if (currentRound !== generationRound.value) {
+      return;
+    }
+
     const message = error instanceof Error ? error.message : '计划保存失败，请稍后重试';
     errorMessage.value = message;
     ElMessage.error(message);
   } finally {
-    loading.value = false;
+    if (currentRound === generationRound.value) {
+      loading.value = false;
+    }
   }
 };
 
@@ -375,14 +420,14 @@ onMounted(async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 18px;
+  padding: 20px 20px 110px;
   background: linear-gradient(180deg, rgba(18, 26, 20, 0.95) 0%, rgba(11, 11, 14, 0.98) 30%), var(--color-bg-screen);
 }
 
 .plan-generator__header {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .plan-generator__eyebrow {
@@ -397,19 +442,19 @@ onMounted(async () => {
 .plan-generator__title {
   margin: 0;
   font-family: 'Fraunces', 'Times New Roman', serif;
-  font-size: 30px;
-  line-height: 1.05;
+  font-size: 34px;
+  line-height: 1.08;
 }
 
 .plan-generator__description {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .plan-generator__actions {
-  margin-top: 14px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -418,39 +463,37 @@ onMounted(async () => {
 
 .plan-generator__submit {
   flex: 1;
-  height: 50px;
+  height: 56px;
+  border-radius: 18px;
 }
 
 .plan-generator__back {
   color: var(--color-text-secondary);
 }
 
-.plan-generator__progress {
-  margin: 10px 0 0;
-  color: var(--color-primary);
-  font-size: 13px;
-}
-
-.plan-generator__error {
-  margin: 10px 0 0;
-  color: var(--color-danger);
-  font-size: 13px;
-}
-
-.plan-generator__retry {
-  margin-top: 8px;
-  padding-left: 0;
-}
-
-.plan-generator__plan-head {
+.plan-generator__status-wrap {
+  margin-top: 12px;
   display: grid;
   gap: 8px;
 }
 
+.plan-generator__plan-head {
+  display: grid;
+  gap: 10px;
+}
+
 .plan-generator__plan-title {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.plan-generator__plan-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .plan-generator__plan-meta {
@@ -458,18 +501,18 @@ onMounted(async () => {
   color: var(--color-primary);
   font-size: 14px;
   font-weight: 600;
-}
-
-.plan-generator__source {
-  display: flex;
-  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.11);
 }
 
 .plan-generator__source-tag {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: 999px;
-  padding: 2px 10px;
+  padding: 5px 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .plan-generator__source-tag--ai {
@@ -491,12 +534,14 @@ onMounted(async () => {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 14px;
+  line-height: 1.65;
 }
 
 .plan-generator__plan-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .plan-generator__library-link {
@@ -510,24 +555,36 @@ onMounted(async () => {
 
 .plan-generator__exercise-list {
   list-style: none;
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .plan-generator__exercise-item {
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(15, 18, 17, 0.8);
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(22, 26, 24, 0.92), rgba(14, 17, 16, 0.92));
 }
 
 .plan-generator__exercise-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+}
+
+.plan-generator__exercise-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.16);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .plan-generator__exercise-link {
@@ -538,6 +595,9 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  flex: 1;
+  text-align: left;
+  line-height: 1.35;
 }
 
 .plan-generator__exercise-link:hover {
@@ -548,18 +608,51 @@ onMounted(async () => {
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .plan-generator__exercise-item p {
-  margin: 8px 0 6px;
+  margin: 10px 0 6px;
   color: var(--color-text-secondary);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
 .plan-generator__exercise-item small {
   color: var(--color-text-muted);
   font-size: 12px;
+}
+
+@media (max-width: 390px) {
+  .plan-generator__screen {
+    padding: 16px 14px 106px;
+  }
+
+  .plan-generator__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .plan-generator__back {
+    align-self: flex-start;
+  }
+
+  .plan-generator__plan-actions {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .plan-generator__title {
+    font-size: 30px;
+  }
+
+  .plan-generator__plan-title {
+    font-size: 23px;
+  }
+
+  .plan-generator__exercise-item {
+    padding: 12px;
+  }
 }
 </style>
 

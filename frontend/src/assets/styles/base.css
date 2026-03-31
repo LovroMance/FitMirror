@@ -97,7 +97,7 @@ body,
 
 body {
   color: var(--color-text-primary);
-  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-family: 'DM Sans', 'PingFang SC', 'MiSans', 'Source Han Sans SC', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
