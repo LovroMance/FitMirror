@@ -56,7 +56,7 @@ export const useRegistrationForm = () => {
     ],
     email: [
       { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-      { type: 'email', message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] }
+      { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
     ],
     password: [
       { required: true, message: '请输入密码', trigger: 'blur' },
@@ -64,7 +64,7 @@ export const useRegistrationForm = () => {
     ],
     confirmPassword: [
       { required: true, message: '请再次输入密码', trigger: 'blur' },
-      { validator: validateConfirmPassword, trigger: ['blur', 'change'] }
+      { validator: validateConfirmPassword, trigger: 'blur' }
     ],
     agreed: [{ validator: validateAgreement, trigger: 'change' }]
   };
