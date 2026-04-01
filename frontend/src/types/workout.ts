@@ -23,3 +23,17 @@ export interface WorkoutTrendSummary {
   averageDuration: number;
   busiestDate: string | null;
 }
+
+export interface WorkoutRecordSyncPayload {
+  clientRecordId: string;
+  date: string;
+  duration: number;
+  completed: boolean;
+  planId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SyncWorkoutRecordsResult {
+  records: WorkoutRecordSyncPayload[];
+}

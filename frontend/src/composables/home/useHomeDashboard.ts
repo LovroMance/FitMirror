@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
+import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
 import { homeRecommendations, homeTabs } from '@/config/home';
@@ -47,6 +48,7 @@ export const useHomeDashboard = () => {
     }
 
     try {
+      await syncWorkoutRecordsForUser(userId).catch(() => undefined);
       const { startDate, endDate, dates } = getRecentDateRange(42);
       const records = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
       const points = buildDailyHeatmapPoints(records, dates);

@@ -7,12 +7,38 @@ const toRepositoryError = (action: string, error: unknown): Error => {
 };
 
 export const workoutRecordsRepository = {
-  async createRecord(payload: Omit<WorkoutRecordEntity, 'id'>): Promise<WorkoutRecordEntity> {
+  async createRecord(
+    payload: Omit<WorkoutRecordEntity, 'id' | 'clientRecordId' | 'createdAt' | 'updatedAt'> &
+      Partial<Pick<WorkoutRecordEntity, 'clientRecordId' | 'createdAt' | 'updatedAt'>>
+  ): Promise<WorkoutRecordEntity> {
     try {
-      const id = await fitMirrorDb.workoutRecords.add(payload);
-      return { ...payload, id: Number(id) };
+      const now = new Date().toISOString();
+      const record: Omit<WorkoutRecordEntity, 'id'> = {
+        ...payload,
+        clientRecordId: payload.clientRecordId ?? createClientRecordId(),
+        createdAt: payload.createdAt ?? now,
+        updatedAt: payload.updatedAt ?? now
+      };
+
+      const id = await fitMirrorDb.workoutRecords.add(record);
+      return { ...record, id: Number(id) };
     } catch (error) {
       throw toRepositoryError('createRecord', error);
+    }
+  },
+
+  async listRecordsByUser(userId: number): Promise<WorkoutRecordEntity[]> {
+    try {
+      const records = await fitMirrorDb.workoutRecords.where('userId').equals(userId).toArray();
+      return records.sort((a, b) => {
+        if (a.date !== b.date) {
+          return a.date > b.date ? 1 : -1;
+        }
+
+        return a.createdAt > b.createdAt ? 1 : -1;
+      });
+    } catch (error) {
+      throw toRepositoryError('listRecordsByUser', error);
     }
   },
 
@@ -34,5 +60,28 @@ export const workoutRecordsRepository = {
     } catch (error) {
       throw toRepositoryError('listRecordsByDay', error);
     }
+  },
+
+  async replaceRecordsForUser(userId: number, records: Omit<WorkoutRecordEntity, 'id' | 'userId'>[]): Promise<void> {
+    try {
+      await fitMirrorDb.transaction('rw', fitMirrorDb.workoutRecords, async () => {
+        await fitMirrorDb.workoutRecords.where('userId').equals(userId).delete();
+        if (records.length === 0) {
+          return;
+        }
+
+        await fitMirrorDb.workoutRecords.bulkAdd(records.map((record) => ({ ...record, userId })));
+      });
+    } catch (error) {
+      throw toRepositoryError('replaceRecordsForUser', error);
+    }
   }
+};
+
+const createClientRecordId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `rec-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };

@@ -5,6 +5,7 @@ import { env, validateRequiredEnv } from './config/env';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler';
 import { authRouter } from './modules/auth/auth.router';
 import { plansRouter } from './modules/plans/plans.router';
+import { workoutRecordsRouter } from './modules/workout-records/workout-records.router';
 import { sendSuccess } from './utils/response';
 
 dotenv.config();
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/plans', plansRouter);
+app.use('/api/workout-records', workoutRecordsRouter);
 
 app.get('/api/health', (_req: express.Request, res: express.Response) => {
   sendSuccess(res, { status: 'ok' });

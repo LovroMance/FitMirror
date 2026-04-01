@@ -2,15 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dbMocks = vi.hoisted(() => ({
   add: vi.fn(),
-  where: vi.fn()
+  where: vi.fn(),
+  bulkAdd: vi.fn(),
+  transaction: vi.fn()
 }));
 
 vi.mock('@/db', () => ({
   fitMirrorDb: {
     workoutRecords: {
       add: dbMocks.add,
-      where: dbMocks.where
-    }
+      where: dbMocks.where,
+      bulkAdd: dbMocks.bulkAdd
+    },
+    transaction: dbMocks.transaction
   }
 }));
 
@@ -19,6 +23,7 @@ import { workoutRecordsRepository } from './workout-records-repository';
 describe('workoutRecordsRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dbMocks.transaction.mockImplementation(async (_mode, _table, callback) => callback());
   });
 
   it('creates a workout record and returns the persisted entity', async () => {
@@ -34,19 +39,23 @@ describe('workoutRecordsRepository', () => {
 
     expect(dbMocks.add).toHaveBeenCalledWith({
       userId: 7,
+      clientRecordId: expect.any(String),
       date: '2026-04-01',
       duration: 18,
       completed: true,
-      planId: 3
+      planId: 3,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String)
     });
-    expect(result).toEqual({
-      id: 9,
+    expect(result).toMatchObject({
       userId: 7,
       date: '2026-04-01',
       duration: 18,
       completed: true,
       planId: 3
     });
+    expect(result.id).toBe(9);
+    expect(result.clientRecordId).toEqual(expect.any(String));
   });
 
   it('filters records by date range and keeps them sorted by date', async () => {
@@ -78,5 +87,38 @@ describe('workoutRecordsRepository', () => {
     const result = await workoutRecordsRepository.listRecordsByDay(7, '2026-04-01');
 
     expect(result.map((item) => item.id)).toEqual([2, 1]);
+  });
+
+  it('replaces all records for one user with cloud-synced data', async () => {
+    const deleteMock = vi.fn().mockResolvedValue(undefined);
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        delete: deleteMock
+      })
+    });
+
+    await workoutRecordsRepository.replaceRecordsForUser(7, [
+      {
+        clientRecordId: 'rec-001',
+        date: '2026-04-01',
+        duration: 20,
+        completed: true,
+        createdAt: '2026-04-01T10:00:00.000Z',
+        updatedAt: '2026-04-01T10:05:00.000Z'
+      }
+    ]);
+
+    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(dbMocks.bulkAdd).toHaveBeenCalledWith([
+      {
+        userId: 7,
+        clientRecordId: 'rec-001',
+        date: '2026-04-01',
+        duration: 20,
+        completed: true,
+        createdAt: '2026-04-01T10:00:00.000Z',
+        updatedAt: '2026-04-01T10:05:00.000Z'
+      }
+    ]);
   });
 });

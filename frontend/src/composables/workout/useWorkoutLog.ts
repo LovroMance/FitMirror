@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
+import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
 import type { WorkoutRecordEntity } from '@/types/local-db';
@@ -71,6 +72,9 @@ export const useWorkoutLog = () => {
     }
 
     try {
+      await syncWorkoutRecordsForUser(userId).catch(() => {
+        ElMessage.warning('云端记录同步失败，已先展示本地数据');
+      });
       const { startDate, endDate, dates } = getDateRangeByPeriod(selectedPeriod.value);
       const loaded = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
       records.value = loaded;
@@ -121,6 +125,9 @@ export const useWorkoutLog = () => {
         date: dayjs().format('YYYY-MM-DD'),
         duration,
         completed: true
+      });
+      await syncWorkoutRecordsForUser(userId).catch(() => {
+        ElMessage.warning('本地记录已保存，云端同步稍后重试');
       });
 
       await refreshRecords();

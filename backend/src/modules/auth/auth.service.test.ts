@@ -31,7 +31,6 @@ vi.mock('jsonwebtoken', () => ({
   }
 }));
 
-import type { HttpError } from '../../utils/http-error';
 import { loginUser, registerUser } from './auth.service';
 
 const baseUser = {
@@ -60,7 +59,7 @@ describe('auth.service', () => {
         username: 'new-user',
         password: 'password123'
       })
-    ).rejects.toMatchObject<HttpError>({
+    ).rejects.toMatchObject({
       message: 'Email already exists',
       statusCode: 409,
       code: 40901
@@ -92,7 +91,7 @@ describe('auth.service', () => {
         account: 'missing@test.com',
         password: 'password123'
       })
-    ).rejects.toMatchObject<HttpError>({
+    ).rejects.toMatchObject({
       message: 'Invalid account or password',
       statusCode: 401,
       code: 40102
@@ -108,7 +107,7 @@ describe('auth.service', () => {
         account: 'demo@test.com',
         password: 'wrong-password'
       })
-    ).rejects.toMatchObject<HttpError>({
+    ).rejects.toMatchObject({
       message: 'Invalid account or password',
       statusCode: 401,
       code: 40102

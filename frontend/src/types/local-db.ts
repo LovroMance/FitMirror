@@ -11,10 +11,13 @@ export interface PlanEntity {
 export interface WorkoutRecordEntity {
   id?: number;
   userId: number;
+  clientRecordId: string;
   date: string;
   duration: number;
   completed: boolean;
   planId?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ExercisePreferenceEntity {

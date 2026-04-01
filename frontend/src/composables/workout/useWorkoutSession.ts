@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
+import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { plansRepository, workoutRecordsRepository } from '@/repositories';
 import { useAuthStore } from '@/store/auth';
 import type { TrainingPlan } from '@/types/plan';
@@ -119,6 +120,9 @@ export const useWorkoutSession = () => {
         duration,
         completed: true,
         ...(latestPlanId.value ? { planId: latestPlanId.value } : {})
+      });
+      await syncWorkoutRecordsForUser(userId).catch(() => {
+        ElMessage.warning('本地记录已保存，云端同步稍后重试');
       });
 
       ElMessage.success('训练已完成，记录已写入热图');
