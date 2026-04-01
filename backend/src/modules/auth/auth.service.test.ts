@@ -84,6 +84,21 @@ describe('auth.service', () => {
     expect(result.user.username).toBe('demo');
   });
 
+  it('rejects login when account does not exist', async () => {
+    authMocks.findFirst.mockResolvedValue(null);
+
+    await expect(
+      loginUser({
+        account: 'missing@test.com',
+        password: 'password123'
+      })
+    ).rejects.toMatchObject<HttpError>({
+      message: 'Invalid account or password',
+      statusCode: 401,
+      code: 40102
+    });
+  });
+
   it('rejects login when password check fails', async () => {
     authMocks.findFirst.mockResolvedValue(baseUser);
     authMocks.compare.mockResolvedValue(false);
@@ -97,6 +112,24 @@ describe('auth.service', () => {
       message: 'Invalid account or password',
       statusCode: 401,
       code: 40102
+    });
+  });
+
+  it('returns user info and token when login succeeds', async () => {
+    authMocks.findFirst.mockResolvedValue(baseUser);
+    authMocks.compare.mockResolvedValue(true);
+    authMocks.sign.mockReturnValue('signed-token');
+
+    const result = await loginUser({
+      account: 'demo@test.com',
+      password: 'password123'
+    });
+
+    expect(result.token).toBe('signed-token');
+    expect(result.user).toMatchObject({
+      id: 1,
+      email: 'demo@test.com',
+      username: 'demo'
     });
   });
 });

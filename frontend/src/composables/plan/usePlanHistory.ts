@@ -162,6 +162,18 @@ export const usePlanHistory = () => {
     });
   };
 
+  const reusePlan = async (planId: number, isValid: boolean): Promise<void> => {
+    if (!isValid) {
+      ElMessage.warning('该计划数据异常，暂时无法复用到计划页');
+      return;
+    }
+
+    await router.push({
+      name: 'PlanGenerator',
+      query: { planId: String(planId) }
+    });
+  };
+
   const deletePlan = async (planId: number): Promise<void> => {
     const userId = resolveUserId();
     if (!userId || deletingPlanId.value) {
@@ -219,6 +231,7 @@ export const usePlanHistory = () => {
     levelLabel,
     loadHistory,
     pageState,
+    reusePlan,
     startWorkout,
     toggleDetail
   };

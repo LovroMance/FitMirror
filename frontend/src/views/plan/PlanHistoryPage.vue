@@ -68,6 +68,14 @@
             </el-button>
             <el-button
               text
+              class="plan-history__action-link"
+              :disabled="!item.isValid"
+              @click="reusePlan(item.id, item.isValid)"
+            >
+              复用到计划页
+            </el-button>
+            <el-button
+              text
               type="danger"
               class="plan-history__action-link"
               :loading="deletingPlanId === item.id"
@@ -133,6 +141,7 @@ const {
   levelLabel,
   loadHistory,
   pageState,
+  reusePlan,
   startWorkout,
   toggleDetail
 } = usePlanHistory();

@@ -148,6 +148,13 @@ export const usePlanGenerator = () => {
     });
   };
 
+  const resolvePlanIdFromQuery = (): number | null => {
+    const raw = Array.isArray(route.query.planId) ? route.query.planId[0] : route.query.planId;
+    const planId = Number(raw);
+
+    return Number.isFinite(planId) && planId > 0 ? planId : null;
+  };
+
   const handleGenerate = async (): Promise<void> => {
     if (loading.value || deleting.value) {
       return;
@@ -317,6 +324,38 @@ export const usePlanGenerator = () => {
     }
   };
 
+  const restorePlanFromHistory = async (): Promise<boolean> => {
+    const userId = resolveCurrentUserId();
+    const planId = resolvePlanIdFromQuery();
+    if (!userId || !planId) {
+      return false;
+    }
+
+    try {
+      const target = await plansRepository.getPlanById(userId, planId);
+      if (!target) {
+        ElMessage.warning('未找到要复用的历史计划，已为你保留当前内容');
+        return false;
+      }
+
+      if (!isValidPlan(target.planJson)) {
+        ElMessage.warning('历史计划数据异常，请重新生成');
+        return false;
+      }
+
+      latestPlanId.value = target.id ?? null;
+      goalText.value = target.goalText;
+      plan.value = target.planJson;
+      planSource.value = null;
+      errorMessage.value = '';
+      ElMessage.success('已恢复历史计划，可直接开始训练或调整目标后重新生成');
+      return true;
+    } catch {
+      ElMessage.warning('读取历史计划失败，请稍后重试');
+      return false;
+    }
+  };
+
   const goHome = async (): Promise<void> => {
     await router.push({ name: 'Home' });
   };
@@ -325,6 +364,11 @@ export const usePlanGenerator = () => {
     const goalFromQuery = typeof route.query.goal === 'string' ? route.query.goal.trim() : '';
     if (goalFromQuery) {
       goalText.value = goalFromQuery;
+    }
+
+    const restoredFromHistory = await restorePlanFromHistory();
+    if (restoredFromHistory) {
+      return;
     }
 
     await restoreLatestPlan();

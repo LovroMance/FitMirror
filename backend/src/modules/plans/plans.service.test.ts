@@ -68,4 +68,29 @@ describe('plans.service', () => {
     expect(result.plan.title).toBe('12分钟核心训练');
     expect(axiosPostMock).toHaveBeenCalledTimes(1);
   });
+
+  it('falls back to template generation when provider returns invalid json', async () => {
+    env.deepseekApiKey = 'deepseek-test-key';
+    axiosPostMock.mockResolvedValue({
+      data: {
+        choices: [
+          {
+            message: {
+              content: 'not-json'
+            }
+          }
+        ]
+      }
+    });
+
+    const events: string[] = [];
+    const result = await generatePlanWithFallback('我想练核心，每天12分钟', (event) => {
+      events.push(`${event.type}:${event.reason ?? event.source ?? ''}`);
+    });
+
+    expect(result.source).toBe('template');
+    expect(result.plan.exercises.length).toBeGreaterThanOrEqual(5);
+    expect(events).toContain('llm_failed:invalid_response');
+    expect(events).toContain('fallback_start:');
+  });
 });

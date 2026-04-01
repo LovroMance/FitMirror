@@ -75,6 +75,12 @@ export const useWorkoutLog = () => {
       const loaded = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
       records.value = loaded;
       dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
+      detailCacheByDate.value = {};
+      if (selectedDate.value) {
+        dayDetails.value = loaded
+          .filter((record) => record.date === selectedDate.value)
+          .sort((a, b) => Number(Boolean(b.completed)) - Number(Boolean(a.completed)));
+      }
       recordsState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
       recordsError.value = '';
     } catch {
