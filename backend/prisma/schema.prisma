@@ -14,7 +14,22 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  plans          Plan[]
   workoutRecords WorkoutRecord[]
+}
+
+model Plan {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  clientPlanId String
+  goalText     String
+  planJson     Json
+  createdAt    DateTime
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientPlanId])
+  @@index([userId, createdAt])
 }
 
 model WorkoutRecord {

@@ -34,6 +34,14 @@ const insertPlanEntity = async (entity: Omit<PlanEntity, 'id'>): Promise<PlanEnt
   return { ...entity, id: Number(id) };
 };
 
+const createClientPlanId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `plan-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const migrateLegacyLatestPlanOnce = async (userId: number): Promise<void> => {
   if (localStorage.getItem(LEGACY_MIGRATION_MARKER_KEY) === '1') {
     return;
@@ -47,11 +55,14 @@ const migrateLegacyLatestPlanOnce = async (userId: number): Promise<void> => {
 
   const legacyPlan = parseLegacyPlan(raw);
   if (legacyPlan) {
+    const now = legacyPlan.createdAt;
     await insertPlanEntity({
       userId,
+      clientPlanId: createClientPlanId(),
       goalText: legacyPlan.goalText,
       planJson: legacyPlan.plan,
-      createdAt: legacyPlan.createdAt
+      createdAt: legacyPlan.createdAt,
+      updatedAt: now
     });
   }
 
@@ -64,9 +75,11 @@ export const plansRepository = {
     try {
       return await insertPlanEntity({
         userId: params.userId,
+        clientPlanId: createClientPlanId(),
         goalText: params.goalText,
         planJson: params.plan,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
     } catch (error) {
       throw toRepositoryError('saveLatestPlan', error);
@@ -126,6 +139,29 @@ export const plansRepository = {
       return plans.reverse();
     } catch (error) {
       throw toRepositoryError('listPlansByUser', error);
+    }
+  },
+
+  async listPlansByUserAsc(userId: number): Promise<PlanEntity[]> {
+    try {
+      return await fitMirrorDb.plans.where('userId').equals(userId).sortBy('createdAt');
+    } catch (error) {
+      throw toRepositoryError('listPlansByUserAsc', error);
+    }
+  },
+
+  async replacePlansForUser(userId: number, plans: Omit<PlanEntity, 'id' | 'userId'>[]): Promise<void> {
+    try {
+      await fitMirrorDb.transaction('rw', fitMirrorDb.plans, async () => {
+        await fitMirrorDb.plans.where('userId').equals(userId).delete();
+        if (plans.length === 0) {
+          return;
+        }
+
+        await fitMirrorDb.plans.bulkAdd(plans.map((plan) => ({ ...plan, userId })));
+      });
+    } catch (error) {
+      throw toRepositoryError('replacePlansForUser', error);
     }
   }
 };

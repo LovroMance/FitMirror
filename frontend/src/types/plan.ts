@@ -29,6 +29,7 @@ export interface PersistedPlan {
 
 export interface PlanHistoryItemView {
   id: number;
+  clientPlanId: string;
   goalText: string;
   createdAt: string;
   title: string;
@@ -55,4 +56,21 @@ export interface PlanStreamEvent {
   reason?: string;
   plan?: TrainingPlan;
   message?: string;
+}
+
+export interface PlanSyncPayload {
+  clientPlanId: string;
+  goalText: string;
+  planJson: TrainingPlan;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SyncPlansRequest {
+  plans: PlanSyncPayload[];
+  deletedClientPlanIds: string[];
+}
+
+export interface SyncPlansResult {
+  plans: PlanSyncPayload[];
 }

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { loginApi, meApi, registerApi } from '@/api/auth';
+import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import type { AuthUser } from '@/types/auth';
 
@@ -40,6 +41,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const user = await meApi();
         this.currentUser = user;
+        await syncPlansForUser(user.id).catch(() => undefined);
         await syncWorkoutRecordsForUser(user.id).catch(() => undefined);
       } catch {
         this.clearAuth();
@@ -50,12 +52,14 @@ export const useAuthStore = defineStore('auth', {
     async login(account: string, password: string): Promise<void> {
       const result = await loginApi({ account, password });
       this.setAuth(result.token, result.user);
+      await syncPlansForUser(result.user.id).catch(() => undefined);
       await syncWorkoutRecordsForUser(result.user.id).catch(() => undefined);
       this.initialized = true;
     },
     async register(email: string, username: string, password: string): Promise<void> {
       const result = await registerApi({ email, username, password });
       this.setAuth(result.token, result.user);
+      await syncPlansForUser(result.user.id).catch(() => undefined);
       await syncWorkoutRecordsForUser(result.user.id).catch(() => undefined);
       this.initialized = true;
     }

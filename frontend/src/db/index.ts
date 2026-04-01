@@ -52,6 +52,29 @@ class FitMirrorDb extends Dexie {
         );
       });
 
+    this.version(4)
+      .stores({
+        plans: '++id, userId, clientPlanId, createdAt, updatedAt, [userId+createdAt], [userId+clientPlanId]',
+        workout_records:
+          '++id, userId, clientRecordId, date, completed, planId, updatedAt, [userId+date], [userId+clientRecordId]',
+        exercise_preferences: '++id, userId, exerciseId, isFavorite, lastViewedAt, updatedAt, [userId+exerciseId]',
+        settings: 'userId, updatedAt'
+      })
+      .upgrade(async (tx) => {
+        const table = tx.table('plans');
+        const plans = await table.toArray();
+
+        await Promise.all(
+          plans.map((plan) =>
+            table.put({
+              ...plan,
+              clientPlanId: String(plan.clientPlanId ?? `legacy-plan-${plan.id ?? Date.now()}-${Math.random()}`),
+              updatedAt: String(plan.updatedAt ?? plan.createdAt ?? new Date().toISOString())
+            })
+          )
+        );
+      });
+
     this.plans = this.table('plans');
     this.workoutRecords = this.table('workout_records');
     this.exercisePreferences = this.table('exercise_preferences');

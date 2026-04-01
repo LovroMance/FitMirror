@@ -2,9 +2,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { generatePlanApiWithSource, generatePlanStream } from '@/api/plans';
+import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { useAuthStore } from '@/store/auth';
 import type { PlanExercise, PlanSource, PlanStreamEvent, TrainingPlan } from '@/types/plan';
-import { plansRepository } from '@/repositories';
+import { planSyncStateRepository, plansRepository } from '@/repositories';
 
 export const usePlanGenerator = () => {
   const router = useRouter();
@@ -240,6 +241,9 @@ export const usePlanGenerator = () => {
         goalText: trimmedGoal,
         plan: persistedPlan
       });
+      await syncPlansForUser(userId).catch(() => {
+        ElMessage.warning('本地计划已保存，云端同步稍后重试');
+      });
 
       if (currentRound !== generationRound.value) {
         return;
@@ -277,7 +281,15 @@ export const usePlanGenerator = () => {
     errorMessage.value = '';
 
     try {
+      const targetPlan =
+        latestPlanId.value !== null ? await plansRepository.getPlanById(userId, latestPlanId.value) : await plansRepository.loadLatestPlan(userId);
       await plansRepository.deletePlan(userId, latestPlanId.value ?? undefined);
+      if (targetPlan) {
+        await planSyncStateRepository.markPlanDeleted(userId, targetPlan.clientPlanId);
+      }
+      await syncPlansForUser(userId).catch(() => {
+        ElMessage.warning('本地计划已删除，云端同步稍后重试');
+      });
       latestPlanId.value = null;
       plan.value = null;
       planSource.value = null;
@@ -298,6 +310,7 @@ export const usePlanGenerator = () => {
     }
 
     try {
+      await syncPlansForUser(userId).catch(() => undefined);
       const latest = await plansRepository.loadLatestPlan(userId);
       if (!latest) {
         return;
@@ -332,6 +345,7 @@ export const usePlanGenerator = () => {
     }
 
     try {
+      await syncPlansForUser(userId).catch(() => undefined);
       const target = await plansRepository.getPlanById(userId, planId);
       if (!target) {
         ElMessage.warning('未找到要复用的历史计划，已为你保留当前内容');

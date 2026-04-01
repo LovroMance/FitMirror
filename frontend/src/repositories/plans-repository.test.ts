@@ -5,7 +5,9 @@ const dbMocks = vi.hoisted(() => ({
   add: vi.fn(),
   where: vi.fn(),
   get: vi.fn(),
-  delete: vi.fn()
+  delete: vi.fn(),
+  bulkAdd: vi.fn(),
+  transaction: vi.fn()
 }));
 
 vi.mock('@/db', () => ({
@@ -14,8 +16,10 @@ vi.mock('@/db', () => ({
       add: dbMocks.add,
       where: dbMocks.where,
       get: dbMocks.get,
-      delete: dbMocks.delete
-    }
+      delete: dbMocks.delete,
+      bulkAdd: dbMocks.bulkAdd
+    },
+    transaction: dbMocks.transaction
   }
 }));
 
@@ -56,6 +60,7 @@ describe('plansRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('localStorage', new LocalStorageMock());
+    dbMocks.transaction.mockImplementation(async (_mode, _table, callback) => callback());
   });
 
   it('migrates legacy localStorage plan once and returns the latest record', async () => {
@@ -70,8 +75,24 @@ describe('plansRepository', () => {
     dbMocks.where.mockReturnValue({
       equals: vi.fn().mockReturnValue({
         sortBy: vi.fn().mockResolvedValue([
-          { id: 3, userId: 7, goalText: '旧计划', planJson: samplePlan, createdAt: '2026-03-19T00:00:00.000Z' },
-          { id: 4, userId: 7, goalText: '新计划', planJson: samplePlan, createdAt: '2026-03-21T00:00:00.000Z' }
+          {
+            id: 3,
+            userId: 7,
+            clientPlanId: 'plan-old',
+            goalText: '旧计划',
+            planJson: samplePlan,
+            createdAt: '2026-03-19T00:00:00.000Z',
+            updatedAt: '2026-03-19T00:00:00.000Z'
+          },
+          {
+            id: 4,
+            userId: 7,
+            clientPlanId: 'plan-new',
+            goalText: '新计划',
+            planJson: samplePlan,
+            createdAt: '2026-03-21T00:00:00.000Z',
+            updatedAt: '2026-03-21T00:00:00.000Z'
+          }
         ])
       })
     });
@@ -80,9 +101,11 @@ describe('plansRepository', () => {
 
     expect(dbMocks.add).toHaveBeenCalledWith({
       userId: 7,
+      clientPlanId: expect.any(String),
       goalText: persistedPlan.goalText,
       planJson: persistedPlan.plan,
-      createdAt: persistedPlan.createdAt
+      createdAt: persistedPlan.createdAt,
+      updatedAt: persistedPlan.createdAt
     });
     expect(localStorage.getItem('fitmirror_latest_plan')).toBeNull();
     expect(localStorage.getItem('fitmirror_latest_plan_migrated_v1')).toBe('1');
@@ -98,7 +121,15 @@ describe('plansRepository', () => {
   });
 
   it('returns a plan by id only when it belongs to the current user', async () => {
-    dbMocks.get.mockResolvedValue({ id: 12, userId: 7, goalText: '目标', planJson: samplePlan, createdAt: '2026-03-31' });
+    dbMocks.get.mockResolvedValue({
+      id: 12,
+      userId: 7,
+      clientPlanId: 'plan-12',
+      goalText: '目标',
+      planJson: samplePlan,
+      createdAt: '2026-03-31',
+      updatedAt: '2026-03-31'
+    });
 
     await expect(plansRepository.getPlanById(7, 12)).resolves.toMatchObject({ id: 12 });
     await expect(plansRepository.getPlanById(8, 12)).resolves.toBeNull();
@@ -108,8 +139,24 @@ describe('plansRepository', () => {
     dbMocks.where.mockReturnValue({
       equals: vi.fn().mockReturnValue({
         sortBy: vi.fn().mockResolvedValue([
-          { id: 1, userId: 7, goalText: '旧计划', planJson: samplePlan, createdAt: '2026-03-19T00:00:00.000Z' },
-          { id: 2, userId: 7, goalText: '新计划', planJson: samplePlan, createdAt: '2026-03-21T00:00:00.000Z' }
+          {
+            id: 1,
+            userId: 7,
+            clientPlanId: 'plan-1',
+            goalText: '旧计划',
+            planJson: samplePlan,
+            createdAt: '2026-03-19T00:00:00.000Z',
+            updatedAt: '2026-03-19T00:00:00.000Z'
+          },
+          {
+            id: 2,
+            userId: 7,
+            clientPlanId: 'plan-2',
+            goalText: '新计划',
+            planJson: samplePlan,
+            createdAt: '2026-03-21T00:00:00.000Z',
+            updatedAt: '2026-03-21T00:00:00.000Z'
+          }
         ])
       })
     });
@@ -117,5 +164,36 @@ describe('plansRepository', () => {
     const result = await plansRepository.listPlansByUser(7);
 
     expect(result.map((item) => item.id)).toEqual([2, 1]);
+  });
+
+  it('replaces all plans for one user with synced cloud data', async () => {
+    const deleteMock = vi.fn().mockResolvedValue(undefined);
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        delete: deleteMock
+      })
+    });
+
+    await plansRepository.replacePlansForUser(7, [
+      {
+        clientPlanId: 'plan-001',
+        goalText: '练核心',
+        planJson: samplePlan,
+        createdAt: '2026-04-01T10:00:00.000Z',
+        updatedAt: '2026-04-01T10:05:00.000Z'
+      }
+    ]);
+
+    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(dbMocks.bulkAdd).toHaveBeenCalledWith([
+      {
+        userId: 7,
+        clientPlanId: 'plan-001',
+        goalText: '练核心',
+        planJson: samplePlan,
+        createdAt: '2026-04-01T10:00:00.000Z',
+        updatedAt: '2026-04-01T10:05:00.000Z'
+      }
+    ]);
   });
 });

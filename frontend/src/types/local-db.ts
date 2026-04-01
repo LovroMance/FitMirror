@@ -3,9 +3,11 @@ import type { TrainingPlan } from '@/types/plan';
 export interface PlanEntity {
   id?: number;
   userId: number;
+  clientPlanId: string;
   goalText: string;
   planJson: TrainingPlan;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface WorkoutRecordEntity {

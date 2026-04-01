@@ -2,8 +2,9 @@ import dayjs from 'dayjs';
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
+import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { useAuthStore } from '@/store/auth';
-import { plansRepository } from '@/repositories';
+import { planSyncStateRepository, plansRepository } from '@/repositories';
 import type { PlanEntity } from '@/types/local-db';
 import type { PlanExercise, PlanHistoryItemView, TrainingPlan } from '@/types/plan';
 import type { PageState } from '@/types/ui';
@@ -50,6 +51,7 @@ const toHistoryItem = (entity: PlanEntity): PlanHistoryItemView => {
   if (!isValidPlan(plan) || !entity.id) {
     return {
       id: entity.id ?? -1,
+      clientPlanId: entity.clientPlanId,
       goalText: entity.goalText,
       createdAt: entity.createdAt,
       title: '计划数据异常',
@@ -64,6 +66,7 @@ const toHistoryItem = (entity: PlanEntity): PlanHistoryItemView => {
 
   return {
     id: entity.id,
+    clientPlanId: entity.clientPlanId,
     goalText: entity.goalText,
     createdAt: entity.createdAt,
     title: plan.title,
@@ -122,6 +125,9 @@ export const usePlanHistory = () => {
     }
 
     try {
+      await syncPlansForUser(userId).catch(() => {
+        ElMessage.warning('云端计划同步失败，已先展示本地历史');
+      });
       const loaded = await plansRepository.listPlansByUser(userId);
       items.value = loaded
         .map((entity) => toHistoryItem(entity))
@@ -193,7 +199,14 @@ export const usePlanHistory = () => {
     deletingPlanId.value = planId;
 
     try {
+      const targetPlan = await plansRepository.getPlanById(userId, planId);
       await plansRepository.deletePlan(userId, planId);
+      if (targetPlan) {
+        await planSyncStateRepository.markPlanDeleted(userId, targetPlan.clientPlanId);
+      }
+      await syncPlansForUser(userId).catch(() => {
+        ElMessage.warning('本地历史已删除，云端同步稍后重试');
+      });
       if (expandedPlanId.value === planId) {
         expandedPlanId.value = null;
       }
