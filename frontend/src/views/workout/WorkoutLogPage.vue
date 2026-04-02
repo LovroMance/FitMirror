@@ -169,13 +169,13 @@
                 </div>
                 <p class="workout-log__detail-source">来源：{{ detail.sourceLabel }}</p>
                 <template v-if="detail.canViewPlan">
-                  <p class="workout-log__detail-plan">{{ detail.planTitle }}</p>
-                  <p v-if="detail.planGoalText" class="workout-log__detail-goal">{{ detail.planGoalText }}</p>
+                  <p class="workout-log__detail-plan">{{ getWorkoutDayDetailPlanLabel(detail) }}</p>
+                  <p class="workout-log__detail-goal">{{ getWorkoutDayDetailHint(detail) }}</p>
                   <el-button text class="workout-log__detail-link" @click="openRelatedPlan(detail.planId)">
                     查看对应计划
                   </el-button>
                 </template>
-                <p v-else-if="detail.planMissing" class="workout-log__detail-missing">关联计划已不可用</p>
+                <p v-else class="workout-log__detail-missing">{{ getWorkoutDayDetailHint(detail) }}</p>
               </div>
             </li>
           </ul>
@@ -192,6 +192,7 @@
 <script setup lang="ts">
 import StatePanel from '@/components/common/StatePanel.vue';
 import { useWorkoutLog } from '@/composables/workout/useWorkoutLog';
+import { getWorkoutDayDetailHint, getWorkoutDayDetailPlanLabel } from '@/utils/workout-day-detail-copy';
 
 const {
   dateRangeLabel,
