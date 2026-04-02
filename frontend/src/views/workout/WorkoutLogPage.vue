@@ -162,8 +162,21 @@
               :key="`${detail.id ?? detail.date}-${detail.duration}`"
               class="workout-log__detail-item"
             >
-              <span>{{ detail.completed ? '已完成' : '未完成' }}</span>
-              <strong>{{ detail.duration }} 分钟</strong>
+              <div class="workout-log__detail-copy">
+                <div class="workout-log__detail-top">
+                  <span>{{ detail.completed ? '已完成' : '未完成' }}</span>
+                  <strong>{{ detail.duration }} 分钟</strong>
+                </div>
+                <p class="workout-log__detail-source">来源：{{ detail.sourceLabel }}</p>
+                <template v-if="detail.canViewPlan">
+                  <p class="workout-log__detail-plan">{{ detail.planTitle }}</p>
+                  <p v-if="detail.planGoalText" class="workout-log__detail-goal">{{ detail.planGoalText }}</p>
+                  <el-button text class="workout-log__detail-link" @click="openRelatedPlan(detail.planId)">
+                    查看对应计划
+                  </el-button>
+                </template>
+                <p v-else-if="detail.planMissing" class="workout-log__detail-missing">关联计划已不可用</p>
+              </div>
             </li>
           </ul>
           <p class="workout-log__detail-total">
@@ -192,6 +205,7 @@ const {
   isMockWriting,
   mockAddRecord,
   openDayDetail,
+  openRelatedPlan,
   periodTitle,
   recordsError,
   recordsState,
@@ -444,13 +458,47 @@ const {
 }
 
 .workout-log__detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  gap: 8px;
   padding: 12px;
   border-radius: 12px;
   background: rgba(21, 24, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-log__detail-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-log__detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workout-log__detail-source,
+.workout-log__detail-goal,
+.workout-log__detail-missing {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.workout-log__detail-plan {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.workout-log__detail-link {
+  justify-self: flex-start;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .workout-log__detail-total {

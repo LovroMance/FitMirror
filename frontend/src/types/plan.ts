@@ -39,7 +39,12 @@ export interface PlanHistoryItemView {
   exercises: PlanExercise[];
   exerciseCount: number;
   isValid: boolean;
+  usedWorkoutCount: number;
+  lastUsedAt: string | null;
+  usageBadge: string | null;
 }
+
+export type PlanHistoryFilter = 'all' | 'used' | 'unused';
 
 export type PlanStreamStatus =
   | 'queued'

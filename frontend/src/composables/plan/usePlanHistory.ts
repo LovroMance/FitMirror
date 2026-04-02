@@ -1,13 +1,14 @@
 import dayjs from 'dayjs';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { useAuthStore } from '@/store/auth';
-import { planSyncStateRepository, plansRepository } from '@/repositories';
+import { planSyncStateRepository, plansRepository, workoutRecordsRepository } from '@/repositories';
 import type { PlanEntity } from '@/types/local-db';
-import type { PlanExercise, PlanHistoryItemView, TrainingPlan } from '@/types/plan';
+import type { PlanExercise, PlanHistoryFilter, PlanHistoryItemView, TrainingPlan } from '@/types/plan';
 import type { PageState } from '@/types/ui';
+import { buildPlanUsageMap, decoratePlanHistoryItems, filterPlanHistoryItems, sortPlanHistoryItems } from '@/utils/plan-history-usage';
 
 const isValidExercise = (value: unknown): value is PlanExercise => {
   if (typeof value !== 'object' || value === null) {
@@ -60,7 +61,10 @@ const toHistoryItem = (entity: PlanEntity): PlanHistoryItemView => {
       summary: '该计划数据异常，暂时无法展示详情。',
       exercises: [],
       exerciseCount: 0,
-      isValid: false
+      isValid: false,
+      usedWorkoutCount: 0,
+      lastUsedAt: null,
+      usageBadge: null
     };
   }
 
@@ -75,12 +79,16 @@ const toHistoryItem = (entity: PlanEntity): PlanHistoryItemView => {
     summary: plan.summary,
     exercises: plan.exercises,
     exerciseCount: plan.exercises.length,
-    isValid: true
+    isValid: true,
+    usedWorkoutCount: 0,
+    lastUsedAt: null,
+    usageBadge: null
   };
 };
 
 export const usePlanHistory = () => {
   const router = useRouter();
+  const route = useRoute();
   const authStore = useAuthStore();
 
   const pageState = ref<PageState>('idle');
@@ -88,8 +96,17 @@ export const usePlanHistory = () => {
   const items = ref<PlanHistoryItemView[]>([]);
   const expandedPlanId = ref<number | null>(null);
   const deletingPlanId = ref<number | null>(null);
+  const highlightedPlanId = ref<number | null>(null);
+  const selectedFilter = ref<PlanHistoryFilter>('all');
+
+  const filterOptions: Array<{ value: PlanHistoryFilter; label: string }> = [
+    { value: 'all', label: '全部计划' },
+    { value: 'used', label: '已用于训练' },
+    { value: 'unused', label: '未用于训练' }
+  ];
 
   const hasPlans = computed(() => items.value.length > 0);
+  const filteredItems = computed(() => filterPlanHistoryItems(items.value, selectedFilter.value));
 
   const resolveUserId = (): number | null => {
     const userId = authStore.currentUser?.id ?? null;
@@ -114,6 +131,59 @@ export const usePlanHistory = () => {
     return value === 'intermediate' ? '进阶级' : '入门级';
   };
 
+  const usageSummary = (item: PlanHistoryItemView): string => {
+    if (item.usedWorkoutCount === 0) {
+      return '尚未用于训练';
+    }
+
+    const lastUsed = item.lastUsedAt ? dayjs(item.lastUsedAt).format('YYYY.MM.DD') : '时间未知';
+    const prefix = item.usageBadge === '最近使用' ? '最近使用' : '已用于训练';
+
+    return `${prefix} · ${lastUsed} · 累计 ${item.usedWorkoutCount} 次`;
+  };
+
+  const resolveTargetPlanId = (): number | null => {
+    const raw = Array.isArray(route.query.planId) ? route.query.planId[0] : route.query.planId;
+    const planId = Number(raw);
+
+    return Number.isFinite(planId) && planId > 0 ? planId : null;
+  };
+
+  const scrollToPlanCard = async (planId: number): Promise<void> => {
+    await nextTick();
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.getElementById(`plan-history-card-${planId}`)?.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth'
+    });
+  };
+
+  const filterIncludesItem = (filter: PlanHistoryFilter, item: PlanHistoryItemView): boolean => {
+    if (filter === 'used') {
+      return item.usedWorkoutCount > 0;
+    }
+
+    if (filter === 'unused') {
+      return item.usedWorkoutCount === 0;
+    }
+
+    return true;
+  };
+
+  const resolveFilterForItem = (item: PlanHistoryItemView): PlanHistoryFilter => {
+    return item.usedWorkoutCount > 0 ? 'used' : 'unused';
+  };
+
+  const setExpandedFallback = (): void => {
+    if (!filteredItems.value.some((item) => item.id === expandedPlanId.value)) {
+      expandedPlanId.value = filteredItems.value[0]?.id ?? null;
+    }
+  };
+
   const loadHistory = async (): Promise<void> => {
     const userId = resolveUserId();
     if (!userId) {
@@ -128,13 +198,37 @@ export const usePlanHistory = () => {
       await syncPlansForUser(userId).catch(() => {
         ElMessage.warning('云端计划同步失败，已先展示本地历史');
       });
-      const loaded = await plansRepository.listPlansByUser(userId);
-      items.value = loaded
-        .map((entity) => toHistoryItem(entity))
-        .filter((item) => Number.isFinite(item.id) && item.id > 0);
+      const [loaded, workoutRecords] = await Promise.all([
+        plansRepository.listPlansByUser(userId),
+        workoutRecordsRepository.listRecordsByUser(userId)
+      ]);
+      const usageMap = buildPlanUsageMap(workoutRecords);
+      items.value = sortPlanHistoryItems(
+        decoratePlanHistoryItems(
+          loaded
+            .map((entity) => toHistoryItem(entity))
+            .filter((item) => Number.isFinite(item.id) && item.id > 0),
+          usageMap
+        )
+      );
 
-      if (!items.value.some((item) => item.id === expandedPlanId.value)) {
-        expandedPlanId.value = items.value[0]?.id ?? null;
+      const targetPlanId = resolveTargetPlanId();
+      const targetItem = targetPlanId ? items.value.find((item) => item.id === targetPlanId) ?? null : null;
+
+      if (targetItem && !filterIncludesItem(selectedFilter.value, targetItem)) {
+        selectedFilter.value = resolveFilterForItem(targetItem);
+      }
+
+      if (targetItem) {
+        expandedPlanId.value = targetPlanId;
+        highlightedPlanId.value = targetPlanId;
+        await scrollToPlanCard(targetPlanId);
+      } else {
+        highlightedPlanId.value = null;
+      }
+
+      if (!targetItem) {
+        setExpandedFallback();
       }
 
       pageState.value = items.value.length > 0 ? 'ready' : 'empty';
@@ -154,6 +248,11 @@ export const usePlanHistory = () => {
 
   const toggleDetail = (planId: number): void => {
     expandedPlanId.value = expandedPlanId.value === planId ? null : planId;
+  };
+
+  const setFilter = (value: PlanHistoryFilter): void => {
+    selectedFilter.value = value;
+    setExpandedFallback();
   };
 
   const startWorkout = async (planId: number, isValid: boolean): Promise<void> => {
@@ -237,15 +336,21 @@ export const usePlanHistory = () => {
     deletingPlanId,
     errorMessage,
     expandedPlanId,
+    filteredItems,
+    filterOptions,
     formatCreatedAt,
     goHome,
     goToPlanGenerator,
+    highlightedPlanId,
     items,
     levelLabel,
     loadHistory,
     pageState,
     reusePlan,
+    selectedFilter,
     startWorkout,
-    toggleDetail
+    setFilter,
+    toggleDetail,
+    usageSummary
   };
 };

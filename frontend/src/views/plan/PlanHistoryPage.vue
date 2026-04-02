@@ -30,91 +30,120 @@
         @action="goToPlanGenerator"
       />
       <template v-else>
-        <el-card
-          v-for="item in items"
-          :key="item.id"
-          shadow="never"
-          class="fm-card plan-history__card"
-        >
-          <div class="plan-history__card-top">
-            <div>
-              <p class="plan-history__timestamp">{{ formatCreatedAt(item.createdAt) }}</p>
-              <h2 class="plan-history__card-title">{{ item.title }}</h2>
-              <p class="plan-history__goal">{{ item.goalText }}</p>
+        <section class="plan-history__filters" aria-label="历史计划筛选">
+          <el-button
+            v-for="option in filterOptions"
+            :key="option.value"
+            text
+            class="plan-history__filter"
+            :class="{ 'plan-history__filter--active': selectedFilter === option.value }"
+            @click="setFilter(option.value)"
+          >
+            {{ option.label }}
+          </el-button>
+        </section>
+
+        <StatePanel
+          v-if="filteredItems.length === 0"
+          variant="empty"
+          title="当前筛选下没有历史计划"
+          description="切换筛选后再看看，或先去完成一次训练记录。"
+          action-label="查看全部计划"
+          @action="setFilter('all')"
+        />
+        <template v-else>
+          <el-card
+            v-for="item in filteredItems"
+            :key="item.id"
+            :id="`plan-history-card-${item.id}`"
+            shadow="never"
+            class="fm-card plan-history__card"
+            :class="{ 'plan-history__card--highlighted': highlightedPlanId === item.id }"
+          >
+            <div class="plan-history__card-top">
+              <div>
+                <p class="plan-history__timestamp">{{ formatCreatedAt(item.createdAt) }}</p>
+                <h2 class="plan-history__card-title">{{ item.title }}</h2>
+                <p class="plan-history__goal">{{ item.goalText }}</p>
+              </div>
+              <span
+                class="plan-history__level"
+                :class="{ 'plan-history__level--invalid': !item.isValid }"
+              >
+                {{ item.isValid ? levelLabel(item.level) : '数据异常' }}
+              </span>
             </div>
-            <span
-              class="plan-history__level"
-              :class="{ 'plan-history__level--invalid': !item.isValid }"
-            >
-              {{ item.isValid ? levelLabel(item.level) : '数据异常' }}
-            </span>
-          </div>
 
-          <div class="plan-history__meta">
-            <span>{{ item.durationMinutes }} 分钟</span>
-            <span>{{ item.exerciseCount }} 个动作</span>
-          </div>
+            <div class="plan-history__meta">
+              <span>{{ item.durationMinutes }} 分钟</span>
+              <span>{{ item.exerciseCount }} 个动作</span>
+            </div>
 
-          <div class="plan-history__actions">
-            <el-button text class="plan-history__action-link" @click="toggleDetail(item.id)">
-              {{ expandedPlanId === item.id ? '收起详情' : '查看详情' }}
-            </el-button>
-            <el-button
-              class="fm-button-primary plan-history__action-primary"
-              :disabled="!item.isValid"
-              @click="startWorkout(item.id, item.isValid)"
-            >
-              开始训练
-            </el-button>
-            <el-button
-              text
-              class="plan-history__action-link"
-              :disabled="!item.isValid"
-              @click="reusePlan(item.id, item.isValid)"
-            >
-              复用到计划页
-            </el-button>
-            <el-button
-              text
-              type="danger"
-              class="plan-history__action-link"
-              :loading="deletingPlanId === item.id"
-              :disabled="deletingPlanId === item.id"
-              @click="deletePlan(item.id)"
-            >
-              删除计划
-            </el-button>
-          </div>
+            <p class="plan-history__usage-copy" :class="{ 'plan-history__usage-copy--active': item.usedWorkoutCount > 0 }">
+              {{ usageSummary(item) }}
+            </p>
 
-          <div v-if="expandedPlanId === item.id" class="plan-history__detail">
-            <template v-if="item.isValid">
-              <p class="plan-history__summary">{{ item.summary }}</p>
-              <ul class="plan-history__exercise-list">
-                <li
-                  v-for="(exercise, index) in item.exercises"
-                  :key="`${item.id}-${exercise.name}-${index}`"
-                  class="plan-history__exercise-item"
-                >
-                  <div class="plan-history__exercise-top">
-                    <span class="plan-history__exercise-index">#{{ index + 1 }}</span>
-                    <strong>{{ exercise.name }}</strong>
-                    <span>
-                      {{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}
-                    </span>
-                  </div>
-                  <p>{{ exercise.instruction }}</p>
-                  <small>休息 {{ exercise.restSeconds }} 秒</small>
-                </li>
-              </ul>
-            </template>
-            <StatePanel
-              v-else
-              variant="error"
-              title="该计划数据异常"
-              description="该计划暂时无法展示详情，你仍可删除这条历史记录。"
-            />
-          </div>
-        </el-card>
+            <div class="plan-history__actions">
+              <el-button text class="plan-history__action-link" @click="toggleDetail(item.id)">
+                {{ expandedPlanId === item.id ? '收起详情' : '查看详情' }}
+              </el-button>
+              <el-button
+                class="fm-button-primary plan-history__action-primary"
+                :disabled="!item.isValid"
+                @click="startWorkout(item.id, item.isValid)"
+              >
+                开始训练
+              </el-button>
+              <el-button
+                text
+                class="plan-history__action-link"
+                :disabled="!item.isValid"
+                @click="reusePlan(item.id, item.isValid)"
+              >
+                复用到计划页
+              </el-button>
+              <el-button
+                text
+                type="danger"
+                class="plan-history__action-link"
+                :loading="deletingPlanId === item.id"
+                :disabled="deletingPlanId === item.id"
+                @click="deletePlan(item.id)"
+              >
+                删除计划
+              </el-button>
+            </div>
+
+            <div v-if="expandedPlanId === item.id" class="plan-history__detail">
+              <template v-if="item.isValid">
+                <p class="plan-history__summary">{{ item.summary }}</p>
+                <ul class="plan-history__exercise-list">
+                  <li
+                    v-for="(exercise, index) in item.exercises"
+                    :key="`${item.id}-${exercise.name}-${index}`"
+                    class="plan-history__exercise-item"
+                  >
+                    <div class="plan-history__exercise-top">
+                      <span class="plan-history__exercise-index">#{{ index + 1 }}</span>
+                      <strong>{{ exercise.name }}</strong>
+                      <span>
+                        {{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}
+                      </span>
+                    </div>
+                    <p>{{ exercise.instruction }}</p>
+                    <small>休息 {{ exercise.restSeconds }} 秒</small>
+                  </li>
+                </ul>
+              </template>
+              <StatePanel
+                v-else
+                variant="error"
+                title="该计划数据异常"
+                description="该计划暂时无法展示详情，你仍可删除这条历史记录。"
+              />
+            </div>
+          </el-card>
+        </template>
       </template>
 
       <div class="plan-history__footer-actions">
@@ -134,16 +163,21 @@ const {
   deletingPlanId,
   errorMessage,
   expandedPlanId,
+  filteredItems,
+  filterOptions,
   formatCreatedAt,
   goHome,
   goToPlanGenerator,
-  items,
+  highlightedPlanId,
   levelLabel,
   loadHistory,
   pageState,
   reusePlan,
+  selectedFilter,
+  setFilter,
   startWorkout,
-  toggleDetail
+  toggleDetail,
+  usageSummary
 } = usePlanHistory();
 </script>
 
@@ -197,6 +231,30 @@ const {
 .plan-history__card {
   display: grid;
   gap: 14px;
+}
+
+.plan-history__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.plan-history__filter {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
+}
+
+.plan-history__filter--active {
+  background: rgba(50, 213, 131, 0.16);
+  color: var(--color-primary);
+}
+
+.plan-history__card--highlighted {
+  border-color: rgba(110, 231, 168, 0.32);
+  box-shadow: 0 0 0 1px rgba(110, 231, 168, 0.16);
 }
 
 .plan-history__card-top {
@@ -257,6 +315,17 @@ const {
   color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
+}
+
+.plan-history__usage-copy {
+  margin: -4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plan-history__usage-copy--active {
+  color: var(--color-primary);
 }
 
 .plan-history__actions {

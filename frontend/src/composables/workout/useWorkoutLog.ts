@@ -4,10 +4,10 @@ import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
-import { workoutRecordsRepository } from '@/repositories';
+import { plansRepository, workoutRecordsRepository } from '@/repositories';
 import type { WorkoutRecordEntity } from '@/types/local-db';
 import type { PageState } from '@/types/ui';
-import type { DailyHeatmapPoint, WorkoutPeriod } from '@/types/workout';
+import type { DailyHeatmapPoint, WorkoutDayDetailView, WorkoutPeriod } from '@/types/workout';
 import {
   buildDailyHeatmapPoints,
   buildHeatmapRows,
@@ -15,6 +15,7 @@ import {
   calculateWorkoutSummary,
   getDateRangeByPeriod
 } from '@/utils/workout-heatmap';
+import { buildWorkoutDayDetailViews } from '@/utils/workout-record-details';
 
 const MOCK_WRITE_GAP_MS = 900;
 
@@ -26,10 +27,10 @@ export const useWorkoutLog = () => {
   const dailyPoints = ref<DailyHeatmapPoint[]>([]);
   const detailVisible = ref(false);
   const selectedDate = ref('');
-  const dayDetails = ref<WorkoutRecordEntity[]>([]);
+  const dayDetails = ref<WorkoutDayDetailView[]>([]);
   const detailLoading = ref(false);
   const detailError = ref('');
-  const detailCacheByDate = ref<Record<string, WorkoutRecordEntity[]>>({});
+  const detailCacheByDate = ref<Record<string, WorkoutDayDetailView[]>>({});
   const isMockWriting = ref(false);
   const lastMockWriteAt = ref(0);
   const detailRequestToken = ref(0);
@@ -81,9 +82,7 @@ export const useWorkoutLog = () => {
       dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
       detailCacheByDate.value = {};
       if (selectedDate.value) {
-        dayDetails.value = loaded
-          .filter((record) => record.date === selectedDate.value)
-          .sort((a, b) => Number(Boolean(b.completed)) - Number(Boolean(a.completed)));
+        await openDayDetail(selectedDate.value);
       }
       recordsState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
       recordsError.value = '';
@@ -166,12 +165,16 @@ export const useWorkoutLog = () => {
 
     try {
       const details = await workoutRecordsRepository.listRecordsByDay(userId, date);
+      const planIds = [...new Set(details.map((record) => record.planId).filter((planId): planId is number => typeof planId === 'number' && planId > 0))];
+      const linkedPlans = await Promise.all(planIds.map((planId) => plansRepository.getPlanById(userId, planId)));
+      const plansById = new Map(linkedPlans.filter((plan): plan is NonNullable<typeof plan> => Boolean(plan)).map((plan) => [plan.id as number, plan]));
+      const detailViews = buildWorkoutDayDetailViews(details, plansById);
       if (requestToken !== detailRequestToken.value) {
         return;
       }
 
-      dayDetails.value = details;
-      detailCacheByDate.value[date] = details;
+      dayDetails.value = detailViews;
+      detailCacheByDate.value[date] = detailViews;
       detailError.value = '';
     } catch {
       if (requestToken !== detailRequestToken.value) {
@@ -196,6 +199,18 @@ export const useWorkoutLog = () => {
     }
 
     await openDayDetail(selectedDate.value);
+  };
+
+  const openRelatedPlan = async (planId: number | null): Promise<void> => {
+    if (!planId || !Number.isFinite(planId) || planId <= 0) {
+      ElMessage.warning('这条记录没有关联可查看的训练计划');
+      return;
+    }
+
+    await router.push({
+      name: 'PlanHistory',
+      query: { planId: String(planId) }
+    });
   };
 
   const goHome = async (): Promise<void> => {
@@ -231,6 +246,7 @@ export const useWorkoutLog = () => {
     isMockWriting,
     mockAddRecord,
     openDayDetail,
+    openRelatedPlan,
     periodTitle,
     recordsError,
     recordsState,

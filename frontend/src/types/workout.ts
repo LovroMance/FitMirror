@@ -24,6 +24,22 @@ export interface WorkoutTrendSummary {
   busiestDate: string | null;
 }
 
+export type WorkoutRecordSourceType = 'plan' | 'manual';
+
+export interface WorkoutDayDetailView {
+  id?: number;
+  date: string;
+  duration: number;
+  completed: boolean;
+  sourceType: WorkoutRecordSourceType;
+  sourceLabel: string;
+  planId: number | null;
+  planTitle: string | null;
+  planGoalText: string | null;
+  canViewPlan: boolean;
+  planMissing: boolean;
+}
+
 export interface WorkoutRecordSyncPayload {
   clientRecordId: string;
   date: string;
