@@ -123,6 +123,31 @@ export const plansRepository = {
     }
   },
 
+  async updatePlanById(
+    userId: number,
+    planId: number,
+    params: { goalText?: string; plan?: TrainingPlan }
+  ): Promise<PlanEntity | null> {
+    try {
+      const existingPlan = await fitMirrorDb.plans.get(planId);
+      if (!existingPlan || existingPlan.userId !== userId) {
+        return null;
+      }
+
+      const updatedPlan: PlanEntity = {
+        ...existingPlan,
+        goalText: params.goalText ?? existingPlan.goalText,
+        planJson: params.plan ?? existingPlan.planJson,
+        updatedAt: new Date().toISOString()
+      };
+
+      await fitMirrorDb.plans.put(updatedPlan);
+      return updatedPlan;
+    } catch (error) {
+      throw toRepositoryError('updatePlanById', error);
+    }
+  },
+
   async deletePlan(userId: number, planId?: number): Promise<void> {
     try {
       if (typeof planId === 'number') {

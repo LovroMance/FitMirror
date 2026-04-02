@@ -4,8 +4,24 @@ import { ElMessage } from 'element-plus';
 import { generatePlanApiWithSource, generatePlanStream } from '@/api/plans';
 import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { useAuthStore } from '@/store/auth';
-import type { PlanExercise, PlanSource, PlanStreamEvent, TrainingPlan } from '@/types/plan';
+import type {
+  EditableTrainingPlanDraft,
+  PlanDisplaySource,
+  PlanExercise,
+  PlanStreamEvent,
+  TrainingPlan
+} from '@/types/plan';
 import { planSyncStateRepository, plansRepository } from '@/repositories';
+
+const clonePlan = (plan: TrainingPlan): TrainingPlan => JSON.parse(JSON.stringify(plan)) as TrainingPlan;
+
+const toEditablePlanDraft = (plan: TrainingPlan): EditableTrainingPlanDraft => ({
+  title: plan.title,
+  level: plan.level,
+  durationMinutes: plan.durationMinutes,
+  summary: plan.summary,
+  exercises: plan.exercises.map((exercise) => ({ ...exercise }))
+});
 
 export const usePlanGenerator = () => {
   const router = useRouter();
@@ -15,24 +31,28 @@ export const usePlanGenerator = () => {
   const goalText = ref('');
   const loading = ref(false);
   const deleting = ref(false);
+  const savingEdits = ref(false);
   const errorMessage = ref('');
   const plan = ref<TrainingPlan | null>(null);
+  const editablePlanDraft = ref<EditableTrainingPlanDraft | null>(null);
   const latestPlanId = ref<number | null>(null);
-  const planSource = ref<PlanSource | null>(null);
+  const planSource = ref<PlanDisplaySource | null>(null);
   const progressState = ref<PlanStreamEvent['type'] | null>(null);
   const generationRound = ref(0);
+  const isEditingPlan = ref(false);
 
   const currentUserId = computed(() => authStore.currentUser?.id ?? null);
   const levelText = computed(() => {
-    if (!plan.value) {
+    const targetPlan = isEditingPlan.value ? editablePlanDraft.value : plan.value;
+    if (!targetPlan) {
       return '未知难度';
     }
 
-    if (plan.value.level === 'beginner') {
+    if (targetPlan.level === 'beginner') {
       return '入门级';
     }
 
-    if (plan.value.level === 'intermediate') {
+    if (targetPlan.level === 'intermediate') {
       return '进阶级';
     }
 
@@ -67,6 +87,10 @@ export const usePlanGenerator = () => {
       return '模板回退';
     }
 
+    if (planSource.value === 'edited') {
+      return '已编辑';
+    }
+
     return '本地恢复';
   });
 
@@ -77,6 +101,10 @@ export const usePlanGenerator = () => {
 
     if (planSource.value === 'template') {
       return 'fallback';
+    }
+
+    if (planSource.value === 'edited') {
+      return 'edited';
     }
 
     return 'restored';
@@ -118,6 +146,18 @@ export const usePlanGenerator = () => {
     );
   };
 
+  const resetEditingState = (): void => {
+    isEditingPlan.value = false;
+    editablePlanDraft.value = null;
+    savingEdits.value = false;
+  };
+
+  const applyPlanState = (nextPlan: TrainingPlan, source: PlanDisplaySource | null): void => {
+    plan.value = clonePlan(nextPlan);
+    planSource.value = source;
+    resetEditingState();
+  };
+
   const resolveCurrentUserId = (): number | null => {
     const userId = currentUserId.value;
     if (!userId) {
@@ -143,6 +183,11 @@ export const usePlanGenerator = () => {
       return;
     }
 
+    if (isEditingPlan.value) {
+      ElMessage.warning('请先保存当前编辑内容，再开始训练');
+      return;
+    }
+
     await router.push({
       name: 'WorkoutSession',
       query: { planId: String(latestPlanId.value) }
@@ -156,8 +201,171 @@ export const usePlanGenerator = () => {
     return Number.isFinite(planId) && planId > 0 ? planId : null;
   };
 
+  const enterEditMode = (): void => {
+    if (!plan.value) {
+      ElMessage.warning('当前没有可编辑的训练计划');
+      return;
+    }
+
+    editablePlanDraft.value = toEditablePlanDraft(plan.value);
+    isEditingPlan.value = true;
+  };
+
+  const cancelEdit = (): void => {
+    if (!isEditingPlan.value) {
+      return;
+    }
+
+    resetEditingState();
+  };
+
+  const updateDraftTitle = (value: string): void => {
+    if (!editablePlanDraft.value) {
+      return;
+    }
+
+    editablePlanDraft.value.title = value;
+  };
+
+  const updateDraftDuration = (value: number | null | undefined): void => {
+    if (!editablePlanDraft.value) {
+      return;
+    }
+
+    editablePlanDraft.value.durationMinutes = typeof value === 'number' ? value : 0;
+  };
+
+  const moveExercise = (fromIndex: number, toIndex: number): void => {
+    if (!editablePlanDraft.value) {
+      return;
+    }
+
+    const exercises = editablePlanDraft.value.exercises;
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= exercises.length ||
+      toIndex >= exercises.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const reordered = [...exercises];
+    const [targetExercise] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, targetExercise);
+    editablePlanDraft.value.exercises = reordered;
+  };
+
+  const moveExerciseUp = (index: number): void => {
+    moveExercise(index, index - 1);
+  };
+
+  const moveExerciseDown = (index: number): void => {
+    moveExercise(index, index + 1);
+  };
+
+  const removeExercise = (index: number): void => {
+    if (!editablePlanDraft.value) {
+      return;
+    }
+
+    if (editablePlanDraft.value.exercises.length <= 1) {
+      ElMessage.warning('训练计划至少需要保留 1 个动作');
+      return;
+    }
+
+    editablePlanDraft.value.exercises = editablePlanDraft.value.exercises.filter((_, exerciseIndex) => exerciseIndex !== index);
+  };
+
+  const buildValidatedDraftPlan = (): TrainingPlan | null => {
+    if (!editablePlanDraft.value) {
+      ElMessage.warning('当前没有可保存的编辑内容');
+      return null;
+    }
+
+    const normalizedTitle = editablePlanDraft.value.title.trim();
+    if (!normalizedTitle) {
+      ElMessage.warning('请输入训练计划标题');
+      return null;
+    }
+
+    if (!Number.isInteger(editablePlanDraft.value.durationMinutes) || editablePlanDraft.value.durationMinutes <= 0) {
+      ElMessage.warning('总时长需为正整数分钟');
+      return null;
+    }
+
+    if (editablePlanDraft.value.exercises.length === 0) {
+      ElMessage.warning('训练计划至少需要保留 1 个动作');
+      return null;
+    }
+
+    const validatedPlan: TrainingPlan = {
+      ...editablePlanDraft.value,
+      title: normalizedTitle,
+      exercises: editablePlanDraft.value.exercises.map((exercise) => ({ ...exercise }))
+    };
+
+    if (!isValidPlan(validatedPlan)) {
+      ElMessage.warning('训练计划数据异常，请检查后重试');
+      return null;
+    }
+
+    return validatedPlan;
+  };
+
+  const saveEditedPlan = async (): Promise<void> => {
+    if (!isEditingPlan.value || loading.value || deleting.value || savingEdits.value) {
+      return;
+    }
+
+    const userId = resolveCurrentUserId();
+    if (!userId || !latestPlanId.value) {
+      return;
+    }
+
+    const validatedPlan = buildValidatedDraftPlan();
+    if (!validatedPlan) {
+      return;
+    }
+
+    savingEdits.value = true;
+    errorMessage.value = '';
+
+    try {
+      const existingPlan = await plansRepository.getPlanById(userId, latestPlanId.value);
+      if (!existingPlan) {
+        throw new Error('当前计划不存在，请重新生成或恢复后再试');
+      }
+
+      const updatedPlan = await plansRepository.updatePlanById(userId, latestPlanId.value, {
+        goalText: goalText.value.trim() || existingPlan.goalText,
+        plan: validatedPlan
+      });
+
+      if (!updatedPlan) {
+        throw new Error('当前计划不存在，请重新生成或恢复后再试');
+      }
+
+      await syncPlansForUser(userId).catch(() => {
+        ElMessage.warning('本地计划已更新，云端同步稍后重试');
+      });
+      const syncedPlan = await plansRepository.getPlanByClientPlanId(userId, updatedPlan.clientPlanId);
+
+      latestPlanId.value = syncedPlan?.id ?? updatedPlan.id ?? latestPlanId.value;
+      applyPlanState(validatedPlan, 'edited');
+      ElMessage.success('训练计划已更新');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '保存编辑内容失败，请稍后重试';
+      errorMessage.value = message;
+      ElMessage.error(message);
+    } finally {
+      savingEdits.value = false;
+    }
+  };
+
   const handleGenerate = async (): Promise<void> => {
-    if (loading.value || deleting.value) {
+    if (loading.value || deleting.value || savingEdits.value) {
       return;
     }
 
@@ -175,6 +383,7 @@ export const usePlanGenerator = () => {
     loading.value = true;
     errorMessage.value = '';
     progressState.value = 'queued';
+    resetEditingState();
     const currentRound = generationRound.value + 1;
     generationRound.value = currentRound;
 
@@ -199,8 +408,7 @@ export const usePlanGenerator = () => {
         throw new Error('计划数据异常，请重试');
       }
 
-      plan.value = streamed.plan;
-      planSource.value = streamed.source ?? null;
+      applyPlanState(streamed.plan, streamed.source ?? null);
     } catch {
       try {
         const fallback = await generatePlanApiWithSource(trimmedGoal);
@@ -212,8 +420,7 @@ export const usePlanGenerator = () => {
           throw new Error('计划数据异常，请重试');
         }
 
-        plan.value = fallback.plan;
-        planSource.value = fallback.source ?? 'template';
+        applyPlanState(fallback.plan, fallback.source ?? 'template');
         progressState.value = 'completed';
         ElMessage.warning('已自动切换到稳定生成通道');
       } catch (error) {
@@ -234,7 +441,7 @@ export const usePlanGenerator = () => {
         throw new Error('计划生成失败，请稍后重试');
       }
 
-      const persistedPlan = JSON.parse(JSON.stringify(plan.value)) as TrainingPlan;
+      const persistedPlan = clonePlan(plan.value);
 
       const saved = await plansRepository.saveLatestPlan({
         userId,
@@ -269,7 +476,7 @@ export const usePlanGenerator = () => {
   };
 
   const handleDeleteLatest = async (): Promise<void> => {
-    if (loading.value || deleting.value) {
+    if (loading.value || deleting.value || savingEdits.value) {
       return;
     }
 
@@ -294,6 +501,7 @@ export const usePlanGenerator = () => {
       latestPlanId.value = null;
       plan.value = null;
       planSource.value = null;
+      resetEditingState();
       ElMessage.success('最近计划已删除');
     } catch (error) {
       const message = error instanceof Error ? error.message : '删除失败，请稍后重试';
@@ -322,6 +530,7 @@ export const usePlanGenerator = () => {
         plan.value = null;
         latestPlanId.value = null;
         planSource.value = null;
+        resetEditingState();
         ElMessage.warning('最近计划数据异常，请重新生成');
         return;
       }
@@ -330,8 +539,7 @@ export const usePlanGenerator = () => {
       if (!goalText.value) {
         goalText.value = latest.goalText;
       }
-      plan.value = latest.planJson;
-      planSource.value = null;
+      applyPlanState(latest.planJson, 'restored');
     } catch {
       errorMessage.value = '读取本地计划失败，但你仍可继续生成新计划';
       ElMessage.warning('读取本地计划失败，但不影响继续使用');
@@ -360,8 +568,7 @@ export const usePlanGenerator = () => {
 
       latestPlanId.value = target.id ?? null;
       goalText.value = target.goalText;
-      plan.value = target.planJson;
-      planSource.value = null;
+      applyPlanState(target.planJson, 'restored');
       errorMessage.value = '';
       ElMessage.success('已恢复历史计划，可直接开始训练或调整目标后重新生成');
       return true;
@@ -390,21 +597,32 @@ export const usePlanGenerator = () => {
   });
 
   return {
+    cancelEdit,
     deleting,
+    editablePlanDraft,
+    enterEditMode,
     errorMessage,
-    goalText,
     goHome,
+    goalText,
     handleDeleteLatest,
     handleGenerate,
+    isEditingPlan,
     latestPlanId,
     levelText,
     loading,
     goToPlanHistory,
+    moveExerciseDown,
+    moveExerciseUp,
     openExerciseLibrary,
     plan,
     progressLabel,
+    removeExercise,
+    saveEditedPlan,
+    savingEdits,
     sourceLabel,
     sourceTagClass,
-    startWorkout
+    startWorkout,
+    updateDraftDuration,
+    updateDraftTitle
   };
 };

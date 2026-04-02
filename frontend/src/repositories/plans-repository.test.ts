@@ -5,6 +5,7 @@ const dbMocks = vi.hoisted(() => ({
   add: vi.fn(),
   where: vi.fn(),
   get: vi.fn(),
+  put: vi.fn(),
   delete: vi.fn(),
   bulkAdd: vi.fn(),
   transaction: vi.fn()
@@ -16,6 +17,7 @@ vi.mock('@/db', () => ({
       add: dbMocks.add,
       where: dbMocks.where,
       get: dbMocks.get,
+      put: dbMocks.put,
       delete: dbMocks.delete,
       bulkAdd: dbMocks.bulkAdd
     },
@@ -153,6 +155,46 @@ describe('plansRepository', () => {
     });
 
     await expect(plansRepository.getPlanByClientPlanId(7, 'plan-21')).resolves.toMatchObject({ id: 21 });
+  });
+
+  it('updates an existing plan while keeping the original clientPlanId', async () => {
+    dbMocks.get.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '旧目标',
+      planJson: samplePlan,
+      createdAt: '2026-03-31',
+      updatedAt: '2026-03-31'
+    });
+
+    const updatedPlan = await plansRepository.updatePlanById(7, 22, {
+      goalText: '新目标',
+      plan: {
+        ...samplePlan,
+        title: '15分钟核心训练',
+        durationMinutes: 15
+      }
+    });
+
+    expect(updatedPlan).toMatchObject({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '新目标',
+      planJson: expect.objectContaining({
+        title: '15分钟核心训练',
+        durationMinutes: 15
+      })
+    });
+    expect(dbMocks.put).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 22,
+        clientPlanId: 'plan-client-1',
+        goalText: '新目标',
+        updatedAt: expect.any(String)
+      })
+    );
   });
 
   it('lists plans by user in reverse chronological order', async () => {

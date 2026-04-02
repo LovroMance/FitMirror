@@ -26,6 +26,7 @@ const {
     loadLatestPlan: vi.fn(),
     getPlanById: vi.fn(),
     getPlanByClientPlanId: vi.fn(),
+    updatePlanById: vi.fn(),
     deletePlan: vi.fn()
   },
   messageSuccess: vi.fn(),
@@ -95,6 +96,12 @@ const samplePlan: TrainingPlan = {
       durationSeconds: 30,
       restSeconds: 20,
       instruction: '保持身体成一直线。'
+    },
+    {
+      name: '登山跑',
+      durationSeconds: 40,
+      restSeconds: 20,
+      instruction: '保持核心收紧。'
     }
   ]
 };
@@ -110,7 +117,15 @@ describe('usePlanGenerator', () => {
     });
     syncPlansForUser.mockResolvedValue(undefined);
     plansRepositoryMocks.loadLatestPlan.mockResolvedValue(null);
-    plansRepositoryMocks.getPlanById.mockResolvedValue(null);
+    plansRepositoryMocks.getPlanById.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
     plansRepositoryMocks.getPlanByClientPlanId.mockResolvedValue({
       id: 22,
       userId: 7,
@@ -129,6 +144,15 @@ describe('usePlanGenerator', () => {
       createdAt: '2026-04-02T10:00:00.000Z',
       updatedAt: '2026-04-02T10:05:00.000Z'
     });
+    plansRepositoryMocks.updatePlanById.mockImplementation(async (_userId, planId, params) => ({
+      id: planId,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: params.goalText ?? '核心训练',
+      planJson: params.plan ?? samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:06:00.000Z'
+    }));
   });
 
   it('refreshes latestPlanId from clientPlanId after sync replaces local ids', async () => {
@@ -148,5 +172,92 @@ describe('usePlanGenerator', () => {
       name: 'WorkoutSession',
       query: { planId: '22' }
     });
+  });
+
+  it('supports lightweight editing and saves back to the same plan id', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    generator.updateDraftTitle('15分钟核心训练');
+    generator.updateDraftDuration(15);
+    generator.moveExerciseDown(0);
+    generator.removeExercise(1);
+
+    await generator.saveEditedPlan();
+
+    expect(plansRepositoryMocks.updatePlanById).toHaveBeenCalledWith(
+      7,
+      22,
+      expect.objectContaining({
+        goalText: '核心训练',
+        plan: expect.objectContaining({
+          title: '15分钟核心训练',
+          durationMinutes: 15,
+          exercises: [expect.objectContaining({ name: '登山跑' })]
+        })
+      })
+    );
+    expect(generator.latestPlanId.value).toBe(22);
+    expect(generator.isEditingPlan.value).toBe(false);
+    expect(generator.plan.value).toMatchObject({
+      title: '15分钟核心训练',
+      durationMinutes: 15,
+      exercises: [{ name: '登山跑' }]
+    });
+  });
+
+  it('restores original content when edit mode is cancelled', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    generator.updateDraftTitle('临时改名');
+    generator.cancelEdit();
+
+    expect(generator.isEditingPlan.value).toBe(false);
+    expect(generator.editablePlanDraft.value).toBeNull();
+    expect(generator.plan.value?.title).toBe(samplePlan.title);
+  });
+
+  it('blocks workout start while there are unsaved edits', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    await generator.startWorkout();
+
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(messageWarning).toHaveBeenCalledWith('请先保存当前编辑内容，再开始训练');
   });
 });

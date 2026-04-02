@@ -15,6 +15,15 @@ export interface TrainingPlan {
 }
 
 export type PlanSource = 'deepseek' | 'template';
+export type PlanDisplaySource = PlanSource | 'restored' | 'edited';
+
+export interface EditableTrainingPlanDraft {
+  title: string;
+  level: TrainingPlan['level'];
+  durationMinutes: number;
+  summary: string;
+  exercises: PlanExercise[];
+}
 
 export interface GeneratePlanPayload {
   plan: TrainingPlan;

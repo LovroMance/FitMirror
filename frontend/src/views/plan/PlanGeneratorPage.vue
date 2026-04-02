@@ -23,7 +23,7 @@
             size="large"
             class="fm-button-primary plan-generator__submit"
             :loading="loading"
-            :disabled="loading || deleting"
+            :disabled="loading || deleting || savingEdits"
             @click="handleGenerate"
           >
             {{ loading ? '生成中...' : '生成计划' }}
@@ -52,38 +52,120 @@
 
       <el-card v-if="plan" shadow="never" class="fm-card plan-generator__card">
         <div class="plan-generator__plan-head">
-          <h2 class="plan-generator__plan-title">{{ plan.title }}</h2>
-          <div class="plan-generator__plan-meta-row">
-            <p class="plan-generator__plan-meta">{{ levelText }} · {{ plan.durationMinutes }} 分钟</p>
-            <span class="plan-generator__source-tag" :class="`plan-generator__source-tag--${sourceTagClass}`">
-              {{ sourceLabel }}
-            </span>
+          <div class="plan-generator__plan-head-copy">
+            <div class="plan-generator__plan-meta-row">
+              <p class="plan-generator__plan-meta">{{ levelText }} · {{ activeDurationMinutes }} 分钟</p>
+              <span class="plan-generator__source-tag" :class="`plan-generator__source-tag--${sourceTagClass}`">
+                {{ sourceLabel }}
+              </span>
+            </div>
+            <h2 class="plan-generator__plan-title">
+              {{ isEditingPlan && editablePlanDraft ? editablePlanDraft.title : plan.title }}
+            </h2>
           </div>
-          <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
-          <div class="plan-generator__plan-actions">
+
+          <div v-if="!isEditingPlan" class="plan-generator__plan-actions">
+            <el-button text class="plan-generator__library-link" @click="openExerciseLibrary()">浏览动作库</el-button>
+            <el-button
+              text
+              class="plan-generator__edit-link"
+              :disabled="loading || deleting || savingEdits"
+              @click="enterEditMode"
+            >
+              编辑计划
+            </el-button>
             <el-button
               class="fm-button-primary plan-generator__start"
-              :disabled="loading || deleting || !latestPlanId"
+              :disabled="loading || deleting || savingEdits || !latestPlanId"
               @click="startWorkout"
             >
               开始训练
             </el-button>
-            <el-button text class="plan-generator__library-link" @click="openExerciseLibrary()">浏览动作库</el-button>
             <el-button
               text
               type="danger"
               class="plan-generator__delete"
               :loading="deleting"
-              :disabled="loading || deleting"
+              :disabled="loading || deleting || savingEdits"
               @click="handleDeleteLatest"
             >
               {{ deleting ? '删除中...' : '删除最近计划' }}
             </el-button>
           </div>
+
+          <div v-else class="plan-generator__edit-actions">
+            <el-button text class="plan-generator__secondary-link" :disabled="savingEdits" @click="cancelEdit">
+              取消编辑
+            </el-button>
+            <el-button class="fm-button-primary plan-generator__save" :loading="savingEdits" @click="saveEditedPlan">
+              {{ savingEdits ? '保存中...' : '保存编辑' }}
+            </el-button>
+          </div>
         </div>
 
-        <ul class="plan-generator__exercise-list">
-          <li v-for="(exercise, idx) in plan.exercises" :key="exercise.name" class="plan-generator__exercise-item">
+        <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
+
+        <template v-if="isEditingPlan && editablePlanDraft">
+          <div class="plan-generator__edit-form">
+            <label class="plan-generator__field">
+              <span class="plan-generator__field-label">计划标题</span>
+              <el-input
+                :model-value="editablePlanDraft.title"
+                maxlength="40"
+                placeholder="例如：10分钟核心激活训练"
+                @update:model-value="updateDraftTitle"
+              />
+            </label>
+            <label class="plan-generator__field">
+              <span class="plan-generator__field-label">总时长（分钟）</span>
+              <el-input-number
+                :model-value="editablePlanDraft.durationMinutes"
+                :min="1"
+                :max="180"
+                :step="1"
+                controls-position="right"
+                class="plan-generator__duration-input"
+                @update:model-value="updateDraftDuration"
+              />
+            </label>
+          </div>
+
+          <div class="plan-generator__edit-tip">
+            当前版本支持改标题、总时长、动作顺序和删除动作；动作内容仍保持原计划配置。
+          </div>
+
+          <ul class="plan-generator__exercise-list">
+            <li
+              v-for="(exercise, idx) in editablePlanDraft.exercises"
+              :key="`${exercise.name}-${idx}`"
+              class="plan-generator__exercise-item"
+            >
+              <div class="plan-generator__exercise-top">
+                <span class="plan-generator__exercise-index">#{{ idx + 1 }}</span>
+                <button type="button" class="plan-generator__exercise-link" @click="openExerciseLibrary(exercise.name)">
+                  {{ exercise.name }}
+                </button>
+                <span>{{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}</span>
+              </div>
+              <p>{{ exercise.instruction }}</p>
+              <small>休息 {{ exercise.restSeconds }} 秒</small>
+              <div class="plan-generator__exercise-actions">
+                <el-button text :disabled="idx === 0 || savingEdits" @click="moveExerciseUp(idx)">上移</el-button>
+                <el-button
+                  text
+                  :disabled="idx === editablePlanDraft.exercises.length - 1 || savingEdits"
+                  @click="moveExerciseDown(idx)"
+                >
+                  下移
+                </el-button>
+                <el-button text type="danger" :disabled="savingEdits" @click="removeExercise(idx)">删除</el-button>
+              </div>
+            </li>
+          </ul>
+        </template>
+
+        <ul v-else class="plan-generator__exercise-list">
+          <li v-for="(exercise, idx) in plan.exercises" :key="`${exercise.name}-${idx}`" class="plan-generator__exercise-item">
             <div class="plan-generator__exercise-top">
               <span class="plan-generator__exercise-index">#{{ idx + 1 }}</span>
               <button type="button" class="plan-generator__exercise-link" @click="openExerciseLibrary(exercise.name)">
@@ -101,27 +183,41 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import StatePanel from '@/components/common/StatePanel.vue';
 import { usePlanGenerator } from '@/composables/plan/usePlanGenerator';
 
 const {
+  cancelEdit,
   deleting,
+  editablePlanDraft,
+  enterEditMode,
   errorMessage,
   goalText,
   goHome,
   handleDeleteLatest,
   handleGenerate,
+  isEditingPlan,
   latestPlanId,
   levelText,
   loading,
   goToPlanHistory,
+  moveExerciseDown,
+  moveExerciseUp,
   openExerciseLibrary,
   plan,
   progressLabel,
+  removeExercise,
+  saveEditedPlan,
+  savingEdits,
   sourceLabel,
   sourceTagClass,
-  startWorkout
+  startWorkout,
+  updateDraftDuration,
+  updateDraftTitle
 } = usePlanGenerator();
+
+const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMinutes ?? plan.value?.durationMinutes ?? 0);
 </script>
 
 <style scoped>
@@ -201,6 +297,11 @@ const {
 
 .plan-generator__plan-head {
   display: grid;
+  gap: 12px;
+}
+
+.plan-generator__plan-head-copy {
+  display: grid;
   gap: 10px;
 }
 
@@ -252,6 +353,11 @@ const {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.plan-generator__source-tag--edited {
+  color: #b8ffd7;
+  background: rgba(50, 213, 131, 0.16);
+}
+
 .plan-generator__plan-summary {
   margin: 0;
   color: var(--color-text-secondary);
@@ -259,7 +365,8 @@ const {
   line-height: 1.65;
 }
 
-.plan-generator__plan-actions {
+.plan-generator__plan-actions,
+.plan-generator__edit-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -267,18 +374,51 @@ const {
   flex-wrap: wrap;
 }
 
-.plan-generator__start {
+.plan-generator__start,
+.plan-generator__save {
   min-height: 42px;
   border-radius: 14px;
 }
 
-.plan-generator__library-link {
+.plan-generator__library-link,
+.plan-generator__edit-link,
+.plan-generator__secondary-link {
   color: var(--color-primary);
   padding-left: 0;
 }
 
 .plan-generator__delete {
   padding-right: 0;
+}
+
+.plan-generator__edit-form {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-generator__field {
+  display: grid;
+  gap: 8px;
+}
+
+.plan-generator__field-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.plan-generator__duration-input {
+  width: 100%;
+}
+
+.plan-generator__edit-tip {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(50, 213, 131, 0.08);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .plan-generator__exercise-list {
@@ -351,27 +491,32 @@ const {
   font-size: 12px;
 }
 
+.plan-generator__exercise-actions {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 390px) {
   .plan-generator__screen {
     padding: 16px 14px 106px;
   }
 
-  .plan-generator__actions {
+  .plan-generator__actions,
+  .plan-generator__plan-actions,
+  .plan-generator__edit-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .plan-generator__back {
+  .plan-generator__back,
+  .plan-generator__history-link,
+  .plan-generator__library-link,
+  .plan-generator__edit-link,
+  .plan-generator__secondary-link {
     align-self: flex-start;
-  }
-
-  .plan-generator__history-link {
-    align-self: flex-start;
-  }
-
-  .plan-generator__plan-actions {
-    flex-wrap: wrap;
-    row-gap: 8px;
   }
 
   .plan-generator__title {
@@ -387,5 +532,3 @@ const {
   }
 }
 </style>
-
-
