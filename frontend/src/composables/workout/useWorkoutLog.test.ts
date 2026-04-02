@@ -1,0 +1,150 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const {
+  mountedCallbacks,
+  routerPush,
+  routeMock,
+  plansRepositoryMocks,
+  workoutRecordsRepositoryMocks,
+  syncWorkoutRecordsForUser,
+  messageSuccess,
+  messageWarning,
+  messageError
+} = vi.hoisted(() => ({
+  mountedCallbacks: [] as Array<() => unknown>,
+  routerPush: vi.fn(),
+  routeMock: {
+    query: {
+      completedDate: '2026-04-02'
+    }
+  },
+  plansRepositoryMocks: {
+    getPlanById: vi.fn()
+  },
+  workoutRecordsRepositoryMocks: {
+    listRecordsByDateRange: vi.fn(),
+    listRecordsByDay: vi.fn()
+  },
+  syncWorkoutRecordsForUser: vi.fn(),
+  messageSuccess: vi.fn(),
+  messageWarning: vi.fn(),
+  messageError: vi.fn()
+}));
+
+vi.mock('vue', async () => {
+  const actual = await vi.importActual<typeof import('vue')>('vue');
+  return {
+    ...actual,
+    onMounted: (callback: () => unknown) => {
+      mountedCallbacks.push(callback);
+    }
+  };
+});
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: routerPush
+  }),
+  useRoute: () => routeMock
+}));
+
+vi.mock('@/repositories', () => ({
+  plansRepository: plansRepositoryMocks,
+  workoutRecordsRepository: workoutRecordsRepositoryMocks
+}));
+
+vi.mock('@/composables/workout/useWorkoutRecordSync', () => ({
+  syncWorkoutRecordsForUser
+}));
+
+vi.mock('@/store/auth', () => ({
+  useAuthStore: () => ({
+    currentUser: {
+      id: 7
+    }
+  })
+}));
+
+vi.mock('element-plus', () => ({
+  ElMessage: {
+    error: messageError,
+    warning: messageWarning,
+    success: messageSuccess
+  }
+}));
+
+import { useWorkoutLog } from './useWorkoutLog';
+
+describe('useWorkoutLog', () => {
+  beforeEach(() => {
+    mountedCallbacks.length = 0;
+    vi.clearAllMocks();
+    routeMock.query.completedDate = '2026-04-02';
+    syncWorkoutRecordsForUser.mockResolvedValue(undefined);
+  });
+
+  it('auto-opens the completed date detail when the workout log is entered from a finished session', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    plansRepositoryMocks.getPlanById.mockResolvedValue({
+      id: 2,
+      userId: 7,
+      clientPlanId: 'plan-2',
+      goalText: '核心训练',
+      createdAt: '2026-04-02T09:00:00.000Z',
+      updatedAt: '2026-04-02T09:00:00.000Z',
+      planJson: {
+        title: '核心激活',
+        level: 'beginner',
+        durationMinutes: 18,
+        summary: '激活核心',
+        exercises: []
+      }
+    });
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+
+    expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
+    expect(log.selectedDate.value).toBe('2026-04-02');
+    expect(log.detailVisible.value).toBe(true);
+    expect(workoutRecordsRepositoryMocks.listRecordsByDay).toHaveBeenCalledWith(7, '2026-04-02');
+    expect(messageSuccess).toHaveBeenCalledWith('本次训练已写入今日热图，已为你展开当天详情');
+  });
+
+  it('shows a fallback warning when the completed date has no readable record yet', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([]);
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+
+    expect(log.selectedDate.value).toBe('2026-04-02');
+    expect(log.detailVisible.value).toBe(false);
+    expect(workoutRecordsRepositoryMocks.listRecordsByDay).not.toHaveBeenCalled();
+    expect(messageWarning).toHaveBeenCalledWith('本次训练记录正在同步，请稍后重试查看当天详情');
+  });
+});

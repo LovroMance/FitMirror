@@ -126,7 +126,10 @@ export const useWorkoutSession = () => {
       });
 
       ElMessage.success('训练已完成，记录已写入热图');
-      await router.push({ name: 'WorkoutLog' });
+      await router.push({
+        name: 'WorkoutLog',
+        query: { completedDate: dayjs().format('YYYY-MM-DD') }
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : '训练记录写入失败，请稍后重试';
       ElMessage.error(message);

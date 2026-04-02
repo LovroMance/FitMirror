@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
 import { plansRepository, workoutRecordsRepository } from '@/repositories';
@@ -21,6 +21,7 @@ const MOCK_WRITE_GAP_MS = 900;
 
 export const useWorkoutLog = () => {
   const router = useRouter();
+  const route = useRoute();
   const authStore = useAuthStore();
 
   const records = ref<WorkoutRecordEntity[]>([]);
@@ -34,6 +35,7 @@ export const useWorkoutLog = () => {
   const isMockWriting = ref(false);
   const lastMockWriteAt = ref(0);
   const detailRequestToken = ref(0);
+  const hasHandledCompletedDate = ref(false);
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
   const selectedPeriod = ref<WorkoutPeriod>('week');
@@ -81,7 +83,8 @@ export const useWorkoutLog = () => {
       records.value = loaded;
       dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
       detailCacheByDate.value = {};
-      if (selectedDate.value) {
+      const handledCompletedDate = await openCompletedDateDetailIfNeeded();
+      if (!handledCompletedDate && selectedDate.value) {
         await openDayDetail(selectedDate.value);
       }
       recordsState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
@@ -201,6 +204,39 @@ export const useWorkoutLog = () => {
     await openDayDetail(selectedDate.value);
   };
 
+  const resolveCompletedDateTarget = (): string | null => {
+    const raw = Array.isArray(route.query.completedDate) ? route.query.completedDate[0] : route.query.completedDate;
+    if (typeof raw !== 'string') {
+      return null;
+    }
+
+    return dayjs(raw, 'YYYY-MM-DD', true).isValid() ? raw : null;
+  };
+
+  const openCompletedDateDetailIfNeeded = async (): Promise<boolean> => {
+    if (hasHandledCompletedDate.value) {
+      return false;
+    }
+
+    const completedDate = resolveCompletedDateTarget();
+    if (!completedDate) {
+      return false;
+    }
+
+    hasHandledCompletedDate.value = true;
+    selectedDate.value = completedDate;
+
+    const hasRecord = records.value.some((record) => record.date === completedDate);
+    if (!hasRecord) {
+      ElMessage.warning('本次训练记录正在同步，请稍后重试查看当天详情');
+      return true;
+    }
+
+    ElMessage.success('本次训练已写入今日热图，已为你展开当天详情');
+    await openDayDetail(completedDate);
+    return true;
+  };
+
   const openRelatedPlan = async (planId: number | null): Promise<void> => {
     if (!planId || !Number.isFinite(planId) || planId <= 0) {
       ElMessage.warning('这条记录没有关联可查看的训练计划');
@@ -251,6 +287,7 @@ export const useWorkoutLog = () => {
     recordsError,
     recordsState,
     refreshRecords,
+    resolveCompletedDateTarget,
     retryDayDetail,
     selectedPeriod,
     selectedDate,

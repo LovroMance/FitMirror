@@ -109,6 +109,9 @@ describe('useWorkoutSession', () => {
       planId: 11
     });
     expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
-    expect(routerPush).toHaveBeenCalledWith({ name: 'WorkoutLog' });
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'WorkoutLog',
+      query: { completedDate: '2026-04-02' }
+    });
   });
 });
