@@ -34,6 +34,8 @@ describe('useEditablePlanDraft', () => {
     const editor = useEditablePlanDraft({ notifyWarning });
 
     editor.startEditingPlan(samplePlan);
+    expect(editor.hasUnsavedEditingPlanChanges.value).toBe(false);
+
     editor.updateEditingPlanTitle('8分钟核心快练');
     editor.updateEditingPlanDuration(8);
     editor.moveEditingPlanExerciseDown(0);
@@ -52,6 +54,7 @@ describe('useEditablePlanDraft', () => {
         { name: '平板支撑' }
       ]
     });
+    expect(editor.hasUnsavedEditingPlanChanges.value).toBe(true);
   });
 
   it('prevents removing the last remaining exercise', () => {
@@ -78,5 +81,18 @@ describe('useEditablePlanDraft', () => {
       title: '12分钟核心训练',
       durationMinutes: 12
     });
+  });
+
+  it('marks the current draft as saved after syncing the baseline', () => {
+    const editor = useEditablePlanDraft({ notifyWarning });
+
+    editor.startEditingPlan(samplePlan);
+    editor.updateEditingPlanTitle('12分钟核心训练');
+
+    expect(editor.hasUnsavedEditingPlanChanges.value).toBe(true);
+
+    editor.syncEditingPlanDraftAsSaved();
+
+    expect(editor.hasUnsavedEditingPlanChanges.value).toBe(false);
   });
 });

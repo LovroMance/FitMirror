@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { EditableTrainingPlanDraft, PlanExercise, TrainingPlan } from '@/types/plan';
 
 const cloneTrainingPlan = (plan: TrainingPlan): TrainingPlan => JSON.parse(JSON.stringify(plan)) as TrainingPlan;
@@ -57,20 +57,43 @@ interface UseEditablePlanDraftOptions {
 export const useEditablePlanDraft = ({ notifyWarning }: UseEditablePlanDraftOptions) => {
   const isEditingPlan = ref(false);
   const editablePlanDraft = ref<EditableTrainingPlanDraft | null>(null);
+  const originalEditablePlanDraft = ref<EditableTrainingPlanDraft | null>(null);
+
+  const hasUnsavedEditingPlanChanges = computed(() => {
+    if (!isEditingPlan.value || !editablePlanDraft.value || !originalEditablePlanDraft.value) {
+      return false;
+    }
+
+    return JSON.stringify(editablePlanDraft.value) !== JSON.stringify(originalEditablePlanDraft.value);
+  });
 
   const clearEditingPlanDraft = (): void => {
     isEditingPlan.value = false;
     editablePlanDraft.value = null;
+    originalEditablePlanDraft.value = null;
   };
 
   const startEditingPlan = (plan: TrainingPlan): void => {
-    editablePlanDraft.value = createEditablePlanDraft(plan);
+    const nextDraft = createEditablePlanDraft(plan);
+    editablePlanDraft.value = nextDraft;
+    originalEditablePlanDraft.value = cloneEditablePlanDraft(nextDraft);
     isEditingPlan.value = true;
   };
 
   const restoreEditingPlanDraft = (draft: EditableTrainingPlanDraft): void => {
-    editablePlanDraft.value = cloneEditablePlanDraft(draft);
+    const nextDraft = cloneEditablePlanDraft(draft);
+    editablePlanDraft.value = nextDraft;
+    originalEditablePlanDraft.value = cloneEditablePlanDraft(nextDraft);
     isEditingPlan.value = true;
+  };
+
+  const syncEditingPlanDraftAsSaved = (): void => {
+    if (!editablePlanDraft.value) {
+      originalEditablePlanDraft.value = null;
+      return;
+    }
+
+    originalEditablePlanDraft.value = cloneEditablePlanDraft(editablePlanDraft.value);
   };
 
   const cancelEditingPlan = (): void => {
@@ -197,12 +220,14 @@ export const useEditablePlanDraft = ({ notifyWarning }: UseEditablePlanDraftOpti
     cancelEditingPlan,
     clearEditingPlanDraft,
     editablePlanDraft,
+    hasUnsavedEditingPlanChanges,
     isEditingPlan,
     moveEditingPlanExerciseDown,
     moveEditingPlanExerciseUp,
     removeEditingPlanExercise,
     replaceEditingPlanExercise,
     restoreEditingPlanDraft,
+    syncEditingPlanDraftAsSaved,
     startEditingPlan,
     updateEditingPlanDuration,
     updateEditingPlanTitle

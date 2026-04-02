@@ -4,6 +4,7 @@ import type { TrainingPlan } from '@/types/plan';
 
 const {
   mountedCallbacks,
+  routeLeaveGuards,
   routerPush,
   routerReplace,
   routeMock,
@@ -12,11 +13,13 @@ const {
   fetchExercises,
   syncPlansForUser,
   plansRepositoryMocks,
+  messageBoxConfirm,
   messageSuccess,
   messageWarning,
   messageError
 } = vi.hoisted(() => ({
   mountedCallbacks: [] as Array<() => unknown>,
+  routeLeaveGuards: [] as Array<(to?: unknown, from?: unknown) => unknown>,
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
   routeMock: {
@@ -34,6 +37,7 @@ const {
     updatePlanById: vi.fn(),
     deletePlan: vi.fn()
   },
+  messageBoxConfirm: vi.fn(),
   messageSuccess: vi.fn(),
   messageWarning: vi.fn(),
   messageError: vi.fn()
@@ -65,7 +69,8 @@ vi.mock('vue', async () => {
     ...actual,
     onMounted: (callback: () => unknown) => {
       mountedCallbacks.push(callback);
-    }
+    },
+    onBeforeUnmount: vi.fn()
   };
 });
 
@@ -74,7 +79,10 @@ vi.mock('vue-router', () => ({
     push: routerPush,
     replace: routerReplace
   }),
-  useRoute: () => routeMock
+  useRoute: () => routeMock,
+  onBeforeRouteLeave: (guard: (to?: unknown, from?: unknown) => unknown) => {
+    routeLeaveGuards.push(guard);
+  }
 }));
 
 vi.mock('@/api/plans', () => ({
@@ -110,6 +118,9 @@ vi.mock('element-plus', () => ({
     success: messageSuccess,
     warning: messageWarning,
     error: messageError
+  },
+  ElMessageBox: {
+    confirm: messageBoxConfirm
   }
 }));
 
@@ -154,8 +165,13 @@ const replacementExercise: ExerciseItem = {
 describe('usePlanGenerator', () => {
   beforeEach(() => {
     mountedCallbacks.length = 0;
+    routeLeaveGuards.length = 0;
     vi.clearAllMocks();
     vi.stubGlobal('sessionStorage', new SessionStorageMock());
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    });
     routeMock.query = {};
     generatePlanStream.mockResolvedValue({
       plan: samplePlan,
@@ -163,6 +179,7 @@ describe('usePlanGenerator', () => {
     });
     fetchExercises.mockResolvedValue([replacementExercise]);
     syncPlansForUser.mockResolvedValue(undefined);
+    messageBoxConfirm.mockResolvedValue(undefined);
     plansRepositoryMocks.loadLatestPlan.mockResolvedValue(null);
     plansRepositoryMocks.getPlanById.mockResolvedValue({
       id: 22,
@@ -354,5 +371,54 @@ describe('usePlanGenerator', () => {
       query: { planId: '22' }
     });
     expect(messageWarning).toHaveBeenCalledWith('请先保存当前编辑内容，再开始训练');
+  });
+
+  it('asks for confirmation before cancelling unsaved edits', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    generator.updateDraftTitle('临时草稿');
+    await generator.cancelEdit();
+
+    expect(messageBoxConfirm).toHaveBeenCalledWith(
+      '当前编辑内容尚未保存，离开后会丢失这些修改。',
+      '放弃未保存变更？',
+      expect.any(Object)
+    );
+    expect(generator.isEditingPlan.value).toBe(false);
+  });
+
+  it('blocks route leave when unsaved edits are not confirmed', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+    messageBoxConfirm.mockRejectedValue(new Error('cancel'));
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    generator.updateDraftTitle('未保存草稿');
+
+    const guardResult = await routeLeaveGuards[0]?.();
+
+    expect(guardResult).toBe(false);
   });
 });

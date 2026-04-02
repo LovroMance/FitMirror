@@ -1,6 +1,6 @@
-import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { generatePlanApiWithSource, generatePlanStream } from '@/api/plans';
 import { fetchExercises } from '@/api/exercises';
 import { useEditablePlanDraft } from '@/composables/plan/useEditablePlanDraft';
@@ -64,18 +64,21 @@ export const usePlanGenerator = () => {
   const planSource = ref<PlanDisplaySource | null>(null);
   const progressState = ref<PlanStreamEvent['type'] | null>(null);
   const generationRound = ref(0);
+  const skipUnsavedChangesPromptOnce = ref(false);
 
   const {
     buildValidatedEditingPlan,
     cancelEditingPlan,
     clearEditingPlanDraft,
     editablePlanDraft,
+    hasUnsavedEditingPlanChanges,
     isEditingPlan,
     moveEditingPlanExerciseDown,
     moveEditingPlanExerciseUp,
     removeEditingPlanExercise,
     replaceEditingPlanExercise,
     restoreEditingPlanDraft,
+    syncEditingPlanDraftAsSaved,
     startEditingPlan,
     updateEditingPlanDuration,
     updateEditingPlanTitle
@@ -156,6 +159,47 @@ export const usePlanGenerator = () => {
     return userId;
   };
 
+  const markNextNavigationAsPromptSafe = (): void => {
+    skipUnsavedChangesPromptOnce.value = true;
+  };
+
+  const runPromptSafeNavigation = async (navigation: () => Promise<unknown>): Promise<void> => {
+    markNextNavigationAsPromptSafe();
+
+    try {
+      await navigation();
+    } catch (error) {
+      skipUnsavedChangesPromptOnce.value = false;
+      throw error;
+    }
+  };
+
+  const confirmDiscardUnsavedPlanChanges = async (): Promise<boolean> => {
+    if (!hasUnsavedEditingPlanChanges.value) {
+      return true;
+    }
+
+    try {
+      await ElMessageBox.confirm('当前编辑内容尚未保存，离开后会丢失这些修改。', '放弃未保存变更？', {
+        confirmButtonText: '确认离开',
+        cancelButtonText: '继续编辑',
+        type: 'warning'
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
+    if (!hasUnsavedEditingPlanChanges.value) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+  };
+
   const applyPlanState = (nextPlan: TrainingPlan, source: PlanDisplaySource | null): void => {
     plan.value = cloneTrainingPlan(nextPlan);
     planSource.value = source;
@@ -189,9 +233,11 @@ export const usePlanGenerator = () => {
     delete nextQuery.replaceExerciseId;
     delete nextQuery.replaceExerciseIndex;
 
-    await router.replace({
-      name: 'PlanGenerator',
-      query: nextQuery
+    await runPromptSafeNavigation(async () => {
+      await router.replace({
+        name: 'PlanGenerator',
+        query: nextQuery
+      });
     });
   };
 
@@ -201,7 +247,13 @@ export const usePlanGenerator = () => {
   };
 
   const goToPlanHistory = async (): Promise<void> => {
-    await router.push({ name: 'PlanHistory' });
+    if (!(await confirmDiscardUnsavedPlanChanges())) {
+      return;
+    }
+
+    await runPromptSafeNavigation(async () => {
+      await router.push({ name: 'PlanHistory' });
+    });
   };
 
   const startWorkout = async (): Promise<void> => {
@@ -230,7 +282,14 @@ export const usePlanGenerator = () => {
     startEditingPlan(plan.value);
   };
 
-  const cancelEdit = (): void => {
+  const cancelEdit = async (): Promise<void> => {
+    if (hasUnsavedEditingPlanChanges.value) {
+      const confirmed = await confirmDiscardUnsavedPlanChanges();
+      if (!confirmed) {
+        return;
+      }
+    }
+
     cancelEditingPlan();
     clearPlanEditingSession();
   };
@@ -253,14 +312,16 @@ export const usePlanGenerator = () => {
       editablePlanDraft: editablePlanDraft.value
     });
 
-    await router.push({
-      name: 'Exercises',
-      query: {
-        q: targetExercise.name,
-        mode: 'replacePlanExercise',
-        planId: String(latestPlanId.value),
-        replaceExerciseIndex: String(exerciseIndex)
-      }
+    await runPromptSafeNavigation(async () => {
+      await router.push({
+        name: 'Exercises',
+        query: {
+          q: targetExercise.name,
+          mode: 'replacePlanExercise',
+          planId: String(latestPlanId.value),
+          replaceExerciseIndex: String(exerciseIndex)
+        }
+      });
     });
   };
 
@@ -338,6 +399,7 @@ export const usePlanGenerator = () => {
       const syncedPlan = await plansRepository.getPlanByClientPlanId(userId, updatedPlan.clientPlanId);
 
       latestPlanId.value = syncedPlan?.id ?? updatedPlan.id ?? latestPlanId.value;
+      syncEditingPlanDraftAsSaved();
       applyPlanState(validatedPlan, 'edited');
       clearPlanEditingSession();
       ElMessage.success('训练计划已更新');
@@ -363,6 +425,10 @@ export const usePlanGenerator = () => {
     const trimmedGoal = goalText.value.trim();
     if (!trimmedGoal) {
       ElMessage.warning('请先输入训练目标');
+      return;
+    }
+
+    if (!(await confirmDiscardUnsavedPlanChanges())) {
       return;
     }
 
@@ -462,6 +528,10 @@ export const usePlanGenerator = () => {
 
   const handleDeleteLatest = async (): Promise<void> => {
     if (loading.value || deleting.value || savingEdits.value) {
+      return;
+    }
+
+    if (!(await confirmDiscardUnsavedPlanChanges())) {
       return;
     }
 
@@ -568,10 +638,31 @@ export const usePlanGenerator = () => {
   };
 
   const goHome = async (): Promise<void> => {
-    await router.push({ name: 'Home' });
+    if (!(await confirmDiscardUnsavedPlanChanges())) {
+      return;
+    }
+
+    await runPromptSafeNavigation(async () => {
+      await router.push({ name: 'Home' });
+    });
   };
 
+  onBeforeRouteLeave(async () => {
+    if (skipUnsavedChangesPromptOnce.value) {
+      skipUnsavedChangesPromptOnce.value = false;
+      return true;
+    }
+
+    if (!hasUnsavedEditingPlanChanges.value) {
+      return true;
+    }
+
+    return await confirmDiscardUnsavedPlanChanges();
+  });
+
   onMounted(async () => {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     const goalFromQuery = typeof route.query.goal === 'string' ? route.query.goal.trim() : '';
     if (goalFromQuery) {
       goalText.value = goalFromQuery;
@@ -583,6 +674,10 @@ export const usePlanGenerator = () => {
     }
 
     await applyReplacementExerciseFromRoute();
+  });
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
   });
 
   return {
