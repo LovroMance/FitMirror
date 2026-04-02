@@ -114,6 +114,15 @@ export const plansRepository = {
     }
   },
 
+  async getPlanByClientPlanId(userId: number, clientPlanId: string): Promise<PlanEntity | null> {
+    try {
+      const plans = await fitMirrorDb.plans.where('[userId+clientPlanId]').equals([userId, clientPlanId]).toArray();
+      return plans[0] ?? null;
+    } catch (error) {
+      throw toRepositoryError('getPlanByClientPlanId', error);
+    }
+  },
+
   async deletePlan(userId: number, planId?: number): Promise<void> {
     try {
       if (typeof planId === 'number') {
@@ -153,12 +162,27 @@ export const plansRepository = {
   async replacePlansForUser(userId: number, plans: Omit<PlanEntity, 'id' | 'userId'>[]): Promise<void> {
     try {
       await fitMirrorDb.transaction('rw', fitMirrorDb.plans, async () => {
+        const existingPlans = await fitMirrorDb.plans.where('userId').equals(userId).toArray();
+        const localIdByClientPlanId = new Map(
+          existingPlans
+            .filter((plan): plan is PlanEntity & { id: number } => typeof plan.id === 'number' && plan.id > 0)
+            .map((plan) => [plan.clientPlanId, plan.id])
+        );
+
         await fitMirrorDb.plans.where('userId').equals(userId).delete();
         if (plans.length === 0) {
           return;
         }
 
-        await fitMirrorDb.plans.bulkAdd(plans.map((plan) => ({ ...plan, userId })));
+        await fitMirrorDb.plans.bulkAdd(
+          plans.map((plan) => ({
+            ...plan,
+            userId,
+            ...(typeof localIdByClientPlanId.get(plan.clientPlanId) === 'number'
+              ? { id: localIdByClientPlanId.get(plan.clientPlanId) }
+              : {})
+          }))
+        );
       });
     } catch (error) {
       throw toRepositoryError('replacePlansForUser', error);

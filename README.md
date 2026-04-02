@@ -38,6 +38,9 @@
 3. 启动服务
 - 后端：`npm --prefix backend run dev`
 - 前端：`npm --prefix frontend run dev -- --host 127.0.0.1 --port 4173`
+- 如果当前环境运行 `npm --prefix backend run dev` 出现 `ts-node-dev spawn EPERM`，可改用：
+  - `npm --prefix backend run build`
+  - 在 `backend` 目录下运行 `node dist/app.js`
 
 4. 质量检查
 - `npm run lint`

@@ -244,12 +244,13 @@ export const usePlanGenerator = () => {
       await syncPlansForUser(userId).catch(() => {
         ElMessage.warning('本地计划已保存，云端同步稍后重试');
       });
+      const syncedPlan = await plansRepository.getPlanByClientPlanId(userId, saved.clientPlanId);
 
       if (currentRound !== generationRound.value) {
         return;
       }
 
-      latestPlanId.value = saved.id ?? null;
+      latestPlanId.value = syncedPlan?.id ?? saved.id ?? null;
       progressState.value = 'completed';
       ElMessage.success('计划已生成并保存');
     } catch (error) {

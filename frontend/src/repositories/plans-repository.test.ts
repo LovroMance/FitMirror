@@ -135,6 +135,26 @@ describe('plansRepository', () => {
     await expect(plansRepository.getPlanById(8, 12)).resolves.toBeNull();
   });
 
+  it('returns a plan by clientPlanId for the current user', async () => {
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([
+          {
+            id: 21,
+            userId: 7,
+            clientPlanId: 'plan-21',
+            goalText: '目标',
+            planJson: samplePlan,
+            createdAt: '2026-03-31',
+            updatedAt: '2026-03-31'
+          }
+        ])
+      })
+    });
+
+    await expect(plansRepository.getPlanByClientPlanId(7, 'plan-21')).resolves.toMatchObject({ id: 21 });
+  });
+
   it('lists plans by user in reverse chronological order', async () => {
     dbMocks.where.mockReturnValue({
       equals: vi.fn().mockReturnValue({
@@ -170,7 +190,18 @@ describe('plansRepository', () => {
     const deleteMock = vi.fn().mockResolvedValue(undefined);
     dbMocks.where.mockReturnValue({
       equals: vi.fn().mockReturnValue({
-        delete: deleteMock
+        delete: deleteMock,
+        toArray: vi.fn().mockResolvedValue([
+          {
+            id: 9,
+            userId: 7,
+            clientPlanId: 'plan-001',
+            goalText: '旧核心计划',
+            planJson: samplePlan,
+            createdAt: '2026-03-31T10:00:00.000Z',
+            updatedAt: '2026-03-31T10:05:00.000Z'
+          }
+        ])
       })
     });
 
@@ -187,6 +218,7 @@ describe('plansRepository', () => {
     expect(deleteMock).toHaveBeenCalledTimes(1);
     expect(dbMocks.bulkAdd).toHaveBeenCalledWith([
       {
+        id: 9,
         userId: 7,
         clientPlanId: 'plan-001',
         goalText: '练核心',
