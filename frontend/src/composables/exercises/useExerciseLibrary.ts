@@ -49,6 +49,22 @@ export const useExerciseLibrary = () => {
     equipment: 'all'
   });
 
+  const isReplacingPlanExercise = computed(() => route.query.mode === 'replacePlanExercise');
+
+  const resolveReplacementPlanId = (): number | null => {
+    const rawPlanId = Array.isArray(route.query.planId) ? route.query.planId[0] : route.query.planId;
+    const planId = Number(rawPlanId);
+    return Number.isFinite(planId) && planId > 0 ? planId : null;
+  };
+
+  const resolveReplacementExerciseIndex = (): number | null => {
+    const rawExerciseIndex = Array.isArray(route.query.replaceExerciseIndex)
+      ? route.query.replaceExerciseIndex[0]
+      : route.query.replaceExerciseIndex;
+    const exerciseIndex = Number(rawExerciseIndex);
+    return Number.isFinite(exerciseIndex) && exerciseIndex >= 0 ? exerciseIndex : null;
+  };
+
   const resolveUserId = (): number | null => {
     const userId = authStore.currentUser?.id ?? null;
     if (!userId) {
@@ -139,6 +155,25 @@ export const useExerciseLibrary = () => {
     }
   };
 
+  const selectExerciseForPlanReplacement = async (item: ExerciseLibraryItemView): Promise<void> => {
+    const planId = resolveReplacementPlanId();
+    const exerciseIndex = resolveReplacementExerciseIndex();
+    if (!planId || exerciseIndex === null) {
+      ElMessage.warning('缺少替换上下文，请返回计划页重新进入替换流程');
+      return;
+    }
+
+    detailVisible.value = false;
+    await router.push({
+      name: 'PlanGenerator',
+      query: {
+        planId: String(planId),
+        replaceExerciseId: item.id,
+        replaceExerciseIndex: String(exerciseIndex)
+      }
+    });
+  };
+
   const resetFilters = (): void => {
     filters.keyword = '';
     filters.bodyPart = 'all';
@@ -182,8 +217,17 @@ export const useExerciseLibrary = () => {
     }
   };
 
-  const backHome = async (): Promise<void> => {
+  const backFromExerciseLibrary = async (): Promise<void> => {
     try {
+      if (isReplacingPlanExercise.value) {
+        const planId = resolveReplacementPlanId();
+        await router.push({
+          name: 'PlanGenerator',
+          query: planId ? { planId: String(planId) } : {}
+        });
+        return;
+      }
+
       await router.push({ name: 'Home' });
     } catch {
       ElMessage.error('页面跳转失败，请稍后重试');
@@ -203,7 +247,7 @@ export const useExerciseLibrary = () => {
   });
 
   return {
-    backHome,
+    backFromExerciseLibrary,
     bodyPartLabel,
     detailInstructions,
     detailTips,
@@ -213,12 +257,14 @@ export const useExerciseLibrary = () => {
     favoriteExercises,
     filteredExercises,
     filters,
+    isReplacingPlanExercise,
     levelLabel,
     loadExercises,
     loading,
     openExercise,
     recentViewedExercises,
     resetFilters,
+    selectExerciseForPlanReplacement,
     selectedExercise,
     toggleFavorite
   };

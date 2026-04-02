@@ -7,6 +7,15 @@
         <p class="exercises-view__description">按目标、部位和难度快速找到今天适合练的动作。</p>
       </header>
 
+      <el-card v-if="isReplacingPlanExercise" shadow="never" class="fm-card exercises-view__card">
+        <div class="exercises-view__replace-banner">
+          <div>
+            <h2>替换计划动作</h2>
+            <p>从动作库里挑一个动作，选中后会自动回到计划编辑页并替换当前动作。</p>
+          </div>
+        </div>
+      </el-card>
+
       <el-card shadow="never" class="fm-card exercises-view__card">
         <el-input
           v-model="filters.keyword"
@@ -143,10 +152,17 @@
             <span>{{ equipmentLabel[item.equipment] }}</span>
             <span>{{ item.durationMinutes }} min</span>
           </div>
+          <div v-if="isReplacingPlanExercise" class="exercises-view__replace-action">
+            <el-button class="fm-button-primary exercises-view__replace-btn" @click.stop="selectExerciseForPlanReplacement(item)">
+              替换为这个动作
+            </el-button>
+          </div>
         </el-card>
       </section>
 
-      <el-button text class="exercises-view__back" @click="backHome">返回首页</el-button>
+      <el-button text class="exercises-view__back" @click="backFromExerciseLibrary">
+        {{ isReplacingPlanExercise ? '返回计划页' : '返回首页' }}
+      </el-button>
     </main>
 
     <el-dialog v-model="detailVisible" title="动作详情" width="92%" align-center class="exercises-view__dialog">
@@ -178,6 +194,14 @@
         <ul class="exercises-view__dialog-list">
           <li v-for="(line, idx) in detailTips" :key="`tip-${idx}`">{{ line }}</li>
         </ul>
+
+        <el-button
+          v-if="isReplacingPlanExercise"
+          class="fm-button-primary exercises-view__dialog-select"
+          @click="selectExerciseForPlanReplacement(selectedExercise)"
+        >
+          替换为这个动作
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -188,7 +212,7 @@ import StatePanel from '@/components/common/StatePanel.vue';
 import { useExerciseLibrary } from '@/composables/exercises/useExerciseLibrary';
 
 const {
-  backHome,
+  backFromExerciseLibrary,
   bodyPartLabel,
   detailInstructions,
   detailTips,
@@ -198,12 +222,14 @@ const {
   favoriteExercises,
   filteredExercises,
   filters,
+  isReplacingPlanExercise,
   levelLabel,
   loadExercises,
   loading,
   openExercise,
   recentViewedExercises,
   resetFilters,
+  selectExerciseForPlanReplacement,
   selectedExercise,
   toggleFavorite
 } = useExerciseLibrary();
@@ -302,6 +328,19 @@ const {
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.exercises-view__replace-banner h2 {
+  margin: 0;
+  font-size: 20px;
+  font-family: 'Fraunces', 'Times New Roman', serif;
+}
+
+.exercises-view__replace-banner p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .exercises-view__empty-tip {
@@ -420,6 +459,16 @@ const {
   color: var(--color-primary);
   font-size: 11px;
   font-weight: 600;
+}
+
+.exercises-view__replace-action {
+  margin-top: 12px;
+}
+
+.exercises-view__replace-btn,
+.exercises-view__dialog-select {
+  min-height: 42px;
+  border-radius: 14px;
 }
 
 .exercises-view__back {

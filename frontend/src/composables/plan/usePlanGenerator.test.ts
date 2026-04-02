@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExerciseItem } from '@/types/exercise';
 import type { TrainingPlan } from '@/types/plan';
 
 const {
   mountedCallbacks,
   routerPush,
+  routerReplace,
   routeMock,
   generatePlanStream,
   generatePlanApiWithSource,
+  fetchExercises,
   syncPlansForUser,
   plansRepositoryMocks,
   messageSuccess,
@@ -15,11 +18,13 @@ const {
 } = vi.hoisted(() => ({
   mountedCallbacks: [] as Array<() => unknown>,
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   routeMock: {
     query: {}
   },
   generatePlanStream: vi.fn(),
   generatePlanApiWithSource: vi.fn(),
+  fetchExercises: vi.fn(),
   syncPlansForUser: vi.fn(),
   plansRepositoryMocks: {
     saveLatestPlan: vi.fn(),
@@ -34,6 +39,26 @@ const {
   messageError: vi.fn()
 }));
 
+class SessionStorageMock {
+  private store = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.store.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.store.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.store.delete(key);
+  }
+
+  clear(): void {
+    this.store.clear();
+  }
+}
+
 vi.mock('vue', async () => {
   const actual = await vi.importActual<typeof import('vue')>('vue');
   return {
@@ -46,7 +71,8 @@ vi.mock('vue', async () => {
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
-    push: routerPush
+    push: routerPush,
+    replace: routerReplace
   }),
   useRoute: () => routeMock
 }));
@@ -54,6 +80,10 @@ vi.mock('vue-router', () => ({
 vi.mock('@/api/plans', () => ({
   generatePlanStream,
   generatePlanApiWithSource
+}));
+
+vi.mock('@/api/exercises', () => ({
+  fetchExercises
 }));
 
 vi.mock('@/composables/plan/usePlanSync', () => ({
@@ -106,15 +136,32 @@ const samplePlan: TrainingPlan = {
   ]
 };
 
+const replacementExercise: ExerciseItem = {
+  id: 'dead-bug',
+  name: '死虫式',
+  bodyPart: 'core',
+  level: 'beginner',
+  equipment: 'none',
+  durationMinutes: 8,
+  sets: 3,
+  reps: '左右各 12 次',
+  description: '适合核心稳定训练。',
+  instructions: ['缓慢伸展四肢并保持核心稳定。'],
+  tips: ['保持下背贴地。'],
+  tags: ['core']
+};
+
 describe('usePlanGenerator', () => {
   beforeEach(() => {
     mountedCallbacks.length = 0;
     vi.clearAllMocks();
+    vi.stubGlobal('sessionStorage', new SessionStorageMock());
     routeMock.query = {};
     generatePlanStream.mockResolvedValue({
       plan: samplePlan,
       source: 'template'
     });
+    fetchExercises.mockResolvedValue([replacementExercise]);
     syncPlansForUser.mockResolvedValue(undefined);
     plansRepositoryMocks.loadLatestPlan.mockResolvedValue(null);
     plansRepositoryMocks.getPlanById.mockResolvedValue({
@@ -217,7 +264,7 @@ describe('usePlanGenerator', () => {
     });
   });
 
-  it('restores original content when edit mode is cancelled', async () => {
+  it('starts the exercise replacement flow with a clear route payload', async () => {
     plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
       id: 22,
       userId: 7,
@@ -232,12 +279,57 @@ describe('usePlanGenerator', () => {
     await mountedCallbacks[0]?.();
 
     generator.enterEditMode();
-    generator.updateDraftTitle('临时改名');
-    generator.cancelEdit();
+    await generator.startExerciseReplacement(1);
 
-    expect(generator.isEditingPlan.value).toBe(false);
-    expect(generator.editablePlanDraft.value).toBeNull();
-    expect(generator.plan.value?.title).toBe(samplePlan.title);
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'Exercises',
+      query: {
+        q: '登山跑',
+        mode: 'replacePlanExercise',
+        planId: '22',
+        replaceExerciseIndex: '1'
+      }
+    });
+    expect(sessionStorage.getItem('fitmirror_plan_editing_session')).toContain('"latestPlanId":22');
+  });
+
+  it('restores the editing draft and applies the selected replacement exercise from route query', async () => {
+    sessionStorage.setItem(
+      'fitmirror_plan_editing_session',
+      JSON.stringify({
+        latestPlanId: 22,
+        goalText: '核心训练',
+        editablePlanDraft: {
+          title: samplePlan.title,
+          level: samplePlan.level,
+          durationMinutes: samplePlan.durationMinutes,
+          summary: samplePlan.summary,
+          exercises: samplePlan.exercises
+        }
+      })
+    );
+    routeMock.query = {
+      planId: '22',
+      replaceExerciseId: 'dead-bug',
+      replaceExerciseIndex: '1'
+    };
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    expect(fetchExercises).toHaveBeenCalled();
+    expect(generator.isEditingPlan.value).toBe(true);
+    expect(generator.editablePlanDraft.value?.exercises[1]).toMatchObject({
+      name: '死虫式',
+      reps: '左右各 12 次',
+      restSeconds: 20
+    });
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'PlanGenerator',
+      query: {
+        planId: '22'
+      }
+    });
   });
 
   it('blocks workout start while there are unsaved edits', async () => {
@@ -257,7 +349,10 @@ describe('usePlanGenerator', () => {
     generator.enterEditMode();
     await generator.startWorkout();
 
-    expect(routerPush).not.toHaveBeenCalled();
+    expect(routerPush).not.toHaveBeenCalledWith({
+      name: 'WorkoutSession',
+      query: { planId: '22' }
+    });
     expect(messageWarning).toHaveBeenCalledWith('请先保存当前编辑内容，再开始训练');
   });
 });

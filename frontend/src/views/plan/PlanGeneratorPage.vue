@@ -131,7 +131,7 @@
           </div>
 
           <div class="plan-generator__edit-tip">
-            当前版本支持改标题、总时长、动作顺序和删除动作；动作内容仍保持原计划配置。
+            当前版本支持改标题、总时长、动作顺序、替换动作和删除动作；动作替换会从动作库回填到当前草稿。
           </div>
 
           <ul class="plan-generator__exercise-list">
@@ -158,6 +158,7 @@
                 >
                   下移
                 </el-button>
+                <el-button text :disabled="savingEdits" @click="startExerciseReplacement(idx)">替换动作</el-button>
                 <el-button text type="danger" :disabled="savingEdits" @click="removeExercise(idx)">删除</el-button>
               </div>
             </li>
@@ -212,6 +213,7 @@ const {
   savingEdits,
   sourceLabel,
   sourceTagClass,
+  startExerciseReplacement,
   startWorkout,
   updateDraftDuration,
   updateDraftTitle

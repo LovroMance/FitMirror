@@ -25,6 +25,12 @@ export interface EditableTrainingPlanDraft {
   exercises: PlanExercise[];
 }
 
+export interface PlanEditingSessionSnapshot {
+  latestPlanId: number;
+  goalText: string;
+  editablePlanDraft: EditableTrainingPlanDraft;
+}
+
 export interface GeneratePlanPayload {
   plan: TrainingPlan;
   source?: PlanSource;
