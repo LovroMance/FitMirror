@@ -105,6 +105,16 @@
 
         <p class="plan-generator__plan-summary">{{ plan.summary }}</p>
 
+        <section v-if="!isEditingPlan && hasLastSavedPlanEditSummary" class="plan-generator__edit-summary">
+          <div class="plan-generator__edit-summary-head">
+            <h3>最近一次编辑结果</h3>
+            <p>保存后会保留在这里，方便你再次确认刚刚改了什么。</p>
+          </div>
+          <ul class="plan-generator__edit-summary-list">
+            <li v-for="highlight in latestSavedPlanEditSummaryHighlights" :key="highlight">{{ highlight }}</li>
+          </ul>
+        </section>
+
         <template v-if="isEditingPlan && editablePlanDraft">
           <div class="plan-generator__edit-form">
             <label class="plan-generator__field">
@@ -202,13 +212,15 @@ const {
   errorMessage,
   goalText,
   goHome,
+  goToPlanHistory,
   handleDeleteLatest,
   handleGenerate,
+  hasLastSavedPlanEditSummary,
   isEditingPlan,
   latestPlanId,
+  latestSavedPlanEditSummaryHighlights,
   levelText,
   loading,
-  goToPlanHistory,
   moveExerciseDown,
   moveExerciseUp,
   openExerciseLibrary,
@@ -427,6 +439,36 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   border-radius: 14px;
   background: rgba(50, 213, 131, 0.08);
   color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.plan-generator__edit-summary {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(50, 213, 131, 0.18);
+  background: rgba(50, 213, 131, 0.08);
+}
+
+.plan-generator__edit-summary-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.plan-generator__edit-summary-head p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.plan-generator__edit-summary-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--color-text-primary);
   font-size: 13px;
   line-height: 1.55;
 }

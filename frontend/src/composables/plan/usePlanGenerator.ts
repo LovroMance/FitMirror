@@ -7,9 +7,9 @@ import { useEditablePlanDraft } from '@/composables/plan/useEditablePlanDraft';
 import { syncPlansForUser } from '@/composables/plan/usePlanSync';
 import { planSyncStateRepository, plansRepository } from '@/repositories';
 import { useAuthStore } from '@/store/auth';
-import type { PlanDisplaySource, PlanExercise, PlanStreamEvent, TrainingPlan } from '@/types/plan';
+import type { PlanDisplaySource, PlanEditChangeSummary, PlanExercise, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { clearPlanEditingSession, loadPlanEditingSession, savePlanEditingSession } from '@/utils/plan-editing-session';
-import { buildPlanEditChangeSummary, buildPlanEditChangeSummaryMessage } from '@/utils/plan-edit-change-summary';
+import { buildPlanEditChangeSummary, buildPlanEditChangeSummaryHighlights, buildPlanEditChangeSummaryMessage } from '@/utils/plan-edit-change-summary';
 import { createPlanExerciseFromExerciseLibraryItem } from '@/utils/plan-exercise-replacement';
 
 const cloneTrainingPlan = (plan: TrainingPlan): TrainingPlan => JSON.parse(JSON.stringify(plan)) as TrainingPlan;
@@ -66,6 +66,7 @@ export const usePlanGenerator = () => {
   const progressState = ref<PlanStreamEvent['type'] | null>(null);
   const generationRound = ref(0);
   const skipUnsavedChangesPromptOnce = ref(false);
+  const lastSavedPlanEditSummary = ref<PlanEditChangeSummary | null>(null);
 
   const {
     appendEditingPlanExercise,
@@ -151,6 +152,11 @@ export const usePlanGenerator = () => {
     return 'restored';
   });
 
+  const hasLastSavedPlanEditSummary = computed(() => Boolean(lastSavedPlanEditSummary.value?.hasChanges));
+  const latestSavedPlanEditSummaryHighlights = computed(() =>
+    lastSavedPlanEditSummary.value ? buildPlanEditChangeSummaryHighlights(lastSavedPlanEditSummary.value) : []
+  );
+
   const resolveCurrentUserId = (): number | null => {
     const userId = currentUserId.value;
     if (!userId) {
@@ -200,6 +206,10 @@ export const usePlanGenerator = () => {
 
     event.preventDefault();
     event.returnValue = '';
+  };
+
+  const clearLastSavedPlanEditSummary = (): void => {
+    lastSavedPlanEditSummary.value = null;
   };
 
   const applyPlanState = (nextPlan: TrainingPlan, source: PlanDisplaySource | null): void => {
@@ -468,6 +478,7 @@ export const usePlanGenerator = () => {
       const syncedPlan = await plansRepository.getPlanByClientPlanId(userId, updatedPlan.clientPlanId);
 
       latestPlanId.value = syncedPlan?.id ?? updatedPlan.id ?? latestPlanId.value;
+      lastSavedPlanEditSummary.value = planEditChangeSummary;
       syncEditingPlanDraftAsSaved();
       applyPlanState(validatedPlan, 'edited');
       clearPlanEditingSession();
@@ -506,6 +517,7 @@ export const usePlanGenerator = () => {
     progressState.value = 'queued';
     clearEditingPlanDraft();
     clearPlanEditingSession();
+    clearLastSavedPlanEditSummary();
     const currentRound = generationRound.value + 1;
     generationRound.value = currentRound;
 
@@ -627,6 +639,7 @@ export const usePlanGenerator = () => {
       planSource.value = null;
       clearEditingPlanDraft();
       clearPlanEditingSession();
+      clearLastSavedPlanEditSummary();
       ElMessage.success('最近计划已删除');
     } catch (error) {
       const message = error instanceof Error ? error.message : '删除失败，请稍后重试';
@@ -657,6 +670,7 @@ export const usePlanGenerator = () => {
         planSource.value = null;
         clearEditingPlanDraft();
         clearPlanEditingSession();
+        clearLastSavedPlanEditSummary();
         ElMessage.warning('最近计划数据异常，请重新生成');
         return;
       }
@@ -665,6 +679,7 @@ export const usePlanGenerator = () => {
       if (!goalText.value) {
         goalText.value = latestPlan.goalText;
       }
+      clearLastSavedPlanEditSummary();
       applyPlanState(latestPlan.planJson, 'restored');
     } catch {
       errorMessage.value = '读取本地计划失败，但你仍可继续生成新计划';
@@ -694,6 +709,7 @@ export const usePlanGenerator = () => {
 
       latestPlanId.value = targetPlan.id ?? null;
       goalText.value = targetPlan.goalText;
+      clearLastSavedPlanEditSummary();
       applyPlanState(targetPlan.planJson, 'restored');
       errorMessage.value = '';
       if (!isReturningFromExerciseSelection()) {
@@ -759,6 +775,7 @@ export const usePlanGenerator = () => {
     goalText,
     goHome,
     goToPlanHistory,
+    hasLastSavedPlanEditSummary,
     handleDeleteLatest,
     handleGenerate,
     isEditingPlan,
@@ -767,6 +784,7 @@ export const usePlanGenerator = () => {
     loading,
     moveExerciseDown: moveEditingPlanExerciseDown,
     moveExerciseUp: moveEditingPlanExerciseUp,
+    latestSavedPlanEditSummaryHighlights,
     openExerciseLibrary,
     plan,
     progressLabel,

@@ -48,6 +48,8 @@ const haveSameExerciseNames = (previousNames: string[], nextNames: string[]): bo
   return true;
 };
 
+const formatExerciseNames = (exerciseNames: string[]): string => exerciseNames.map((name) => `“${name}”`).join('、');
+
 export const buildPlanEditChangeSummary = (previousPlan: TrainingPlan, nextPlan: TrainingPlan): PlanEditChangeSummary => {
   const previousExerciseNames = previousPlan.exercises.map((exercise) => exercise.name);
   const nextExerciseNames = nextPlan.exercises.map((exercise) => exercise.name);
@@ -85,21 +87,19 @@ export const buildPlanEditChangeSummary = (previousPlan: TrainingPlan, nextPlan:
   };
 };
 
-const formatExerciseNames = (exerciseNames: string[]): string => exerciseNames.map((name) => `“${name}”`).join('、');
-
-export const buildPlanEditChangeSummaryMessage = (summary: PlanEditChangeSummary): string => {
-  const messageParts: string[] = [];
+export const buildPlanEditChangeSummaryHighlights = (summary: PlanEditChangeSummary): string[] => {
+  const highlights: string[] = [];
 
   if (summary.titleChanged) {
-    messageParts.push('已更新计划标题');
+    highlights.push('已更新计划标题');
   }
 
   if (summary.durationChanged) {
-    messageParts.push(`已调整总时长为 ${summary.nextDurationMinutes} 分钟`);
+    highlights.push(`已调整总时长为 ${summary.nextDurationMinutes} 分钟`);
   }
 
   if (summary.replacedExercises.length > 0) {
-    messageParts.push(
+    highlights.push(
       `已替换动作：${summary.replacedExercises
         .map((item) => `“${item.previousName}” -> “${item.nextName}”`)
         .join('、')}`
@@ -107,16 +107,22 @@ export const buildPlanEditChangeSummaryMessage = (summary: PlanEditChangeSummary
   }
 
   if (summary.addedExerciseNames.length > 0) {
-    messageParts.push(`已添加动作：${formatExerciseNames(summary.addedExerciseNames)}`);
+    highlights.push(`已添加动作：${formatExerciseNames(summary.addedExerciseNames)}`);
   }
 
   if (summary.removedExerciseNames.length > 0) {
-    messageParts.push(`已删除动作：${formatExerciseNames(summary.removedExerciseNames)}`);
+    highlights.push(`已删除动作：${formatExerciseNames(summary.removedExerciseNames)}`);
   }
 
   if (summary.reordered) {
-    messageParts.push('已调整动作顺序');
+    highlights.push('已调整动作顺序');
   }
+
+  return highlights;
+};
+
+export const buildPlanEditChangeSummaryMessage = (summary: PlanEditChangeSummary): string => {
+  const messageParts = buildPlanEditChangeSummaryHighlights(summary);
 
   if (messageParts.length === 0) {
     return '训练计划已更新';

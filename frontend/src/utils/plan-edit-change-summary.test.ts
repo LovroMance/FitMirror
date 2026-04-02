@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { TrainingPlan } from '@/types/plan';
-import { buildPlanEditChangeSummary, buildPlanEditChangeSummaryMessage } from './plan-edit-change-summary';
+import {
+  buildPlanEditChangeSummary,
+  buildPlanEditChangeSummaryHighlights,
+  buildPlanEditChangeSummaryMessage
+} from './plan-edit-change-summary';
 
 const basePlan: TrainingPlan = {
   title: '10分钟核心激活训练',
@@ -61,6 +65,12 @@ describe('plan-edit-change-summary', () => {
       nextDurationMinutes: 12,
       hasChanges: true
     });
+    expect(buildPlanEditChangeSummaryHighlights(summary)).toEqual([
+      '已更新计划标题',
+      '已调整总时长为 12 分钟',
+      '已替换动作：“平板支撑” -> “死虫式”',
+      '已添加动作：“卷腹”'
+    ]);
     expect(buildPlanEditChangeSummaryMessage(summary)).toBe(
       '训练计划已更新：已更新计划标题；已调整总时长为 12 分钟；已替换动作：“平板支撑” -> “死虫式”；已添加动作：“卷腹”'
     );
@@ -81,6 +91,7 @@ describe('plan-edit-change-summary', () => {
       replacedExercises: [],
       hasChanges: true
     });
+    expect(buildPlanEditChangeSummaryHighlights(summary)).toEqual(['已调整动作顺序']);
     expect(buildPlanEditChangeSummaryMessage(summary)).toBe('训练计划已更新：已调整动作顺序');
   });
 
@@ -88,6 +99,7 @@ describe('plan-edit-change-summary', () => {
     const summary = buildPlanEditChangeSummary(basePlan, basePlan);
 
     expect(summary.hasChanges).toBe(false);
+    expect(buildPlanEditChangeSummaryHighlights(summary)).toEqual([]);
     expect(buildPlanEditChangeSummaryMessage(summary)).toBe('训练计划已更新');
   });
 });
