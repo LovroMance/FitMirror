@@ -171,7 +171,7 @@ export const useWorkoutLog = () => {
       const planIds = [...new Set(details.map((record) => record.planId).filter((planId): planId is number => typeof planId === 'number' && planId > 0))];
       const linkedPlans = await Promise.all(planIds.map((planId) => plansRepository.getPlanById(userId, planId)));
       const plansById = new Map(linkedPlans.filter((plan): plan is NonNullable<typeof plan> => Boolean(plan)).map((plan) => [plan.id as number, plan]));
-      const detailViews = buildWorkoutDayDetailViews(details, plansById);
+      const detailViews = prioritizeCompletedPlanRecord(buildWorkoutDayDetailViews(details, plansById));
       if (requestToken !== detailRequestToken.value) {
         return;
       }
@@ -211,6 +211,29 @@ export const useWorkoutLog = () => {
     }
 
     return dayjs(raw, 'YYYY-MM-DD', true).isValid() ? raw : null;
+  };
+
+  const resolveCompletedPlanTarget = (): number | null => {
+    const raw = Array.isArray(route.query.completedPlanId) ? route.query.completedPlanId[0] : route.query.completedPlanId;
+    const planId = Number(raw);
+    return Number.isFinite(planId) && planId > 0 ? planId : null;
+  };
+
+  const prioritizeCompletedPlanRecord = (details: WorkoutDayDetailView[]): WorkoutDayDetailView[] => {
+    const completedPlanId = resolveCompletedPlanTarget();
+    if (!completedPlanId || details.length < 2) {
+      return details;
+    }
+
+    const targetIndex = details.findIndex((detail) => detail.planId === completedPlanId);
+    if (targetIndex <= 0) {
+      return details;
+    }
+
+    const prioritized = [...details];
+    const [targetDetail] = prioritized.splice(targetIndex, 1);
+    prioritized.unshift(targetDetail);
+    return prioritized;
   };
 
   const openCompletedDateDetailIfNeeded = async (): Promise<boolean> => {
@@ -288,6 +311,7 @@ export const useWorkoutLog = () => {
     recordsState,
     refreshRecords,
     resolveCompletedDateTarget,
+    resolveCompletedPlanTarget,
     retryDayDetail,
     selectedPeriod,
     selectedDate,

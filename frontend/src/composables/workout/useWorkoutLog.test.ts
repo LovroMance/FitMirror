@@ -80,6 +80,7 @@ describe('useWorkoutLog', () => {
     mountedCallbacks.length = 0;
     vi.clearAllMocks();
     routeMock.query.completedDate = '2026-04-02';
+    routeMock.query.completedPlanId = undefined;
     syncWorkoutRecordsForUser.mockResolvedValue(undefined);
   });
 
@@ -146,5 +147,78 @@ describe('useWorkoutLog', () => {
     expect(log.detailVisible.value).toBe(false);
     expect(workoutRecordsRepositoryMocks.listRecordsByDay).not.toHaveBeenCalled();
     expect(messageWarning).toHaveBeenCalledWith('本次训练记录正在同步，请稍后重试查看当天详情');
+  });
+
+  it('prioritizes the completed plan record when multiple records exist on the same day', async () => {
+    routeMock.query.completedPlanId = '2';
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 12,
+        completed: true,
+        planId: 1,
+        createdAt: '2026-04-02T09:00:00.000Z',
+        updatedAt: '2026-04-02T09:10:00.000Z'
+      },
+      {
+        id: 2,
+        userId: 7,
+        clientRecordId: 'rec-2',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 12,
+        completed: true,
+        planId: 1,
+        createdAt: '2026-04-02T09:00:00.000Z',
+        updatedAt: '2026-04-02T09:10:00.000Z'
+      },
+      {
+        id: 2,
+        userId: 7,
+        clientRecordId: 'rec-2',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    plansRepositoryMocks.getPlanById.mockImplementation(async (_userId: number, planId: number) => ({
+      id: planId,
+      userId: 7,
+      clientPlanId: `plan-${planId}`,
+      goalText: `目标 ${planId}`,
+      createdAt: '2026-04-02T08:00:00.000Z',
+      updatedAt: '2026-04-02T08:00:00.000Z',
+      planJson: {
+        title: `计划 ${planId}`,
+        level: 'beginner',
+        durationMinutes: 18,
+        summary: `摘要 ${planId}`,
+        exercises: []
+      }
+    }));
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+
+    expect(log.dayDetails.value[0]?.planId).toBe(2);
+    expect(log.dayDetails.value[1]?.planId).toBe(1);
   });
 });
