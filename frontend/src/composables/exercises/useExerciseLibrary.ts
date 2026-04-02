@@ -50,8 +50,17 @@ export const useExerciseLibrary = () => {
   });
 
   const isReplacingPlanExercise = computed(() => route.query.mode === 'replacePlanExercise');
+  const isAppendingPlanExercise = computed(() => route.query.mode === 'appendPlanExercise');
+  const isSelectingPlanExercise = computed(() => isReplacingPlanExercise.value || isAppendingPlanExercise.value);
+  const planExerciseSelectionTitle = computed(() => (isReplacingPlanExercise.value ? '替换计划动作' : '添加计划动作'));
+  const planExerciseSelectionDescription = computed(() =>
+    isReplacingPlanExercise.value
+      ? '从动作库里挑一个动作，选中后会自动回到计划编辑页并替换当前动作。'
+      : '从动作库里挑一个动作，选中后会自动回到计划编辑页并追加到当前计划末尾。'
+  );
+  const planExerciseSelectionButtonText = computed(() => (isReplacingPlanExercise.value ? '替换为这个动作' : '添加这个动作'));
 
-  const resolveReplacementPlanId = (): number | null => {
+  const resolvePlanIdForPlanExerciseSelection = (): number | null => {
     const rawPlanId = Array.isArray(route.query.planId) ? route.query.planId[0] : route.query.planId;
     const planId = Number(rawPlanId);
     return Number.isFinite(planId) && planId > 0 ? planId : null;
@@ -156,7 +165,7 @@ export const useExerciseLibrary = () => {
   };
 
   const selectExerciseForPlanReplacement = async (item: ExerciseLibraryItemView): Promise<void> => {
-    const planId = resolveReplacementPlanId();
+    const planId = resolvePlanIdForPlanExerciseSelection();
     const exerciseIndex = resolveReplacementExerciseIndex();
     if (!planId || exerciseIndex === null) {
       ElMessage.warning('缺少替换上下文，请返回计划页重新进入替换流程');
@@ -172,6 +181,34 @@ export const useExerciseLibrary = () => {
         replaceExerciseIndex: String(exerciseIndex)
       }
     });
+  };
+
+  const selectExerciseForPlanAppend = async (item: ExerciseLibraryItemView): Promise<void> => {
+    const planId = resolvePlanIdForPlanExerciseSelection();
+    if (!planId) {
+      ElMessage.warning('缺少添加上下文，请返回计划页重新进入添加流程');
+      return;
+    }
+
+    detailVisible.value = false;
+    await router.push({
+      name: 'PlanGenerator',
+      query: {
+        planId: String(planId),
+        appendExerciseId: item.id
+      }
+    });
+  };
+
+  const selectExerciseForPlanEditing = async (item: ExerciseLibraryItemView): Promise<void> => {
+    if (isReplacingPlanExercise.value) {
+      await selectExerciseForPlanReplacement(item);
+      return;
+    }
+
+    if (isAppendingPlanExercise.value) {
+      await selectExerciseForPlanAppend(item);
+    }
   };
 
   const resetFilters = (): void => {
@@ -219,8 +256,8 @@ export const useExerciseLibrary = () => {
 
   const backFromExerciseLibrary = async (): Promise<void> => {
     try {
-      if (isReplacingPlanExercise.value) {
-        const planId = resolveReplacementPlanId();
+      if (isSelectingPlanExercise.value) {
+        const planId = resolvePlanIdForPlanExerciseSelection();
         await router.push({
           name: 'PlanGenerator',
           query: planId ? { planId: String(planId) } : {}
@@ -257,14 +294,19 @@ export const useExerciseLibrary = () => {
     favoriteExercises,
     filteredExercises,
     filters,
+    isAppendingPlanExercise,
     isReplacingPlanExercise,
+    isSelectingPlanExercise,
     levelLabel,
     loadExercises,
     loading,
     openExercise,
+    planExerciseSelectionButtonText,
+    planExerciseSelectionDescription,
+    planExerciseSelectionTitle,
     recentViewedExercises,
     resetFilters,
-    selectExerciseForPlanReplacement,
+    selectExerciseForPlanEditing,
     selectedExercise,
     toggleFavorite
   };

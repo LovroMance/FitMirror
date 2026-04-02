@@ -180,6 +180,14 @@ export const useEditablePlanDraft = ({ notifyWarning }: UseEditablePlanDraftOpti
     );
   };
 
+  const appendEditingPlanExercise = (nextExercise: PlanExercise): void => {
+    if (!editablePlanDraft.value) {
+      return;
+    }
+
+    editablePlanDraft.value.exercises = [...editablePlanDraft.value.exercises, { ...nextExercise }];
+  };
+
   const buildValidatedEditingPlan = (): TrainingPlan | null => {
     if (!editablePlanDraft.value) {
       notifyWarning('当前没有可保存的编辑内容');
@@ -220,6 +228,7 @@ export const useEditablePlanDraft = ({ notifyWarning }: UseEditablePlanDraftOpti
     cancelEditingPlan,
     clearEditingPlanDraft,
     editablePlanDraft,
+    appendEditingPlanExercise,
     hasUnsavedEditingPlanChanges,
     isEditingPlan,
     moveEditingPlanExerciseDown,
@@ -233,3 +242,4 @@ export const useEditablePlanDraft = ({ notifyWarning }: UseEditablePlanDraftOpti
     updateEditingPlanTitle
   };
 };
+

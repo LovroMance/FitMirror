@@ -131,7 +131,7 @@
           </div>
 
           <div class="plan-generator__edit-tip">
-            当前版本支持改标题、总时长、动作顺序、替换动作和删除动作；动作替换会从动作库回填到当前草稿。
+            当前版本支持改标题、总时长、动作顺序、替换动作、添加动作和删除动作；动作选择会从动作库回填到当前草稿。
           </div>
 
           <ul class="plan-generator__exercise-list">
@@ -163,6 +163,12 @@
               </div>
             </li>
           </ul>
+
+          <div class="plan-generator__append-action">
+            <el-button class="fm-button-primary plan-generator__append-button" :disabled="savingEdits" @click="startAppendingExerciseToPlan">
+              添加动作
+            </el-button>
+          </div>
         </template>
 
         <ul v-else class="plan-generator__exercise-list">
@@ -213,6 +219,7 @@ const {
   savingEdits,
   sourceLabel,
   sourceTagClass,
+  startAppendingExerciseToPlan,
   startExerciseReplacement,
   startWorkout,
   updateDraftDuration,
@@ -377,7 +384,8 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
 }
 
 .plan-generator__start,
-.plan-generator__save {
+.plan-generator__save,
+.plan-generator__append-button {
   min-height: 42px;
   border-radius: 14px;
 }
@@ -501,6 +509,12 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   flex-wrap: wrap;
 }
 
+.plan-generator__append-action {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
 @media (max-width: 390px) {
   .plan-generator__screen {
     padding: 16px 14px 106px;
@@ -519,6 +533,14 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   .plan-generator__edit-link,
   .plan-generator__secondary-link {
     align-self: flex-start;
+  }
+
+  .plan-generator__append-action {
+    justify-content: stretch;
+  }
+
+  .plan-generator__append-button {
+    width: 100%;
   }
 
   .plan-generator__title {

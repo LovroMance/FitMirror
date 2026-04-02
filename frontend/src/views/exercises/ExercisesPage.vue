@@ -7,11 +7,11 @@
         <p class="exercises-view__description">按目标、部位和难度快速找到今天适合练的动作。</p>
       </header>
 
-      <el-card v-if="isReplacingPlanExercise" shadow="never" class="fm-card exercises-view__card">
+      <el-card v-if="isSelectingPlanExercise" shadow="never" class="fm-card exercises-view__card">
         <div class="exercises-view__replace-banner">
           <div>
-            <h2>替换计划动作</h2>
-            <p>从动作库里挑一个动作，选中后会自动回到计划编辑页并替换当前动作。</p>
+            <h2>{{ planExerciseSelectionTitle }}</h2>
+            <p>{{ planExerciseSelectionDescription }}</p>
           </div>
         </div>
       </el-card>
@@ -152,16 +152,16 @@
             <span>{{ equipmentLabel[item.equipment] }}</span>
             <span>{{ item.durationMinutes }} min</span>
           </div>
-          <div v-if="isReplacingPlanExercise" class="exercises-view__replace-action">
-            <el-button class="fm-button-primary exercises-view__replace-btn" @click.stop="selectExerciseForPlanReplacement(item)">
-              替换为这个动作
+          <div v-if="isSelectingPlanExercise" class="exercises-view__replace-action">
+            <el-button class="fm-button-primary exercises-view__replace-btn" @click.stop="selectExerciseForPlanEditing(item)">
+              {{ planExerciseSelectionButtonText }}
             </el-button>
           </div>
         </el-card>
       </section>
 
       <el-button text class="exercises-view__back" @click="backFromExerciseLibrary">
-        {{ isReplacingPlanExercise ? '返回计划页' : '返回首页' }}
+        {{ isSelectingPlanExercise ? '返回计划页' : '返回首页' }}
       </el-button>
     </main>
 
@@ -196,11 +196,11 @@
         </ul>
 
         <el-button
-          v-if="isReplacingPlanExercise"
+          v-if="isSelectingPlanExercise"
           class="fm-button-primary exercises-view__dialog-select"
-          @click="selectExerciseForPlanReplacement(selectedExercise)"
+          @click="selectExerciseForPlanEditing(selectedExercise)"
         >
-          替换为这个动作
+          {{ planExerciseSelectionButtonText }}
         </el-button>
       </template>
     </el-dialog>
@@ -222,14 +222,17 @@ const {
   favoriteExercises,
   filteredExercises,
   filters,
-  isReplacingPlanExercise,
+  isSelectingPlanExercise,
   levelLabel,
   loadExercises,
   loading,
   openExercise,
+  planExerciseSelectionButtonText,
+  planExerciseSelectionDescription,
+  planExerciseSelectionTitle,
   recentViewedExercises,
   resetFilters,
-  selectExerciseForPlanReplacement,
+  selectExerciseForPlanEditing,
   selectedExercise,
   toggleFavorite
 } = useExerciseLibrary();

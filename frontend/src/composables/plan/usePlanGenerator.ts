@@ -67,6 +67,7 @@ export const usePlanGenerator = () => {
   const skipUnsavedChangesPromptOnce = ref(false);
 
   const {
+    appendEditingPlanExercise,
     buildValidatedEditingPlan,
     cancelEditingPlan,
     clearEditingPlanDraft,
@@ -225,13 +226,21 @@ export const usePlanGenerator = () => {
     return Number.isFinite(exerciseIndex) && exerciseIndex >= 0 ? exerciseIndex : null;
   };
 
-  const isReturningFromExerciseReplacement = (): boolean =>
-    Boolean(resolveReplacementExerciseIdFromQuery()) || resolveReplacementExerciseIndexFromQuery() !== null;
+  const resolveAppendedExerciseIdFromQuery = (): string | null => {
+    const rawExerciseId = Array.isArray(route.query.appendExerciseId) ? route.query.appendExerciseId[0] : route.query.appendExerciseId;
+    return typeof rawExerciseId === 'string' && rawExerciseId.trim().length > 0 ? rawExerciseId.trim() : null;
+  };
 
-  const clearReplacementQueryState = async (): Promise<void> => {
+  const isReturningFromExerciseSelection = (): boolean =>
+    Boolean(resolveReplacementExerciseIdFromQuery()) ||
+    resolveReplacementExerciseIndexFromQuery() !== null ||
+    Boolean(resolveAppendedExerciseIdFromQuery());
+
+  const clearExerciseSelectionQueryState = async (): Promise<void> => {
     const nextQuery = { ...route.query };
     delete nextQuery.replaceExerciseId;
     delete nextQuery.replaceExerciseIndex;
+    delete nextQuery.appendExerciseId;
 
     await runPromptSafeNavigation(async () => {
       await router.replace({
@@ -325,6 +334,29 @@ export const usePlanGenerator = () => {
     });
   };
 
+  const startAppendingExerciseToPlan = async (): Promise<void> => {
+    if (!isEditingPlan.value || !editablePlanDraft.value || !latestPlanId.value) {
+      ElMessage.warning('请先进入计划编辑状态，再添加动作');
+      return;
+    }
+
+    savePlanEditingSession({
+      latestPlanId: latestPlanId.value,
+      goalText: goalText.value.trim(),
+      editablePlanDraft: editablePlanDraft.value
+    });
+
+    await runPromptSafeNavigation(async () => {
+      await router.push({
+        name: 'Exercises',
+        query: {
+          mode: 'appendPlanExercise',
+          planId: String(latestPlanId.value)
+        }
+      });
+    });
+  };
+
   const applyReplacementExerciseFromRoute = async (): Promise<void> => {
     const selectedExerciseId = resolveReplacementExerciseIdFromQuery();
     const targetExerciseIndex = resolveReplacementExerciseIndexFromQuery();
@@ -337,7 +369,7 @@ export const usePlanGenerator = () => {
     if (!editingSessionSnapshot || !latestPlanId.value || editingSessionSnapshot.latestPlanId !== latestPlanId.value) {
       clearPlanEditingSession();
       ElMessage.warning('未找到可恢复的编辑草稿，请重新进入编辑模式后再替换动作');
-      await clearReplacementQueryState();
+      await clearExerciseSelectionQueryState();
       return;
     }
 
@@ -347,7 +379,7 @@ export const usePlanGenerator = () => {
     if (!selectedExercise) {
       clearPlanEditingSession();
       ElMessage.warning('未找到要替换的动作，请重新选择');
-      await clearReplacementQueryState();
+      await clearExerciseSelectionQueryState();
       return;
     }
 
@@ -357,7 +389,41 @@ export const usePlanGenerator = () => {
     clearPlanEditingSession();
     planSource.value = 'edited';
     ElMessage.success(`已将动作替换为“${selectedExercise.name}”`);
-    await clearReplacementQueryState();
+    await clearExerciseSelectionQueryState();
+  };
+
+  const applyAppendedExerciseFromRoute = async (): Promise<void> => {
+    const selectedExerciseId = resolveAppendedExerciseIdFromQuery();
+    const editingSessionSnapshot = loadPlanEditingSession();
+
+    if (!selectedExerciseId) {
+      return;
+    }
+
+    if (!editingSessionSnapshot || !latestPlanId.value || editingSessionSnapshot.latestPlanId !== latestPlanId.value) {
+      clearPlanEditingSession();
+      ElMessage.warning('未找到可恢复的编辑草稿，请重新进入编辑模式后再添加动作');
+      await clearExerciseSelectionQueryState();
+      return;
+    }
+
+    const exercises = await fetchExercises();
+    const selectedExercise = exercises.find((item) => item.id === selectedExerciseId);
+
+    if (!selectedExercise) {
+      clearPlanEditingSession();
+      ElMessage.warning('未找到要添加的动作，请重新选择');
+      await clearExerciseSelectionQueryState();
+      return;
+    }
+
+    goalText.value = editingSessionSnapshot.goalText || goalText.value;
+    restoreEditingPlanDraft(editingSessionSnapshot.editablePlanDraft);
+    appendEditingPlanExercise(createPlanExerciseFromExerciseLibraryItem(selectedExercise));
+    clearPlanEditingSession();
+    planSource.value = 'edited';
+    ElMessage.success(`已添加动作“${selectedExercise.name}”`);
+    await clearExerciseSelectionQueryState();
   };
 
   const saveEditedPlan = async (): Promise<void> => {
@@ -627,7 +693,7 @@ export const usePlanGenerator = () => {
       goalText.value = targetPlan.goalText;
       applyPlanState(targetPlan.planJson, 'restored');
       errorMessage.value = '';
-      if (!isReturningFromExerciseReplacement()) {
+      if (!isReturningFromExerciseSelection()) {
         ElMessage.success('已恢复历史计划，可直接开始训练或调整目标后重新生成');
       }
       return true;
@@ -674,6 +740,7 @@ export const usePlanGenerator = () => {
     }
 
     await applyReplacementExerciseFromRoute();
+    await applyAppendedExerciseFromRoute();
   });
 
   onBeforeUnmount(() => {
@@ -705,6 +772,7 @@ export const usePlanGenerator = () => {
     savingEdits,
     sourceLabel,
     sourceTagClass,
+    startAppendingExerciseToPlan,
     startExerciseReplacement,
     startWorkout,
     updateDraftDuration: updateEditingPlanDuration,

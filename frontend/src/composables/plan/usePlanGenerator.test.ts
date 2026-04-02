@@ -162,6 +162,21 @@ const replacementExercise: ExerciseItem = {
   tags: ['core']
 };
 
+const appendedExercise: ExerciseItem = {
+  id: 'side-plank',
+  name: '侧桥',
+  bodyPart: 'core',
+  level: 'beginner',
+  equipment: 'none',
+  durationMinutes: 6,
+  sets: 3,
+  reps: '左右各 30 秒',
+  description: '强化侧向核心稳定。',
+  instructions: ['保持肩、髋、踝在一条直线。'],
+  tips: ['避免塌腰。'],
+  tags: ['core']
+};
+
 describe('usePlanGenerator', () => {
   beforeEach(() => {
     mountedCallbacks.length = 0;
@@ -177,7 +192,7 @@ describe('usePlanGenerator', () => {
       plan: samplePlan,
       source: 'template'
     });
-    fetchExercises.mockResolvedValue([replacementExercise]);
+    fetchExercises.mockResolvedValue([replacementExercise, appendedExercise]);
     syncPlansForUser.mockResolvedValue(undefined);
     messageBoxConfirm.mockResolvedValue(undefined);
     plansRepositoryMocks.loadLatestPlan.mockResolvedValue(null);
@@ -310,6 +325,33 @@ describe('usePlanGenerator', () => {
     expect(sessionStorage.getItem('fitmirror_plan_editing_session')).toContain('"latestPlanId":22');
   });
 
+  it('starts the append exercise flow with a clear route payload', async () => {
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    generator.enterEditMode();
+    await generator.startAppendingExerciseToPlan();
+
+    expect(routerPush).toHaveBeenCalledWith({
+      name: 'Exercises',
+      query: {
+        mode: 'appendPlanExercise',
+        planId: '22'
+      }
+    });
+    expect(sessionStorage.getItem('fitmirror_plan_editing_session')).toContain('"latestPlanId":22');
+  });
+
   it('restores the editing draft and applies the selected replacement exercise from route query', async () => {
     sessionStorage.setItem(
       'fitmirror_plan_editing_session',
@@ -339,6 +381,45 @@ describe('usePlanGenerator', () => {
     expect(generator.editablePlanDraft.value?.exercises[1]).toMatchObject({
       name: '死虫式',
       reps: '左右各 12 次',
+      restSeconds: 20
+    });
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'PlanGenerator',
+      query: {
+        planId: '22'
+      }
+    });
+  });
+
+  it('restores the editing draft and appends the selected exercise from route query', async () => {
+    sessionStorage.setItem(
+      'fitmirror_plan_editing_session',
+      JSON.stringify({
+        latestPlanId: 22,
+        goalText: '核心训练',
+        editablePlanDraft: {
+          title: samplePlan.title,
+          level: samplePlan.level,
+          durationMinutes: samplePlan.durationMinutes,
+          summary: samplePlan.summary,
+          exercises: samplePlan.exercises
+        }
+      })
+    );
+    routeMock.query = {
+      planId: '22',
+      appendExerciseId: 'side-plank'
+    };
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    expect(fetchExercises).toHaveBeenCalled();
+    expect(generator.isEditingPlan.value).toBe(true);
+    expect(generator.editablePlanDraft.value?.exercises).toHaveLength(3);
+    expect(generator.editablePlanDraft.value?.exercises[2]).toMatchObject({
+      name: '侧桥',
+      reps: '左右各 30 秒',
       restSeconds: 20
     });
     expect(routerReplace).toHaveBeenCalledWith({

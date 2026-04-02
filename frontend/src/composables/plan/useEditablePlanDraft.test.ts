@@ -57,6 +57,26 @@ describe('useEditablePlanDraft', () => {
     expect(editor.hasUnsavedEditingPlanChanges.value).toBe(true);
   });
 
+  it('appends a new exercise to the editing draft', () => {
+    const editor = useEditablePlanDraft({ notifyWarning });
+
+    editor.startEditingPlan(samplePlan);
+    editor.appendEditingPlanExercise({
+      name: '侧桥',
+      durationSeconds: 30,
+      restSeconds: 20,
+      instruction: '保持身体侧向稳定。'
+    });
+
+    expect(editor.editablePlanDraft.value?.exercises).toHaveLength(3);
+    expect(editor.editablePlanDraft.value?.exercises[2]).toMatchObject({
+      name: '侧桥',
+      durationSeconds: 30,
+      restSeconds: 20
+    });
+    expect(editor.hasUnsavedEditingPlanChanges.value).toBe(true);
+  });
+
   it('prevents removing the last remaining exercise', () => {
     const editor = useEditablePlanDraft({ notifyWarning });
 
