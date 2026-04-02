@@ -31,6 +31,22 @@ export interface PlanEditingSessionSnapshot {
   editablePlanDraft: EditableTrainingPlanDraft;
 }
 
+export interface PlanExerciseReplacementSummary {
+  previousName: string;
+  nextName: string;
+}
+
+export interface PlanEditChangeSummary {
+  titleChanged: boolean;
+  durationChanged: boolean;
+  reordered: boolean;
+  addedExerciseNames: string[];
+  removedExerciseNames: string[];
+  replacedExercises: PlanExerciseReplacementSummary[];
+  nextDurationMinutes: number;
+  hasChanges: boolean;
+}
+
 export interface GeneratePlanPayload {
   plan: TrainingPlan;
   source?: PlanSource;
@@ -94,3 +110,4 @@ export interface SyncPlansRequest {
 export interface SyncPlansResult {
   plans: PlanSyncPayload[];
 }
+

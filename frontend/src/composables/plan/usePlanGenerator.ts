@@ -9,6 +9,7 @@ import { planSyncStateRepository, plansRepository } from '@/repositories';
 import { useAuthStore } from '@/store/auth';
 import type { PlanDisplaySource, PlanExercise, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { clearPlanEditingSession, loadPlanEditingSession, savePlanEditingSession } from '@/utils/plan-editing-session';
+import { buildPlanEditChangeSummary, buildPlanEditChangeSummaryMessage } from '@/utils/plan-edit-change-summary';
 import { createPlanExerciseFromExerciseLibraryItem } from '@/utils/plan-exercise-replacement';
 
 const cloneTrainingPlan = (plan: TrainingPlan): TrainingPlan => JSON.parse(JSON.stringify(plan)) as TrainingPlan;
@@ -459,6 +460,8 @@ export const usePlanGenerator = () => {
         throw new Error('当前计划不存在，请重新生成或恢复后再试');
       }
 
+      const planEditChangeSummary = buildPlanEditChangeSummary(existingPlan.planJson, validatedPlan);
+
       await syncPlansForUser(userId).catch(() => {
         ElMessage.warning('本地计划已更新，云端同步稍后重试');
       });
@@ -468,7 +471,7 @@ export const usePlanGenerator = () => {
       syncEditingPlanDraftAsSaved();
       applyPlanState(validatedPlan, 'edited');
       clearPlanEditingSession();
-      ElMessage.success('训练计划已更新');
+      ElMessage.success(buildPlanEditChangeSummaryMessage(planEditChangeSummary));
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存编辑内容失败，请稍后重试';
       errorMessage.value = message;
@@ -779,3 +782,4 @@ export const usePlanGenerator = () => {
     updateDraftTitle: updateEditingPlanTitle
   };
 };
+

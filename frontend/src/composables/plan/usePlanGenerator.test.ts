@@ -294,6 +294,7 @@ describe('usePlanGenerator', () => {
       durationMinutes: 15,
       exercises: [{ name: '登山跑' }]
     });
+    expect(messageSuccess).toHaveBeenCalledWith('训练计划已更新：已更新计划标题；已调整总时长为 15 分钟；已删除动作：“平板支撑”');
   });
 
   it('starts the exercise replacement flow with a clear route payload', async () => {
@@ -503,3 +504,4 @@ describe('usePlanGenerator', () => {
     expect(guardResult).toBe(false);
   });
 });
+
