@@ -18,6 +18,7 @@ import {
 import { buildWorkoutDayDetailViews } from '@/utils/workout-record-details';
 
 const MOCK_WRITE_GAP_MS = 900;
+const JUST_COMPLETED_BANNER_TITLE = '刚完成训练';
 
 export const useWorkoutLog = () => {
   const router = useRouter();
@@ -43,6 +44,36 @@ export const useWorkoutLog = () => {
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
   const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
   const heatmapRows = computed(() => buildHeatmapRows(dailyPoints.value));
+  const completedDateTarget = computed(() => resolveCompletedDateTarget());
+  const completedPlanTarget = computed(() => resolveCompletedPlanTarget());
+  const completionBanner = computed(() => {
+    const completedDate = completedDateTarget.value;
+    if (!completedDate) {
+      return {
+        visible: false,
+        title: JUST_COMPLETED_BANNER_TITLE,
+        description: '',
+        actionLabel: '查看当天详情'
+      };
+    }
+
+    const hasRecord = records.value.some((record) => record.date === completedDate);
+    if (!hasRecord) {
+      return {
+        visible: true,
+        title: JUST_COMPLETED_BANNER_TITLE,
+        description: `${completedDate} 的训练记录还在同步中，稍后可再次打开当天详情确认结果。`,
+        actionLabel: '重新加载'
+      };
+    }
+
+    return {
+      visible: true,
+      title: JUST_COMPLETED_BANNER_TITLE,
+      description: `${completedDate} 的训练结果已回到记录页，下面会优先展示刚完成的内容。`,
+      actionLabel: '查看当天详情'
+    };
+  });
   const periodTitle = computed(() => (selectedPeriod.value === 'month' ? '近 30 天' : '近 6 周'));
   const dateRangeLabel = computed(() => {
     if (dailyPoints.value.length === 0) {
@@ -168,10 +199,12 @@ export const useWorkoutLog = () => {
 
     try {
       const details = await workoutRecordsRepository.listRecordsByDay(userId, date);
-      const planIds = [...new Set(details.map((record) => record.planId).filter((planId): planId is number => typeof planId === 'number' && planId > 0))];
+      const planIds = [
+        ...new Set(details.map((record) => record.planId).filter((planId): planId is number => typeof planId === 'number' && planId > 0))
+      ];
       const linkedPlans = await Promise.all(planIds.map((planId) => plansRepository.getPlanById(userId, planId)));
       const plansById = new Map(linkedPlans.filter((plan): plan is NonNullable<typeof plan> => Boolean(plan)).map((plan) => [plan.id as number, plan]));
-      const detailViews = prioritizeCompletedPlanRecord(buildWorkoutDayDetailViews(details, plansById));
+      const detailViews = markJustCompletedRecord(prioritizeCompletedPlanRecord(buildWorkoutDayDetailViews(details, plansById)));
       if (requestToken !== detailRequestToken.value) {
         return;
       }
@@ -220,7 +253,7 @@ export const useWorkoutLog = () => {
   };
 
   const prioritizeCompletedPlanRecord = (details: WorkoutDayDetailView[]): WorkoutDayDetailView[] => {
-    const completedPlanId = resolveCompletedPlanTarget();
+    const completedPlanId = completedPlanTarget.value;
     if (!completedPlanId || details.length < 2) {
       return details;
     }
@@ -234,6 +267,26 @@ export const useWorkoutLog = () => {
     const [targetDetail] = prioritized.splice(targetIndex, 1);
     prioritized.unshift(targetDetail);
     return prioritized;
+  };
+
+  const markJustCompletedRecord = (details: WorkoutDayDetailView[]): WorkoutDayDetailView[] => {
+    const completedDate = completedDateTarget.value;
+    if (!completedDate || selectedDate.value !== completedDate) {
+      return details.map((detail) => ({ ...detail, isJustCompleted: false }));
+    }
+
+    const completedPlanId = completedPlanTarget.value;
+    let highlightedIndex = -1;
+    if (completedPlanId) {
+      highlightedIndex = details.findIndex((detail) => detail.planId === completedPlanId);
+    } else if (details.length === 1) {
+      highlightedIndex = 0;
+    }
+
+    return details.map((detail, index) => ({
+      ...detail,
+      isJustCompleted: index === highlightedIndex
+    }));
   };
 
   const openCompletedDateDetailIfNeeded = async (): Promise<boolean> => {
@@ -293,8 +346,25 @@ export const useWorkoutLog = () => {
     await refreshRecords();
   });
 
+  const handleCompletionBannerAction = async (): Promise<void> => {
+    const completedDate = completedDateTarget.value;
+    if (!completedDate) {
+      return;
+    }
+
+    const hasRecord = records.value.some((record) => record.date === completedDate);
+    if (!hasRecord) {
+      await refreshRecords();
+      return;
+    }
+
+    await openDayDetail(completedDate);
+  };
+
   return {
     dateRangeLabel,
+    completionBanner,
+    completedDateTarget,
     dayDetails,
     detailError,
     detailLoading,
@@ -302,6 +372,7 @@ export const useWorkoutLog = () => {
     goHome,
     goToPlanGenerator,
     heatmapRows,
+    handleCompletionBannerAction,
     isMockWriting,
     mockAddRecord,
     openDayDetail,

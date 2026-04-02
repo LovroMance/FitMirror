@@ -8,6 +8,16 @@
       </header>
 
       <el-card shadow="never" class="fm-card workout-log__card">
+        <div v-if="completionBanner.visible" class="workout-log__completion-banner">
+          <div class="workout-log__completion-copy">
+            <p class="workout-log__completion-eyebrow">{{ completionBanner.title }}</p>
+            <p class="workout-log__completion-description">{{ completionBanner.description }}</p>
+          </div>
+          <el-button class="workout-log__completion-action" @click="handleCompletionBannerAction">
+            {{ completionBanner.actionLabel }}
+          </el-button>
+        </div>
+        <div v-if="completionBanner.visible" class="workout-log__completion-divider"></div>
         <div class="workout-log__summary-grid">
           <div>
             <p class="workout-log__metric-label">训练天数</p>
@@ -141,6 +151,9 @@
     <el-dialog v-model="detailVisible" title="当日训练详情" width="92%" align-center>
       <template v-if="selectedDate">
         <p class="workout-log__detail-date">{{ selectedDate }}</p>
+        <p v-if="completedDateTarget === selectedDate" class="workout-log__detail-focus">
+          已为你标出刚完成训练对应的记录卡片
+        </p>
         <StatePanel
           v-if="detailLoading"
           variant="loading"
@@ -161,12 +174,14 @@
               v-for="detail in dayDetails"
               :key="`${detail.id ?? detail.date}-${detail.duration}`"
               class="workout-log__detail-item"
+              :class="{ 'is-just-completed': detail.isJustCompleted }"
             >
               <div class="workout-log__detail-copy">
                 <div class="workout-log__detail-top">
-                  <span>{{ detail.completed ? '已完成' : '未完成' }}</span>
+                  <span>{{ detail.isJustCompleted ? '刚完成' : detail.completed ? '已完成' : '未完成' }}</span>
                   <strong>{{ detail.duration }} 分钟</strong>
                 </div>
+                <p v-if="detail.isJustCompleted" class="workout-log__detail-badge">本次训练结果</p>
                 <p class="workout-log__detail-source">来源：{{ detail.sourceLabel }}</p>
                 <template v-if="detail.canViewPlan">
                   <p class="workout-log__detail-plan">{{ getWorkoutDayDetailPlanLabel(detail) }}</p>
@@ -196,6 +211,8 @@ import { getWorkoutDayDetailHint, getWorkoutDayDetailPlanLabel } from '@/utils/w
 
 const {
   dateRangeLabel,
+  completionBanner,
+  completedDateTarget,
   dayDetails,
   detailError,
   detailLoading,
@@ -203,6 +220,7 @@ const {
   goHome,
   goToPlanGenerator,
   heatmapRows,
+  handleCompletionBannerAction,
   isMockWriting,
   mockAddRecord,
   openDayDetail,
@@ -271,6 +289,44 @@ const {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.workout-log__completion-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.workout-log__completion-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-log__completion-eyebrow {
+  margin: 0;
+  color: #8ff0bc;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workout-log__completion-description {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.workout-log__completion-action {
+  justify-self: end;
+}
+
+.workout-log__completion-divider {
+  height: 1px;
+  margin: 14px 0 2px;
+  background: linear-gradient(90deg, rgba(50, 213, 131, 0.48), rgba(255, 255, 255, 0.04));
 }
 
 .workout-log__metric-label {
@@ -450,6 +506,13 @@ const {
   color: var(--color-text-secondary);
 }
 
+.workout-log__detail-focus {
+  margin: 8px 0 0;
+  color: #8ff0bc;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .workout-log__detail-list {
   margin: 12px 0 14px;
   padding: 0;
@@ -465,6 +528,12 @@ const {
   border-radius: 12px;
   background: rgba(21, 24, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-log__detail-item.is-just-completed {
+  background: linear-gradient(180deg, rgba(50, 213, 131, 0.16), rgba(21, 24, 28, 0.92));
+  border-color: rgba(50, 213, 131, 0.5);
+  box-shadow: 0 10px 24px rgba(6, 14, 9, 0.3);
 }
 
 .workout-log__detail-copy {
@@ -502,6 +571,18 @@ const {
   padding-right: 0;
 }
 
+.workout-log__detail-badge {
+  width: fit-content;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(143, 240, 188, 0.14);
+  color: #b8ffd7;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .workout-log__detail-total {
   margin: 0;
   color: var(--color-primary);
@@ -530,6 +611,14 @@ const {
 
   .workout-log__summary-grid {
     gap: 8px;
+  }
+
+  .workout-log__completion-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .workout-log__completion-action {
+    justify-self: stretch;
   }
 
   .workout-log__trend-grid {

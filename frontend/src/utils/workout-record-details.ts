@@ -19,6 +19,7 @@ export const buildWorkoutDayDetailViews = (
       date: record.date,
       duration: record.duration,
       completed: record.completed,
+      isJustCompleted: false,
       sourceType: toSourceType(record),
       sourceLabel: toSourceLabel(record),
       planId,

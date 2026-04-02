@@ -133,6 +133,8 @@ describe('useWorkoutLog', () => {
     expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
     expect(log.selectedDate.value).toBe('2026-04-02');
     expect(log.detailVisible.value).toBe(true);
+    expect(log.completionBanner.value.visible).toBe(true);
+    expect(log.completionBanner.value.actionLabel).toBe('查看当天详情');
     expect(workoutRecordsRepositoryMocks.listRecordsByDay).toHaveBeenCalledWith(7, '2026-04-02');
     expect(messageSuccess).toHaveBeenCalledWith('本次训练已写入今日热图，已为你展开当天详情');
   });
@@ -145,6 +147,8 @@ describe('useWorkoutLog', () => {
 
     expect(log.selectedDate.value).toBe('2026-04-02');
     expect(log.detailVisible.value).toBe(false);
+    expect(log.completionBanner.value.visible).toBe(true);
+    expect(log.completionBanner.value.actionLabel).toBe('重新加载');
     expect(workoutRecordsRepositoryMocks.listRecordsByDay).not.toHaveBeenCalled();
     expect(messageWarning).toHaveBeenCalledWith('本次训练记录正在同步，请稍后重试查看当天详情');
   });
@@ -219,6 +223,72 @@ describe('useWorkoutLog', () => {
     await mountedCallbacks[0]?.();
 
     expect(log.dayDetails.value[0]?.planId).toBe(2);
+    expect(log.dayDetails.value[0]?.isJustCompleted).toBe(true);
     expect(log.dayDetails.value[1]?.planId).toBe(1);
+    expect(log.dayDetails.value[1]?.isJustCompleted).toBe(false);
+  });
+
+  it('opens the completed date detail from the banner action when the record already exists', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        planId: 2,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    plansRepositoryMocks.getPlanById.mockResolvedValue({
+      id: 2,
+      userId: 7,
+      clientPlanId: 'plan-2',
+      goalText: '核心训练',
+      createdAt: '2026-04-02T09:00:00.000Z',
+      updatedAt: '2026-04-02T09:00:00.000Z',
+      planJson: {
+        title: '核心激活',
+        level: 'beginner',
+        durationMinutes: 18,
+        summary: '激活核心',
+        exercises: []
+      }
+    });
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockClear();
+
+    await log.handleCompletionBannerAction();
+
+    expect(workoutRecordsRepositoryMocks.listRecordsByDay).toHaveBeenCalledWith(7, '2026-04-02');
+  });
+
+  it('refreshes records from the banner action when the completed record is still syncing', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([]);
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockClear();
+
+    await log.handleCompletionBannerAction();
+
+    expect(workoutRecordsRepositoryMocks.listRecordsByDateRange).toHaveBeenCalledTimes(1);
   });
 });

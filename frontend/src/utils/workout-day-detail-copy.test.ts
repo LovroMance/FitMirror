@@ -7,6 +7,7 @@ const createDetail = (overrides: Partial<WorkoutDayDetailView>): WorkoutDayDetai
   date: '2026-04-02',
   duration: 18,
   completed: true,
+  isJustCompleted: false,
   sourceType: 'manual',
   sourceLabel: '手动记录',
   planId: null,

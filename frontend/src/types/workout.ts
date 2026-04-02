@@ -31,6 +31,7 @@ export interface WorkoutDayDetailView {
   date: string;
   duration: number;
   completed: boolean;
+  isJustCompleted: boolean;
   sourceType: WorkoutRecordSourceType;
   sourceLabel: string;
   planId: number | null;
