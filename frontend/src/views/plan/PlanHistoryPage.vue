@@ -2,6 +2,10 @@
   <div class="plan-history">
     <main class="plan-history__screen">
       <header class="plan-history__header">
+        <div class="plan-history__header-top">
+          <el-button text class="plan-history__top-back" @click="goToPlanGenerator">返回</el-button>
+          <el-button text class="plan-history__home-link" @click="goHome">首页</el-button>
+        </div>
         <p class="plan-history__eyebrow">Plan History</p>
         <h1 class="plan-history__title">历史训练计划</h1>
         <p class="plan-history__description">回看你生成过的训练计划，并从历史方案直接继续训练。</p>
@@ -146,10 +150,6 @@
         </template>
       </template>
 
-      <div class="plan-history__footer-actions">
-        <el-button text class="plan-history__back" @click="goToPlanGenerator">返回计划页</el-button>
-        <el-button text class="plan-history__back" @click="goHome">返回首页</el-button>
-      </div>
     </main>
   </div>
 </template>
@@ -203,6 +203,26 @@ const {
 .plan-history__header {
   display: grid;
   gap: 10px;
+}
+
+.plan-history__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-history__top-back,
+.plan-history__home-link {
+  padding-left: 0;
+}
+
+.plan-history__top-back {
+  color: var(--color-text-secondary);
+}
+
+.plan-history__home-link {
+  color: var(--color-primary);
 }
 
 .plan-history__eyebrow {
@@ -416,17 +436,6 @@ const {
 .plan-history__exercise-item small {
   color: var(--color-text-muted);
   font-size: 12px;
-}
-
-.plan-history__footer-actions {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.plan-history__back {
-  padding-left: 0;
-  color: var(--color-text-secondary);
 }
 
 @media (max-width: 390px) {

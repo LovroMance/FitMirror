@@ -2,6 +2,10 @@
   <div class="plan-generator">
     <main class="plan-generator__screen">
       <header class="plan-generator__header">
+        <div class="plan-generator__header-top">
+          <el-button text class="plan-generator__top-back" @click="goHome">返回</el-button>
+          <el-button text class="plan-generator__history-link" @click="goToPlanHistory">历史计划</el-button>
+        </div>
         <p class="plan-generator__eyebrow">AI Plan</p>
         <h1 class="plan-generator__title">生成今日训练计划</h1>
         <p class="plan-generator__description">输入目标后即可获得可执行的训练建议，并自动保存最近一次结果。</p>
@@ -28,8 +32,6 @@
           >
             {{ loading ? '生成中...' : '生成计划' }}
           </el-button>
-          <el-button text class="plan-generator__history-link" @click="goToPlanHistory">查看历史计划</el-button>
-          <el-button text class="plan-generator__back" @click="goHome">返回首页</el-button>
         </div>
 
         <div class="plan-generator__status-wrap">
@@ -305,6 +307,18 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   gap: 10px;
 }
 
+.plan-generator__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-generator__top-back {
+  padding-left: 0;
+  color: var(--color-text-secondary);
+}
+
 .plan-generator__eyebrow {
   margin: 0;
   color: var(--color-primary);
@@ -340,10 +354,6 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   flex: 1;
   height: 56px;
   border-radius: 18px;
-}
-
-.plan-generator__back {
-  color: var(--color-text-secondary);
 }
 
 .plan-generator__history-link {
@@ -684,7 +694,6 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
     align-items: stretch;
   }
 
-  .plan-generator__back,
   .plan-generator__history-link,
   .plan-generator__library-link,
   .plan-generator__edit-link,

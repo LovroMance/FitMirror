@@ -2,6 +2,9 @@
   <div class="exercises-view">
     <main class="exercises-view__screen">
       <header class="exercises-view__header">
+        <div class="exercises-view__header-top">
+          <el-button text class="exercises-view__top-back" @click="backFromExerciseLibrary">返回</el-button>
+        </div>
         <p class="exercises-view__eyebrow">Exercise Library</p>
         <h1 class="exercises-view__title">动作库</h1>
         <p class="exercises-view__description">按目标、部位和难度快速找到今天适合练的动作。</p>
@@ -160,9 +163,6 @@
         </el-card>
       </section>
 
-      <el-button text class="exercises-view__back" @click="backFromExerciseLibrary">
-        {{ isSelectingPlanExercise ? '返回计划页' : '返回首页' }}
-      </el-button>
     </main>
 
     <el-dialog v-model="detailVisible" title="动作详情" width="92%" align-center class="exercises-view__dialog">
@@ -260,6 +260,16 @@ const {
 .exercises-view__header {
   display: grid;
   gap: 10px;
+}
+
+.exercises-view__header-top {
+  display: flex;
+  align-items: center;
+}
+
+.exercises-view__top-back {
+  padding-left: 0;
+  color: var(--color-text-secondary);
 }
 
 .exercises-view__eyebrow {
@@ -472,11 +482,6 @@ const {
 .exercises-view__dialog-select {
   min-height: 42px;
   border-radius: 14px;
-}
-
-.exercises-view__back {
-  align-self: flex-start;
-  color: var(--color-text-secondary);
 }
 
 .exercises-view__dialog-title {

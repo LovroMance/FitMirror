@@ -2,6 +2,9 @@
   <div class="workout-log">
     <main class="workout-log__screen">
       <header class="workout-log__header">
+        <div class="workout-log__header-top">
+          <el-button text class="workout-log__top-back" @click="goHome">返回</el-button>
+        </div>
         <p class="workout-log__eyebrow">Workout Log</p>
         <h1 class="workout-log__title">训练记录热图</h1>
         <p class="workout-log__description">查看最近六周训练活跃度，并可点击日期查看详细记录。</p>
@@ -106,7 +109,7 @@
           v-else-if="recordsState === 'empty'"
           variant="empty"
           title="还没有训练记录"
-          description="先完成一次真实训练，或在下方手动补录一条记录。"
+          description="先完成一次真实训练，热图就会自动亮起来。"
           action-label="去开始训练"
           @action="goToPlanGenerator"
         />
@@ -127,30 +130,6 @@
         </div>
       </el-card>
 
-      <el-card shadow="never" class="fm-card workout-log__card">
-        <div class="workout-log__card-head">
-          <h2>手动补录</h2>
-          <p>真实训练完成会自动写入热图；这里保留一个最小表单用于补记训练时长。</p>
-        </div>
-        <div class="workout-log__manual-form">
-          <label class="workout-log__manual-field">
-            <span>训练时长（分钟）</span>
-            <el-input-number
-              v-model="manualRecordDuration"
-              :min="1"
-              :max="300"
-              :step="1"
-              controls-position="right"
-              class="workout-log__manual-input"
-            />
-          </label>
-          <el-button class="fm-button-primary workout-log__manual-submit" :loading="isMockWriting" :disabled="isMockWriting" @click="submitManualRecord">
-            {{ isMockWriting ? '补录中...' : '提交补录' }}
-          </el-button>
-        </div>
-      </el-card>
-
-      <el-button text class="workout-log__back" @click="goHome">返回首页</el-button>
     </main>
 
     <el-dialog v-model="detailVisible" title="当日训练详情" width="92%" align-center>
@@ -251,8 +230,6 @@ const {
   goToPlanGenerator,
   heatmapRows,
   handleCompletionBannerAction,
-  isMockWriting,
-  manualRecordDuration,
   openDayDetail,
   openRelatedPlan,
   periodTitle,
@@ -263,7 +240,6 @@ const {
   saveEditedRecord,
   selectedPeriod,
   selectedDate,
-  submitManualRecord,
   summary,
   startEditingRecord,
   trendSummary,
@@ -293,6 +269,16 @@ const {
 .workout-log__header {
   display: grid;
   gap: 10px;
+}
+
+.workout-log__header-top {
+  display: flex;
+  align-items: center;
+}
+
+.workout-log__top-back {
+  padding-left: 0;
+  color: var(--color-text-secondary);
 }
 
 .workout-log__eyebrow {
@@ -522,38 +508,6 @@ const {
   background: #6ee7a8;
 }
 
-.workout-log__manual-form {
-  margin-top: 16px;
-  display: flex;
-  align-items: end;
-  gap: 12px;
-}
-
-.workout-log__manual-field {
-  flex: 1;
-  display: grid;
-  gap: 6px;
-}
-
-.workout-log__manual-field span {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-}
-
-.workout-log__manual-input {
-  width: 100%;
-}
-
-.workout-log__manual-submit {
-  min-height: 40px;
-  border-radius: 14px;
-}
-
-.workout-log__back {
-  align-self: flex-start;
-  color: var(--color-text-secondary);
-}
-
 .workout-log__detail-date {
   margin: 0;
   color: var(--color-text-secondary);
@@ -720,11 +674,6 @@ const {
 
   .workout-log__cell {
     border-radius: 7px;
-  }
-
-  .workout-log__manual-form {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .workout-log__title {

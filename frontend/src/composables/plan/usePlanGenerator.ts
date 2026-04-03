@@ -10,6 +10,11 @@ import { useAuthStore } from '@/store/auth';
 import type { PlanDisplaySource, PlanEditChangeSummary, PlanExercise, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { clearPlanEditingSession, loadPlanEditingSession, savePlanEditingSession } from '@/utils/plan-editing-session';
 import {
+  clearPlanGenerationSession,
+  loadPlanGenerationSession,
+  savePlanGenerationSession
+} from '@/utils/plan-generation-session';
+import {
   buildPlanEditChangeSummary,
   buildPlanEditChangeSummaryHighlights,
   buildPlanEditChangeSummaryMessage,
@@ -72,6 +77,7 @@ export const usePlanGenerator = () => {
   const generationRound = ref(0);
   const skipUnsavedChangesPromptOnce = ref(false);
   const lastSavedPlanEditSummary = ref<PlanEditChangeSummary | null>(null);
+  let generationSessionPollTimer: ReturnType<typeof setInterval> | null = null;
 
   const {
     appendEditingPlanExercise,
@@ -231,6 +237,112 @@ export const usePlanGenerator = () => {
     const rawPlanId = Array.isArray(route.query.planId) ? route.query.planId[0] : route.query.planId;
     const planId = Number(rawPlanId);
     return Number.isFinite(planId) && planId > 0 ? planId : null;
+  };
+
+  const shouldAutoGenerateFromQuery = (): boolean => {
+    const rawAutoGenerate = Array.isArray(route.query.autoGenerate) ? route.query.autoGenerate[0] : route.query.autoGenerate;
+    return rawAutoGenerate === '1';
+  };
+
+  const clearAutoGenerateQueryFlag = async (): Promise<void> => {
+    if (!shouldAutoGenerateFromQuery()) {
+      return;
+    }
+
+    const nextQuery = { ...route.query };
+    delete nextQuery.autoGenerate;
+
+    await router.replace({
+      name: 'PlanGenerator',
+      query: nextQuery
+    });
+  };
+
+  const stopGenerationSessionPolling = (): void => {
+    if (generationSessionPollTimer === null) {
+      return;
+    }
+
+    clearInterval(generationSessionPollTimer);
+    generationSessionPollTimer = null;
+  };
+
+  const persistPlanGenerationSession = (
+    userId: number,
+    status: 'pending' | 'completed' | 'error',
+    nextProgressState: PlanStreamEvent['type'] | null,
+    nextErrorMessage = ''
+  ): void => {
+    savePlanGenerationSession({
+      userId,
+      goalText: goalText.value.trim(),
+      status,
+      progressState: nextProgressState,
+      errorMessage: nextErrorMessage,
+      updatedAt: new Date().toISOString()
+    });
+  };
+
+  const syncPlanGenerationSessionState = async (): Promise<boolean> => {
+    const userId = currentUserId.value;
+    if (!userId) {
+      stopGenerationSessionPolling();
+      return false;
+    }
+
+    const session = loadPlanGenerationSession();
+    if (!session || session.userId !== userId) {
+      stopGenerationSessionPolling();
+      return false;
+    }
+
+    if (session.goalText.trim()) {
+      goalText.value = session.goalText;
+    }
+
+    if (session.status === 'pending') {
+      loading.value = true;
+      errorMessage.value = '';
+      progressState.value = session.progressState ?? 'queued';
+      return true;
+    }
+
+    stopGenerationSessionPolling();
+    loading.value = false;
+
+    if (session.status === 'error') {
+      progressState.value = session.progressState;
+      errorMessage.value = session.errorMessage || '计划生成失败，请稍后重试';
+      return false;
+    }
+
+    progressState.value = 'completed';
+    errorMessage.value = '';
+    clearPlanGenerationSession();
+    await restoreLatestPlan();
+    return false;
+  };
+
+  const resumePendingGenerationIfNeeded = async (): Promise<boolean> => {
+    const userId = currentUserId.value;
+    if (!userId) {
+      return false;
+    }
+
+    const session = loadPlanGenerationSession();
+    if (!session || session.userId !== userId || session.status !== 'pending') {
+      return false;
+    }
+
+    const resumed = await syncPlanGenerationSessionState();
+    if (!resumed) {
+      return false;
+    }
+
+    generationSessionPollTimer = setInterval(() => {
+      void syncPlanGenerationSessionState();
+    }, 1000);
+    return true;
   };
 
   const resolveReplacementExerciseIdFromQuery = (): string | null => {
@@ -501,7 +613,7 @@ export const usePlanGenerator = () => {
     }
   };
 
-  const handleGenerate = async (): Promise<void> => {
+  const handleGenerate = async (options?: { skipUnsavedChangesPrompt?: boolean }): Promise<void> => {
     if (loading.value || deleting.value || savingEdits.value) {
       return;
     }
@@ -517,10 +629,11 @@ export const usePlanGenerator = () => {
       return;
     }
 
-    if (!(await confirmDiscardUnsavedPlanChanges())) {
+    if (!options?.skipUnsavedChangesPrompt && !(await confirmDiscardUnsavedPlanChanges())) {
       return;
     }
 
+    stopGenerationSessionPolling();
     loading.value = true;
     errorMessage.value = '';
     progressState.value = 'queued';
@@ -529,6 +642,7 @@ export const usePlanGenerator = () => {
     clearLastSavedPlanEditSummary();
     const currentRound = generationRound.value + 1;
     generationRound.value = currentRound;
+    persistPlanGenerationSession(userId, 'pending', 'queued');
 
     try {
       const streamed = await generatePlanStream(
@@ -539,6 +653,7 @@ export const usePlanGenerator = () => {
           }
 
           progressState.value = event.type;
+          persistPlanGenerationSession(userId, 'pending', event.type);
         },
         { timeoutMs: 12000 }
       );
@@ -565,6 +680,7 @@ export const usePlanGenerator = () => {
 
         applyPlanState(fallback.plan, fallback.source ?? 'template');
         progressState.value = 'completed';
+        persistPlanGenerationSession(userId, 'pending', 'completed');
         ElMessage.warning('已自动切换到稳定生成通道');
       } catch (error) {
         if (currentRound !== generationRound.value) {
@@ -573,6 +689,7 @@ export const usePlanGenerator = () => {
 
         const message = error instanceof Error ? error.message : '计划生成失败，请稍后重试';
         errorMessage.value = message;
+        persistPlanGenerationSession(userId, 'error', progressState.value, message);
         ElMessage.error(message);
         loading.value = false;
         return;
@@ -600,6 +717,7 @@ export const usePlanGenerator = () => {
 
       latestPlanId.value = syncedPlan?.id ?? saved.id ?? null;
       progressState.value = 'completed';
+      persistPlanGenerationSession(userId, 'completed', 'completed');
       ElMessage.success('计划已生成并保存');
     } catch (error) {
       if (currentRound !== generationRound.value) {
@@ -608,6 +726,7 @@ export const usePlanGenerator = () => {
 
       const message = error instanceof Error ? error.message : '计划保存失败，请稍后重试';
       errorMessage.value = message;
+      persistPlanGenerationSession(userId, 'error', progressState.value, message);
       ElMessage.error(message);
     } finally {
       if (currentRound === generationRound.value) {
@@ -762,17 +881,29 @@ export const usePlanGenerator = () => {
       goalText.value = goalFromQuery;
     }
 
+    const autoGenerateFromQuery = shouldAutoGenerateFromQuery();
+    if (autoGenerateFromQuery) {
+      await clearAutoGenerateQueryFlag();
+    }
+
     const restoredFromHistory = await restorePlanFromHistory();
-    if (!restoredFromHistory) {
+    const resumedPendingGeneration = !restoredFromHistory ? await resumePendingGenerationIfNeeded() : false;
+
+    if (!restoredFromHistory && !resumedPendingGeneration && !autoGenerateFromQuery) {
       await restoreLatestPlan();
     }
 
     await applyReplacementExerciseFromRoute();
     await applyAppendedExerciseFromRoute();
+
+    if (!restoredFromHistory && autoGenerateFromQuery && !resumedPendingGeneration && goalText.value.trim()) {
+      await handleGenerate({ skipUnsavedChangesPrompt: true });
+    }
   });
 
   onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    stopGenerationSessionPolling();
   });
 
   return {

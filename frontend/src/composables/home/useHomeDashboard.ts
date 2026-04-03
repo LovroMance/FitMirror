@@ -86,7 +86,7 @@ export const useHomeDashboard = () => {
       return;
     }
 
-    const query = goal ? { goal } : undefined;
+    const query = goal ? { goal, autoGenerate: '1' } : undefined;
     await safePush('PlanGenerator', query);
   };
 

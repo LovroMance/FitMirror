@@ -17,7 +17,6 @@ import {
 } from '@/utils/workout-heatmap';
 import { buildWorkoutDayDetailViews } from '@/utils/workout-record-details';
 
-const MOCK_WRITE_GAP_MS = 900;
 const JUST_COMPLETED_BANNER_TITLE = '刚完成训练';
 
 export const useWorkoutLog = () => {
@@ -37,14 +36,11 @@ export const useWorkoutLog = () => {
   const editingCompleted = ref(true);
   const detailSaving = ref(false);
   const detailCacheByDate = ref<Record<string, WorkoutDayDetailView[]>>({});
-  const isMockWriting = ref(false);
-  const lastMockWriteAt = ref(0);
   const detailRequestToken = ref(0);
   const hasHandledCompletedDate = ref(false);
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
   const selectedPeriod = ref<WorkoutPeriod>('week');
-  const manualRecordDuration = ref(20);
 
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
   const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
@@ -135,46 +131,6 @@ export const useWorkoutLog = () => {
       recordsState.value = 'error';
       recordsError.value = '暂时无法读取训练记录，请稍后重试。';
       ElMessage.error('读取训练记录失败，请稍后重试');
-    }
-  };
-
-  const mockAddRecord = async (duration: number): Promise<void> => {
-    if (!Number.isFinite(duration) || duration <= 0) {
-      ElMessage.warning('训练时长异常，请稍后重试');
-      return;
-    }
-
-    const now = Date.now();
-    if (isMockWriting.value || now - lastMockWriteAt.value < MOCK_WRITE_GAP_MS) {
-      ElMessage.warning('请稍后再试，避免重复写入');
-      return;
-    }
-
-    const userId = resolveUserId();
-    if (!userId) {
-      return;
-    }
-
-    isMockWriting.value = true;
-
-    try {
-      await workoutRecordsRepository.createRecord({
-        userId,
-        date: dayjs().format('YYYY-MM-DD'),
-        duration,
-        completed: true
-      });
-      await syncWorkoutRecordsForUser(userId).catch(() => {
-        ElMessage.warning('本地记录已保存，云端同步稍后重试');
-      });
-
-      await refreshRecords();
-      lastMockWriteAt.value = Date.now();
-      ElMessage.success(`已写入 ${duration} 分钟训练记录`);
-    } catch {
-      ElMessage.error('写入训练记录失败，请稍后重试');
-    } finally {
-      isMockWriting.value = false;
     }
   };
 
@@ -293,10 +249,6 @@ export const useWorkoutLog = () => {
     } finally {
       detailSaving.value = false;
     }
-  };
-
-  const submitManualRecord = async (): Promise<void> => {
-    await mockAddRecord(manualRecordDuration.value);
   };
 
   const deleteRecord = async (detail: WorkoutDayDetailView): Promise<void> => {
@@ -484,9 +436,6 @@ export const useWorkoutLog = () => {
     goToPlanGenerator,
     heatmapRows,
     handleCompletionBannerAction,
-    isMockWriting,
-    manualRecordDuration,
-    mockAddRecord,
     openDayDetail,
     openRelatedPlan,
     periodTitle,
@@ -500,7 +449,6 @@ export const useWorkoutLog = () => {
     selectedPeriod,
     selectedDate,
     summary,
-    submitManualRecord,
     startEditingRecord,
     trendSummary,
     changePeriod,

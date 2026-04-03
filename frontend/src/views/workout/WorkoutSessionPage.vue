@@ -2,6 +2,9 @@
   <div class="workout-session">
     <main class="workout-session__screen">
       <header class="workout-session__header">
+        <div class="workout-session__header-top">
+          <el-button text class="workout-session__top-back" @click="goBackToPlans">返回</el-button>
+        </div>
         <p class="workout-session__eyebrow">Workout Session</p>
         <h1 class="workout-session__title">开始本次训练</h1>
         <p class="workout-session__description">按当前计划依次完成动作，结束后会自动写入训练记录。</p>
@@ -54,7 +57,6 @@
             </ol>
             <div class="workout-session__actions">
               <el-button class="fm-button-primary workout-session__primary" @click="startSession">开始训练</el-button>
-              <el-button text class="workout-session__secondary" @click="goBackToPlans">返回计划页</el-button>
             </div>
           </template>
 
@@ -81,9 +83,6 @@
                 @click="advanceSession"
               >
                 {{ isLastExercise ? '完成训练' : '下一个动作' }}
-              </el-button>
-              <el-button text class="workout-session__secondary" :disabled="saving" @click="goBackToPlans">
-                稍后继续
               </el-button>
             </div>
           </template>
@@ -138,6 +137,16 @@ const {
 .workout-session__intro {
   display: grid;
   gap: 10px;
+}
+
+.workout-session__header-top {
+  display: flex;
+  align-items: center;
+}
+
+.workout-session__top-back {
+  padding-left: 0;
+  color: var(--color-text-secondary);
 }
 
 .workout-session__eyebrow {
@@ -241,11 +250,6 @@ const {
   width: 100%;
   min-height: 54px;
   border-radius: 18px;
-}
-
-.workout-session__secondary {
-  align-self: flex-start;
-  color: var(--color-text-secondary);
 }
 
 @media (max-width: 390px) {

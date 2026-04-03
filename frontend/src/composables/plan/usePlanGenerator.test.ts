@@ -182,6 +182,7 @@ describe('usePlanGenerator', () => {
     mountedCallbacks.length = 0;
     routeLeaveGuards.length = 0;
     vi.clearAllMocks();
+    vi.useRealTimers();
     vi.stubGlobal('sessionStorage', new SessionStorageMock());
     vi.stubGlobal('window', {
       addEventListener: vi.fn(),
@@ -251,6 +252,80 @@ describe('usePlanGenerator', () => {
       name: 'WorkoutSession',
       query: { planId: '22' }
     });
+  });
+
+  it('auto-generates immediately when entering from home with autoGenerate query', async () => {
+    routeMock.query = {
+      goal: '核心训练',
+      autoGenerate: '1'
+    };
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'PlanGenerator',
+      query: {
+        goal: '核心训练'
+      }
+    });
+    expect(generatePlanStream).toHaveBeenCalledWith(
+      '核心训练',
+      expect.any(Function),
+      { timeoutMs: 12000 }
+    );
+    expect(generator.goalText.value).toBe('核心训练');
+    expect(messageSuccess).toHaveBeenCalledWith('计划已生成并保存');
+  });
+
+  it('resumes the pending generation banner and restores the latest plan when the persisted session completes', async () => {
+    vi.useFakeTimers();
+    sessionStorage.setItem(
+      'fitmirror_plan_generation_session',
+      JSON.stringify({
+        userId: 7,
+        goalText: '核心训练',
+        status: 'pending',
+        progressState: 'llm_start',
+        errorMessage: '',
+        updatedAt: '2026-04-03T10:00:00.000Z'
+      })
+    );
+    plansRepositoryMocks.loadLatestPlan.mockResolvedValue({
+      id: 22,
+      userId: 7,
+      clientPlanId: 'plan-client-1',
+      goalText: '核心训练',
+      planJson: samplePlan,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:05:00.000Z'
+    });
+
+    const generator = usePlanGenerator();
+    await mountedCallbacks[0]?.();
+
+    expect(generator.loading.value).toBe(true);
+    expect(generator.progressLabel.value).toBe('AI 生成中...');
+    expect(generatePlanStream).not.toHaveBeenCalled();
+
+    sessionStorage.setItem(
+      'fitmirror_plan_generation_session',
+      JSON.stringify({
+        userId: 7,
+        goalText: '核心训练',
+        status: 'completed',
+        progressState: 'completed',
+        errorMessage: '',
+        updatedAt: '2026-04-03T10:00:02.000Z'
+      })
+    );
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(generator.loading.value).toBe(false);
+    expect(generator.plan.value).toEqual(samplePlan);
+    expect(generator.goalText.value).toBe('核心训练');
+    expect(sessionStorage.getItem('fitmirror_plan_generation_session')).toBeNull();
   });
 
   it('supports lightweight editing and saves back to the same plan id', async () => {
