@@ -22,7 +22,7 @@
   --color-text-tertiary: #4a4a50;
 
   --spacing-base: 16px;
-  --radius-card: 18px;
+  --radius-card: 14px;
   --radius-control: 16px;
   --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.28);
   --shadow-primary: 0 10px 24px rgba(50, 213, 131, 0.22);
@@ -49,3 +49,4 @@
   --el-mask-color: rgba(0, 0, 0, 0.72);
   --el-box-shadow-light: 0 12px 28px rgba(0, 0, 0, 0.26);
 }
+

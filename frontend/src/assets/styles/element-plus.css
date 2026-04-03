@@ -159,5 +159,6 @@
 }
 
 .fm-card .el-card__body {
-  padding-top: 0;
+  padding-top: 8px;
 }
+
