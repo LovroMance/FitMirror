@@ -40,15 +40,24 @@
       <el-card shadow="never" class="fm-card workout-log__card">
         <div class="workout-log__trend-grid">
           <div class="workout-log__trend-item">
-            <p class="workout-log__metric-label">{{ periodTitle }}训练天数</p>
+            <p class="workout-log__metric-label workout-log__metric-label--stacked">
+              <span>{{ periodTitle }}</span>
+              <span>训练天数</span>
+            </p>
             <p class="workout-log__metric-value">{{ trendSummary.trainingDays }}</p>
           </div>
           <div class="workout-log__trend-item">
-            <p class="workout-log__metric-label">{{ periodTitle }}总时长</p>
+            <p class="workout-log__metric-label workout-log__metric-label--stacked">
+              <span>{{ periodTitle }}</span>
+              <span>总时长</span>
+            </p>
             <p class="workout-log__metric-value">{{ trendSummary.totalDuration }} min</p>
           </div>
           <div class="workout-log__trend-item">
-            <p class="workout-log__metric-label">平均单次时长</p>
+            <p class="workout-log__metric-label workout-log__metric-label--stacked">
+              <span>平均</span>
+              <span>单次时长</span>
+            </p>
             <p class="workout-log__metric-value">{{ trendSummary.averageDuration }} min</p>
           </div>
         </div>
@@ -261,14 +270,14 @@ const {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px 20px 104px;
+  gap: 22px;
+  padding: 24px 20px 104px;
   background: linear-gradient(180deg, rgba(18, 26, 20, 0.95) 0%, rgba(11, 11, 14, 0.98) 30%), var(--color-bg-screen);
 }
 
 .workout-log__header {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .workout-log__header-top {
@@ -301,13 +310,23 @@ const {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.72;
+}
+
+.workout-log__card {
+  border-radius: 14px;
+}
+
+.workout-log__card :deep(.el-card__body) {
+  display: grid;
+  gap: 18px;
+  padding-top: 8px;
 }
 
 .workout-log__summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .workout-log__completion-banner {
@@ -353,7 +372,13 @@ const {
   color: var(--color-text-secondary);
   font-size: 11px;
   letter-spacing: 0.05em;
+  line-height: 1.5;
   text-transform: uppercase;
+}
+
+.workout-log__metric-label--stacked {
+  display: grid;
+  gap: 2px;
 }
 
 .workout-log__metric-value {
@@ -386,7 +411,7 @@ const {
 
 .workout-log__head-actions {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   justify-items: end;
 }
 
@@ -394,16 +419,17 @@ const {
   display: inline-flex;
   gap: 6px;
   padding: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .workout-log__period-button {
   border: 0;
-  border-radius: 999px;
+  border-radius: 9px;
   background: transparent;
   color: var(--color-text-secondary);
-  padding: 7px 12px;
+  padding: 8px 12px;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -418,18 +444,20 @@ const {
 .workout-log__trend-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
 }
 
 .workout-log__trend-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2px 0;
+}
+
+.workout-log__trend-item:not(:first-child) {
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .workout-log__trend-note {
-  margin: 12px 0 0;
+  margin: 0;
   color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.5;
@@ -445,7 +473,7 @@ const {
 .workout-log__legend-cell {
   width: 14px;
   height: 14px;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -466,7 +494,6 @@ const {
 }
 
 .workout-log__heatmap {
-  margin-top: 14px;
   display: grid;
   gap: 7px;
 }
@@ -480,7 +507,7 @@ const {
 .workout-log__cell {
   aspect-ratio: 1;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 6px;
   background: #16161a;
   transition:
     transform var(--duration-fast) ease,
@@ -644,7 +671,7 @@ const {
 
 @media (max-width: 390px) {
   .workout-log__screen {
-    padding: 16px 14px 96px;
+    padding: 18px 14px 96px;
   }
 
   .workout-log__summary-grid {
@@ -661,7 +688,14 @@ const {
 
   .workout-log__trend-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 12px;
+  }
+
+  .workout-log__trend-item:not(:first-child) {
+    padding-left: 0;
+    padding-top: 12px;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .workout-log__metric-value {
