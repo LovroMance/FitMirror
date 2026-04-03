@@ -1,5 +1,6 @@
 # FitMirror
 
+测试
 移动端优先的 AI 健身 MVP。
 
 当前阶段重点不是继续扩散功能，而是把主链路做稳：注册 / 登录 -> 生成计划 -> 开始训练 -> 完成训练 -> 写入记录 -> 热图回看。
@@ -26,16 +27,19 @@
 ## 快速开始
 
 1. 安装依赖
+
 - 根目录：`npm install`
 - 前端：`npm --prefix frontend install`
 - 后端：`npm --prefix backend install`
 
 2. 配置环境变量
+
 - 可参考根目录 `.env.example`
 - 前端最小配置：`VITE_API_BASE_URL=http://127.0.0.1:3000/api`
 - 后端最小配置：`DATABASE_URL`、`JWT_SECRET`、`JWT_EXPIRES_IN`、`PORT`
 
 3. 启动服务
+
 - 后端：`npm --prefix backend run dev`
 - 前端：`npm --prefix frontend run dev -- --host 127.0.0.1 --port 4173`
 - 如果当前环境运行 `npm --prefix backend run dev` 出现 `ts-node-dev spawn EPERM`，可改用：
@@ -43,6 +47,7 @@
   - 在 `backend` 目录下运行 `node dist/app.js`
 
 4. 质量检查
+
 - `npm run lint`
 - `npm run test:frontend`
 - `npm run test:backend`
