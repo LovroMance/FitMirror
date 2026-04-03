@@ -25,6 +25,7 @@ const {
   workoutRecordsRepositoryMocks: {
     listRecordsByDateRange: vi.fn(),
     listRecordsByDay: vi.fn(),
+    createRecord: vi.fn(),
     updateRecordByClientId: vi.fn(),
     deleteRecordByClientId: vi.fn()
   },
@@ -90,6 +91,16 @@ describe('useWorkoutLog', () => {
     routeMock.query.completedPlanId = undefined;
     syncWorkoutRecordsForUser.mockResolvedValue(undefined);
     messageBoxConfirm.mockResolvedValue(undefined);
+    workoutRecordsRepositoryMocks.createRecord.mockResolvedValue({
+      id: 1,
+      userId: 7,
+      clientRecordId: 'rec-manual',
+      date: '2026-04-03',
+      duration: 20,
+      completed: true,
+      createdAt: '2026-04-03T09:00:00.000Z',
+      updatedAt: '2026-04-03T09:00:00.000Z'
+    });
   });
 
   it('auto-opens the completed date detail when the workout log is entered from a finished session', async () => {
@@ -394,5 +405,35 @@ describe('useWorkoutLog', () => {
     expect(workoutRecordsRepositoryMocks.deleteRecordByClientId).toHaveBeenCalledWith(7, 'rec-1');
     expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
     expect(messageSuccess).toHaveBeenCalledWith('训练记录已删除');
+  });
+
+  it('submits a custom manual record duration', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([]);
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockResolvedValue([]);
+    workoutRecordsRepositoryMocks.createRecord.mockResolvedValue({
+      id: 1,
+      userId: 7,
+      clientRecordId: 'rec-manual',
+      date: '2026-04-03',
+      duration: 26,
+      completed: true,
+      createdAt: '2026-04-03T09:00:00.000Z',
+      updatedAt: '2026-04-03T09:00:00.000Z'
+    });
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+    log.manualRecordDuration.value = 26;
+
+    await log.submitManualRecord();
+
+    expect(workoutRecordsRepositoryMocks.createRecord).toHaveBeenCalledWith({
+      userId: 7,
+      date: expect.any(String),
+      duration: 26,
+      completed: true
+    });
+    expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
+    expect(messageSuccess).toHaveBeenCalledWith('已写入 26 分钟训练记录');
   });
 });

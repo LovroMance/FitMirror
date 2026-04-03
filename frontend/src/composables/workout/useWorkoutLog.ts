@@ -44,6 +44,7 @@ export const useWorkoutLog = () => {
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
   const selectedPeriod = ref<WorkoutPeriod>('week');
+  const manualRecordDuration = ref(20);
 
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
   const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
@@ -294,6 +295,10 @@ export const useWorkoutLog = () => {
     }
   };
 
+  const submitManualRecord = async (): Promise<void> => {
+    await mockAddRecord(manualRecordDuration.value);
+  };
+
   const deleteRecord = async (detail: WorkoutDayDetailView): Promise<void> => {
     if (detailSaving.value) {
       return;
@@ -480,6 +485,7 @@ export const useWorkoutLog = () => {
     heatmapRows,
     handleCompletionBannerAction,
     isMockWriting,
+    manualRecordDuration,
     mockAddRecord,
     openDayDetail,
     openRelatedPlan,
@@ -494,6 +500,7 @@ export const useWorkoutLog = () => {
     selectedPeriod,
     selectedDate,
     summary,
+    submitManualRecord,
     startEditingRecord,
     trendSummary,
     changePeriod,
