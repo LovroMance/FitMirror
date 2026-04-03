@@ -11,7 +11,7 @@
         <p class="plan-generator__description">输入目标后即可获得可执行的训练建议，并自动保存最近一次结果。</p>
       </header>
 
-      <el-card shadow="never" class="fm-card plan-generator__card">
+      <el-card shadow="never" class="fm-card plan-generator__card plan-generator__card--composer">
         <el-input
           v-model="goalText"
           type="textarea"
@@ -297,14 +297,14 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 22px;
   padding: 20px 20px 110px;
   background: linear-gradient(180deg, rgba(18, 26, 20, 0.95) 0%, rgba(11, 11, 14, 0.98) 30%), var(--color-bg-screen);
 }
 
 .plan-generator__header {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .plan-generator__header-top {
@@ -339,15 +339,18 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.72;
 }
 
-.plan-generator__actions {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.plan-generator__card :deep(.el-card__body) {
+  display: grid;
+  gap: 18px;
+  padding-top: 6px;
+}
+
+.plan-generator__card--composer :deep(.el-card__body) {
+  gap: 20px;
+  padding-top: 10px;
 }
 
 .plan-generator__submit {
@@ -361,32 +364,31 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
 }
 
 .plan-generator__status-wrap {
-  margin-top: 12px;
   display: grid;
   gap: 8px;
 }
 
 .plan-generator__plan-head {
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .plan-generator__plan-head-copy {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
 .plan-generator__plan-title {
   margin: 0;
   font-size: 27px;
-  line-height: 1.2;
+  line-height: 1.12;
   font-weight: 600;
 }
 
 .plan-generator__plan-meta-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -433,7 +435,7 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.72;
 }
 
 .plan-generator__plan-actions,
@@ -441,15 +443,19 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .plan-generator__start,
 .plan-generator__save,
 .plan-generator__append-button {
-  min-height: 42px;
+  min-height: 44px;
   border-radius: 14px;
+}
+
+.plan-generator__start {
+  min-width: 132px;
 }
 
 .plan-generator__library-link,
