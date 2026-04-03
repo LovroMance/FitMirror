@@ -34,7 +34,7 @@
           </el-button>
         </div>
 
-        <div class="plan-generator__status-wrap">
+        <div v-if="loading || errorMessage" class="plan-generator__status-wrap">
           <StatePanel
             v-if="loading"
             variant="loading"
@@ -349,14 +349,15 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
 }
 
 .plan-generator__card--composer :deep(.el-card__body) {
-  gap: 20px;
-  padding-top: 10px;
+  gap: 16px;
+  padding-top: 12px;
 }
 
 .plan-generator__submit {
-  flex: 1;
-  height: 56px;
-  border-radius: 18px;
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 26px;
+  border-radius: 14px;
 }
 
 .plan-generator__history-link {
@@ -445,6 +446,11 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.plan-generator__plan-actions :deep(.el-button + .el-button),
+.plan-generator__edit-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .plan-generator__start,
@@ -751,3 +757,4 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   }
 }
 </style>
+
