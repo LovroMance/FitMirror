@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const dbMocks = vi.hoisted(() => ({
   add: vi.fn(),
   where: vi.fn(),
+  delete: vi.fn(),
+  bulkDelete: vi.fn(),
+  put: vi.fn(),
   bulkAdd: vi.fn(),
   transaction: vi.fn()
 }));
@@ -12,6 +15,9 @@ vi.mock('@/db', () => ({
     workoutRecords: {
       add: dbMocks.add,
       where: dbMocks.where,
+      delete: dbMocks.delete,
+      bulkDelete: dbMocks.bulkDelete,
+      put: dbMocks.put,
       bulkAdd: dbMocks.bulkAdd
     },
     transaction: dbMocks.transaction
@@ -87,6 +93,70 @@ describe('workoutRecordsRepository', () => {
     const result = await workoutRecordsRepository.listRecordsByDay(7, '2026-04-01');
 
     expect(result.map((item) => item.id)).toEqual([2, 1]);
+  });
+
+  it('updates one record by client id and refreshes updatedAt', async () => {
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        first: vi.fn().mockResolvedValue({
+          id: 3,
+          userId: 7,
+          clientRecordId: 'rec-003',
+          date: '2026-04-01',
+          duration: 10,
+          completed: false,
+          createdAt: '2026-04-01T09:00:00.000Z',
+          updatedAt: '2026-04-01T09:00:00.000Z'
+        })
+      })
+    });
+
+    const result = await workoutRecordsRepository.updateRecordByClientId(7, 'rec-003', {
+      duration: 25,
+      completed: true
+    });
+
+    expect(dbMocks.put).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 3,
+        clientRecordId: 'rec-003',
+        duration: 25,
+        completed: true
+      })
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 3,
+        clientRecordId: 'rec-003',
+        duration: 25,
+        completed: true
+      })
+    );
+  });
+
+  it('deletes one record by client id', async () => {
+    dbMocks.where.mockReturnValue({
+      equals: vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([
+          {
+            id: 4,
+            userId: 7,
+            clientRecordId: 'rec-004',
+            date: '2026-04-01',
+            duration: 10,
+            completed: true,
+            createdAt: '2026-04-01T10:00:00.000Z',
+            updatedAt: '2026-04-01T10:00:00.000Z'
+          }
+        ])
+      })
+    });
+    dbMocks.delete.mockResolvedValue(undefined);
+
+    const result = await workoutRecordsRepository.deleteRecordByClientId(7, 'rec-004');
+
+    expect(dbMocks.delete).toHaveBeenCalledWith(4);
+    expect(result).toBe(true);
   });
 
   it('replaces all records for one user with cloud-synced data', async () => {

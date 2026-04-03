@@ -16,6 +16,7 @@ export const buildWorkoutDayDetailViews = (
 
     return {
       id: record.id,
+      clientRecordId: record.clientRecordId,
       date: record.date,
       duration: record.duration,
       completed: record.completed,

@@ -7,6 +7,7 @@ const {
   plansRepositoryMocks,
   workoutRecordsRepositoryMocks,
   syncWorkoutRecordsForUser,
+  messageBoxConfirm,
   messageSuccess,
   messageWarning,
   messageError
@@ -23,9 +24,12 @@ const {
   },
   workoutRecordsRepositoryMocks: {
     listRecordsByDateRange: vi.fn(),
-    listRecordsByDay: vi.fn()
+    listRecordsByDay: vi.fn(),
+    updateRecordByClientId: vi.fn(),
+    deleteRecordByClientId: vi.fn()
   },
   syncWorkoutRecordsForUser: vi.fn(),
+  messageBoxConfirm: vi.fn(),
   messageSuccess: vi.fn(),
   messageWarning: vi.fn(),
   messageError: vi.fn()
@@ -70,6 +74,9 @@ vi.mock('element-plus', () => ({
     error: messageError,
     warning: messageWarning,
     success: messageSuccess
+  },
+  ElMessageBox: {
+    confirm: messageBoxConfirm
   }
 }));
 
@@ -82,6 +89,7 @@ describe('useWorkoutLog', () => {
     routeMock.query.completedDate = '2026-04-02';
     routeMock.query.completedPlanId = undefined;
     syncWorkoutRecordsForUser.mockResolvedValue(undefined);
+    messageBoxConfirm.mockResolvedValue(undefined);
   });
 
   it('auto-opens the completed date detail when the workout log is entered from a finished session', async () => {
@@ -290,5 +298,101 @@ describe('useWorkoutLog', () => {
     await log.handleCompletionBannerAction();
 
     expect(workoutRecordsRepositoryMocks.listRecordsByDateRange).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates one day record and refreshes the detail list', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    workoutRecordsRepositoryMocks.listRecordsByDay.mockResolvedValue([
+      {
+        id: 1,
+        userId: 7,
+        clientRecordId: 'rec-1',
+        date: '2026-04-02',
+        duration: 18,
+        completed: true,
+        createdAt: '2026-04-02T10:00:00.000Z',
+        updatedAt: '2026-04-02T10:10:00.000Z'
+      }
+    ]);
+    workoutRecordsRepositoryMocks.updateRecordByClientId.mockResolvedValue({
+      id: 1,
+      userId: 7,
+      clientRecordId: 'rec-1',
+      date: '2026-04-02',
+      duration: 25,
+      completed: false,
+      createdAt: '2026-04-02T10:00:00.000Z',
+      updatedAt: '2026-04-02T10:20:00.000Z'
+    });
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+
+    log.startEditingRecord(log.dayDetails.value[0]!);
+    log.editingDuration.value = 25;
+    log.editingCompleted.value = false;
+
+    await log.saveEditedRecord();
+
+    expect(workoutRecordsRepositoryMocks.updateRecordByClientId).toHaveBeenCalledWith(7, 'rec-1', {
+      duration: 25,
+      completed: false
+    });
+    expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
+    expect(messageSuccess).toHaveBeenCalledWith('训练记录已更新');
+    expect(log.editingRecordId.value).toBe(null);
+  });
+
+  it('deletes one day record and refreshes the heatmap state', async () => {
+    workoutRecordsRepositoryMocks.listRecordsByDateRange
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          userId: 7,
+          clientRecordId: 'rec-1',
+          date: '2026-04-02',
+          duration: 18,
+          completed: true,
+          createdAt: '2026-04-02T10:00:00.000Z',
+          updatedAt: '2026-04-02T10:10:00.000Z'
+        }
+      ])
+      .mockResolvedValueOnce([]);
+    workoutRecordsRepositoryMocks.listRecordsByDay
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          userId: 7,
+          clientRecordId: 'rec-1',
+          date: '2026-04-02',
+          duration: 18,
+          completed: true,
+          createdAt: '2026-04-02T10:00:00.000Z',
+          updatedAt: '2026-04-02T10:10:00.000Z'
+        }
+      ])
+      .mockResolvedValueOnce([]);
+    workoutRecordsRepositoryMocks.deleteRecordByClientId.mockResolvedValue(true);
+
+    const log = useWorkoutLog();
+    await mountedCallbacks[0]?.();
+
+    await log.deleteRecord(log.dayDetails.value[0]!);
+
+    expect(messageBoxConfirm).toHaveBeenCalled();
+    expect(workoutRecordsRepositoryMocks.deleteRecordByClientId).toHaveBeenCalledWith(7, 'rec-1');
+    expect(syncWorkoutRecordsForUser).toHaveBeenCalledWith(7);
+    expect(messageSuccess).toHaveBeenCalledWith('训练记录已删除');
   });
 });

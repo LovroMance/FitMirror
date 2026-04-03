@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { computed, onMounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
@@ -32,6 +32,10 @@ export const useWorkoutLog = () => {
   const dayDetails = ref<WorkoutDayDetailView[]>([]);
   const detailLoading = ref(false);
   const detailError = ref('');
+  const editingRecordId = ref<string | null>(null);
+  const editingDuration = ref(10);
+  const editingCompleted = ref(true);
+  const detailSaving = ref(false);
   const detailCacheByDate = ref<Record<string, WorkoutDayDetailView[]>>({});
   const isMockWriting = ref(false);
   const lastMockWriteAt = ref(0);
@@ -237,6 +241,103 @@ export const useWorkoutLog = () => {
     await openDayDetail(selectedDate.value);
   };
 
+  const startEditingRecord = (detail: WorkoutDayDetailView): void => {
+    editingRecordId.value = detail.clientRecordId;
+    editingDuration.value = detail.duration;
+    editingCompleted.value = detail.completed;
+  };
+
+  const cancelEditingRecord = (): void => {
+    editingRecordId.value = null;
+    editingDuration.value = 10;
+    editingCompleted.value = true;
+  };
+
+  const saveEditedRecord = async (): Promise<void> => {
+    if (!editingRecordId.value || detailSaving.value) {
+      return;
+    }
+
+    if (!Number.isFinite(editingDuration.value) || editingDuration.value <= 0) {
+      ElMessage.warning('请输入有效的训练时长');
+      return;
+    }
+
+    const userId = resolveUserId();
+    if (!userId) {
+      return;
+    }
+
+    detailSaving.value = true;
+
+    try {
+      const updated = await workoutRecordsRepository.updateRecordByClientId(userId, editingRecordId.value, {
+        duration: Math.round(editingDuration.value),
+        completed: editingCompleted.value
+      });
+
+      if (!updated) {
+        throw new Error('未找到要编辑的训练记录');
+      }
+
+      await syncWorkoutRecordsForUser(userId).catch(() => {
+        ElMessage.warning('本地训练记录已更新，云端同步稍后重试');
+      });
+      await refreshRecords();
+      cancelEditingRecord();
+      ElMessage.success('训练记录已更新');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '更新训练记录失败，请稍后重试';
+      ElMessage.error(message);
+    } finally {
+      detailSaving.value = false;
+    }
+  };
+
+  const deleteRecord = async (detail: WorkoutDayDetailView): Promise<void> => {
+    if (detailSaving.value) {
+      return;
+    }
+
+    const userId = resolveUserId();
+    if (!userId) {
+      return;
+    }
+
+    try {
+      await ElMessageBox.confirm('删除后这条训练记录将从热图和当天详情中移除。', '删除训练记录？', {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    } catch {
+      return;
+    }
+
+    detailSaving.value = true;
+
+    try {
+      const deleted = await workoutRecordsRepository.deleteRecordByClientId(userId, detail.clientRecordId);
+      if (!deleted) {
+        throw new Error('未找到要删除的训练记录');
+      }
+
+      await syncWorkoutRecordsForUser(userId).catch(() => {
+        ElMessage.warning('本地训练记录已删除，云端同步稍后重试');
+      });
+      if (editingRecordId.value === detail.clientRecordId) {
+        cancelEditingRecord();
+      }
+      await refreshRecords();
+      ElMessage.success('训练记录已删除');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '删除训练记录失败，请稍后重试';
+      ElMessage.error(message);
+    } finally {
+      detailSaving.value = false;
+    }
+  };
+
   const resolveCompletedDateTarget = (): string | null => {
     const raw = Array.isArray(route.query.completedDate) ? route.query.completedDate[0] : route.query.completedDate;
     if (typeof raw !== 'string') {
@@ -365,10 +466,15 @@ export const useWorkoutLog = () => {
     dateRangeLabel,
     completionBanner,
     completedDateTarget,
+    deleteRecord,
     dayDetails,
     detailError,
     detailLoading,
+    detailSaving,
     detailVisible,
+    editingCompleted,
+    editingDuration,
+    editingRecordId,
     goHome,
     goToPlanGenerator,
     heatmapRows,
@@ -384,10 +490,13 @@ export const useWorkoutLog = () => {
     resolveCompletedDateTarget,
     resolveCompletedPlanTarget,
     retryDayDetail,
+    saveEditedRecord,
     selectedPeriod,
     selectedDate,
     summary,
+    startEditingRecord,
     trendSummary,
-    changePeriod
+    changePeriod,
+    cancelEditingRecord
   };
 };

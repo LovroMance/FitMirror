@@ -62,6 +62,51 @@ export const workoutRecordsRepository = {
     }
   },
 
+  async updateRecordByClientId(
+    userId: number,
+    clientRecordId: string,
+    updates: Pick<WorkoutRecordEntity, 'duration' | 'completed'>
+  ): Promise<WorkoutRecordEntity | null> {
+    try {
+      const existing = await fitMirrorDb.workoutRecords.where('[userId+clientRecordId]').equals([userId, clientRecordId]).first();
+      if (!existing) {
+        return null;
+      }
+
+      const nextRecord: WorkoutRecordEntity = {
+        ...existing,
+        duration: updates.duration,
+        completed: updates.completed,
+        updatedAt: new Date().toISOString()
+      };
+
+      await fitMirrorDb.workoutRecords.put(nextRecord);
+      return nextRecord;
+    } catch (error) {
+      throw toRepositoryError('updateRecordByClientId', error);
+    }
+  },
+
+  async deleteRecordByClientId(userId: number, clientRecordId: string): Promise<boolean> {
+    try {
+      const collection = fitMirrorDb.workoutRecords.where('[userId+clientRecordId]').equals([userId, clientRecordId]);
+      const records = await collection.toArray();
+      const recordIds = records
+        .map((record) => Number(record.id))
+        .filter((recordId) => Number.isFinite(recordId) && recordId > 0);
+      if (recordIds.length === 0) {
+        return false;
+      }
+
+      for (const recordId of recordIds) {
+        await fitMirrorDb.workoutRecords.delete(recordId);
+      }
+      return true;
+    } catch (error) {
+      throw toRepositoryError('deleteRecordByClientId', error);
+    }
+  },
+
   async replaceRecordsForUser(userId: number, records: Omit<WorkoutRecordEntity, 'id' | 'userId'>[]): Promise<void> {
     try {
       await fitMirrorDb.transaction('rw', fitMirrorDb.workoutRecords, async () => {

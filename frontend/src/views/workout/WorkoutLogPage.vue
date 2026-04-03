@@ -172,7 +172,7 @@
           <ul class="workout-log__detail-list">
             <li
               v-for="detail in dayDetails"
-              :key="`${detail.id ?? detail.date}-${detail.duration}`"
+              :key="detail.clientRecordId"
               class="workout-log__detail-item"
               :class="{ 'is-just-completed': detail.isJustCompleted }"
             >
@@ -191,6 +191,25 @@
                   </el-button>
                 </template>
                 <p v-else class="workout-log__detail-missing">{{ getWorkoutDayDetailHint(detail) }}</p>
+                <template v-if="editingRecordId === detail.clientRecordId">
+                  <div class="workout-log__detail-edit-form">
+                    <label class="workout-log__detail-field">
+                      <span>训练时长（分钟）</span>
+                      <el-input-number v-model="editingDuration" :min="1" :max="300" :step="1" controls-position="right" />
+                    </label>
+                    <label class="workout-log__detail-checkbox">
+                      <el-checkbox v-model="editingCompleted">标记为已完成</el-checkbox>
+                    </label>
+                    <div class="workout-log__detail-actions">
+                      <el-button text :disabled="detailSaving" @click="cancelEditingRecord">取消</el-button>
+                      <el-button class="fm-button-primary" :loading="detailSaving" @click="saveEditedRecord">保存</el-button>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="workout-log__detail-actions">
+                  <el-button text :disabled="detailSaving" @click="startEditingRecord(detail)">编辑</el-button>
+                  <el-button text type="danger" :disabled="detailSaving" @click="deleteRecord(detail)">删除</el-button>
+                </div>
               </div>
             </li>
           </ul>
@@ -213,10 +232,16 @@ const {
   dateRangeLabel,
   completionBanner,
   completedDateTarget,
+  deleteRecord,
   dayDetails,
   detailError,
   detailLoading,
+  detailSaving,
   detailVisible,
+  editingCompleted,
+  editingDuration,
+  editingRecordId,
+  cancelEditingRecord,
   goHome,
   goToPlanGenerator,
   heatmapRows,
@@ -230,9 +255,11 @@ const {
   recordsState,
   refreshRecords,
   retryDayDetail,
+  saveEditedRecord,
   selectedPeriod,
   selectedDate,
   summary,
+  startEditingRecord,
   trendSummary,
   changePeriod
 } = useWorkoutLog();
@@ -541,6 +568,30 @@ const {
   gap: 6px;
 }
 
+.workout-log__detail-edit-form {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workout-log__detail-field {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-log__detail-field span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.workout-log__detail-checkbox {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
 .workout-log__detail-top {
   display: flex;
   align-items: center;
@@ -569,6 +620,13 @@ const {
   justify-self: flex-start;
   padding-left: 0;
   padding-right: 0;
+}
+
+.workout-log__detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .workout-log__detail-badge {

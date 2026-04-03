@@ -4,6 +4,23 @@ import type { WorkoutRecordSyncInput } from './workout-records.schema';
 export const workoutRecordsRepository = {
   async syncRecords(userId: number, records: WorkoutRecordSyncInput[]) {
     return prisma.$transaction(async (tx) => {
+      const incomingClientRecordIds = records.map((record) => record.clientRecordId);
+
+      if (incomingClientRecordIds.length === 0) {
+        await tx.workoutRecord.deleteMany({
+          where: { userId }
+        });
+      } else {
+        await tx.workoutRecord.deleteMany({
+          where: {
+            userId,
+            clientRecordId: {
+              notIn: incomingClientRecordIds
+            }
+          }
+        });
+      }
+
       for (const record of records) {
         const existing = await tx.workoutRecord.findUnique({
           where: {

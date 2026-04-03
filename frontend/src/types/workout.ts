@@ -28,6 +28,7 @@ export type WorkoutRecordSourceType = 'plan' | 'manual';
 
 export interface WorkoutDayDetailView {
   id?: number;
+  clientRecordId: string;
   date: string;
   duration: number;
   completed: boolean;

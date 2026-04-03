@@ -4,6 +4,7 @@ import type { WorkoutDayDetailView } from '@/types/workout';
 
 const createDetail = (overrides: Partial<WorkoutDayDetailView>): WorkoutDayDetailView => ({
   id: 1,
+  clientRecordId: 'rec-1',
   date: '2026-04-02',
   duration: 18,
   completed: true,
