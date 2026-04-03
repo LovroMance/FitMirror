@@ -440,7 +440,7 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
 .plan-generator__edit-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -455,12 +455,35 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
 .plan-generator__library-link,
 .plan-generator__edit-link,
 .plan-generator__secondary-link {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--color-primary);
-  padding-left: 0;
+  line-height: 1;
 }
 
 .plan-generator__delete {
-  padding-right: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 90, 54, 0.16);
+  background: rgba(255, 90, 54, 0.06);
+  color: #ff8f79;
+  line-height: 1;
+}
+
+.plan-generator__library-link:hover,
+.plan-generator__edit-link:hover,
+.plan-generator__secondary-link:hover {
+  border-color: rgba(50, 213, 131, 0.2);
+  background: rgba(50, 213, 131, 0.08);
+}
+
+.plan-generator__delete:hover {
+  border-color: rgba(255, 90, 54, 0.26);
+  background: rgba(255, 90, 54, 0.1);
 }
 
 .plan-generator__edit-form {

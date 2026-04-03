@@ -65,8 +65,13 @@
   --el-button-active-bg-color: #1da85f;
   --el-button-active-border-color: #1da85f;
   --el-button-text-color: #0b0b0e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--shadow-primary);
   color: #0b0b0e;
+  line-height: 1;
+  text-align: center;
   transition:
     transform var(--duration-fast) ease,
     box-shadow var(--duration-fast) ease;
@@ -87,7 +92,19 @@
   --el-button-hover-border-color: #313743;
   --el-button-hover-text-color: var(--color-text-primary);
   --el-button-text-color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--color-text-primary);
+  line-height: 1;
+  text-align: center;
+}
+
+.el-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .fm-auth-form .el-form-item__error {
