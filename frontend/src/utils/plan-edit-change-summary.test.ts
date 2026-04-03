@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TrainingPlan } from '@/types/plan';
 import {
+  buildPlanExerciseChangeMarkers,
   buildPlanEditChangeSummary,
   buildPlanEditChangeSummaryHighlights,
   buildPlanEditChangeSummaryMessage
@@ -101,5 +102,40 @@ describe('plan-edit-change-summary', () => {
     expect(summary.hasChanges).toBe(false);
     expect(buildPlanEditChangeSummaryHighlights(summary)).toEqual([]);
     expect(buildPlanEditChangeSummaryMessage(summary)).toBe('训练计划已更新');
+  });
+
+  it('builds per-exercise markers for replaced and added exercises', () => {
+    const nextPlan: TrainingPlan = {
+      ...basePlan,
+      exercises: [
+        {
+          name: '死虫式',
+          reps: '左右各 12 次',
+          restSeconds: 20,
+          instruction: '缓慢伸展四肢并保持核心稳定。'
+        },
+        basePlan.exercises[1],
+        {
+          name: '卷腹',
+          reps: '15-20 次',
+          restSeconds: 20,
+          instruction: '仰卧屈膝脚掌踩地。'
+        }
+      ]
+    };
+    const summary = buildPlanEditChangeSummary(basePlan, nextPlan);
+
+    expect(buildPlanExerciseChangeMarkers(summary, nextPlan)).toEqual([
+      {
+        kind: 'replaced',
+        label: '已替换',
+        previousName: '平板支撑'
+      },
+      null,
+      {
+        kind: 'added',
+        label: '新增'
+      }
+    ]);
   });
 });

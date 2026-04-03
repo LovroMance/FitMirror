@@ -115,6 +115,22 @@
           </ul>
         </section>
 
+        <section
+          v-if="!isEditingPlan && latestSavedRemovedExerciseNames.length > 0"
+          class="plan-generator__removed-summary"
+        >
+          <h3>本次已删除动作</h3>
+          <div class="plan-generator__removed-tags">
+            <span
+              v-for="(exerciseName, removedIdx) in latestSavedRemovedExerciseNames"
+              :key="`${exerciseName}-${removedIdx}`"
+              class="plan-generator__removed-tag"
+            >
+              {{ exerciseName }}
+            </span>
+          </div>
+        </section>
+
         <template v-if="isEditingPlan && editablePlanDraft">
           <div class="plan-generator__edit-form">
             <label class="plan-generator__field">
@@ -182,13 +198,35 @@
         </template>
 
         <ul v-else class="plan-generator__exercise-list">
-          <li v-for="(exercise, idx) in plan.exercises" :key="`${exercise.name}-${idx}`" class="plan-generator__exercise-item">
+          <li
+            v-for="(exercise, idx) in plan.exercises"
+            :key="`${exercise.name}-${idx}`"
+            class="plan-generator__exercise-item"
+            :class="{
+              'plan-generator__exercise-item--added': latestSavedPlanExerciseChangeMarkers[idx]?.kind === 'added',
+              'plan-generator__exercise-item--replaced': latestSavedPlanExerciseChangeMarkers[idx]?.kind === 'replaced'
+            }"
+          >
             <div class="plan-generator__exercise-top">
               <span class="plan-generator__exercise-index">#{{ idx + 1 }}</span>
               <button type="button" class="plan-generator__exercise-link" @click="openExerciseLibrary(exercise.name)">
                 {{ exercise.name }}
               </button>
               <span>{{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}</span>
+            </div>
+            <div v-if="latestSavedPlanExerciseChangeMarkers[idx]" class="plan-generator__exercise-change">
+              <span
+                class="plan-generator__exercise-change-badge"
+                :class="`plan-generator__exercise-change-badge--${latestSavedPlanExerciseChangeMarkers[idx]?.kind}`"
+              >
+                {{ latestSavedPlanExerciseChangeMarkers[idx]?.label }}
+              </span>
+              <span
+                v-if="latestSavedPlanExerciseChangeMarkers[idx]?.previousName"
+                class="plan-generator__exercise-change-text"
+              >
+                原动作：{{ latestSavedPlanExerciseChangeMarkers[idx]?.previousName }}
+              </span>
             </div>
             <p>{{ exercise.instruction }}</p>
             <small>休息 {{ exercise.restSeconds }} 秒</small>
@@ -219,6 +257,8 @@ const {
   isEditingPlan,
   latestPlanId,
   latestSavedPlanEditSummaryHighlights,
+  latestSavedPlanExerciseChangeMarkers,
+  latestSavedRemovedExerciseNames,
   levelText,
   loading,
   moveExerciseDown,
@@ -473,6 +513,37 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   line-height: 1.55;
 }
 
+.plan-generator__removed-summary {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 120, 120, 0.18);
+  background: rgba(255, 120, 120, 0.08);
+}
+
+.plan-generator__removed-summary h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.plan-generator__removed-tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plan-generator__removed-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 120, 120, 0.14);
+  color: #ffb4b4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .plan-generator__exercise-list {
   list-style: none;
   margin: 18px 0 0;
@@ -486,6 +557,16 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(22, 26, 24, 0.92), rgba(14, 17, 16, 0.92));
+}
+
+.plan-generator__exercise-item--added {
+  border-color: rgba(50, 213, 131, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(50, 213, 131, 0.12);
+}
+
+.plan-generator__exercise-item--replaced {
+  border-color: rgba(245, 196, 81, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(245, 196, 81, 0.12);
 }
 
 .plan-generator__exercise-top {
@@ -529,6 +610,40 @@ const activeDurationMinutes = computed(() => editablePlanDraft.value?.durationMi
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.plan-generator__exercise-change {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-generator__exercise-change-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.plan-generator__exercise-change-badge--added {
+  background: rgba(50, 213, 131, 0.14);
+  color: #b8ffd7;
+}
+
+.plan-generator__exercise-change-badge--replaced {
+  background: rgba(245, 196, 81, 0.16);
+  color: #ffd77b;
+}
+
+.plan-generator__exercise-change-text {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .plan-generator__exercise-item p {

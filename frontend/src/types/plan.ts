@@ -47,6 +47,12 @@ export interface PlanEditChangeSummary {
   hasChanges: boolean;
 }
 
+export interface PlanExerciseChangeMarker {
+  kind: 'added' | 'replaced';
+  label: string;
+  previousName?: string;
+}
+
 export interface GeneratePlanPayload {
   plan: TrainingPlan;
   source?: PlanSource;

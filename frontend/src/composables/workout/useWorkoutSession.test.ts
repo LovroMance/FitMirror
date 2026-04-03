@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mountedCallbacks, routerPush, routeMock, plansRepositoryMocks, workoutRecordsRepositoryMocks, syncWorkoutRecordsForUser } = vi.hoisted(() => ({
   mountedCallbacks: [] as Array<() => unknown>,
@@ -64,8 +64,13 @@ describe('useWorkoutSession', () => {
   beforeEach(() => {
     mountedCallbacks.length = 0;
     vi.clearAllMocks();
-    vi.spyOn(Date, 'now').mockReturnValue(1000);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-02T08:00:00.000Z'));
     syncWorkoutRecordsForUser.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('writes the linked plan id into the completed workout record', async () => {

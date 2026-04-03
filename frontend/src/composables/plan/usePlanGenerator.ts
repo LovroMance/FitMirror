@@ -9,7 +9,12 @@ import { planSyncStateRepository, plansRepository } from '@/repositories';
 import { useAuthStore } from '@/store/auth';
 import type { PlanDisplaySource, PlanEditChangeSummary, PlanExercise, PlanStreamEvent, TrainingPlan } from '@/types/plan';
 import { clearPlanEditingSession, loadPlanEditingSession, savePlanEditingSession } from '@/utils/plan-editing-session';
-import { buildPlanEditChangeSummary, buildPlanEditChangeSummaryHighlights, buildPlanEditChangeSummaryMessage } from '@/utils/plan-edit-change-summary';
+import {
+  buildPlanEditChangeSummary,
+  buildPlanEditChangeSummaryHighlights,
+  buildPlanEditChangeSummaryMessage,
+  buildPlanExerciseChangeMarkers
+} from '@/utils/plan-edit-change-summary';
 import { createPlanExerciseFromExerciseLibraryItem } from '@/utils/plan-exercise-replacement';
 
 const cloneTrainingPlan = (plan: TrainingPlan): TrainingPlan => JSON.parse(JSON.stringify(plan)) as TrainingPlan;
@@ -156,6 +161,10 @@ export const usePlanGenerator = () => {
   const latestSavedPlanEditSummaryHighlights = computed(() =>
     lastSavedPlanEditSummary.value ? buildPlanEditChangeSummaryHighlights(lastSavedPlanEditSummary.value) : []
   );
+  const latestSavedPlanExerciseChangeMarkers = computed(() =>
+    buildPlanExerciseChangeMarkers(lastSavedPlanEditSummary.value, plan.value)
+  );
+  const latestSavedRemovedExerciseNames = computed(() => lastSavedPlanEditSummary.value?.removedExerciseNames ?? []);
 
   const resolveCurrentUserId = (): number | null => {
     const userId = currentUserId.value;
@@ -782,6 +791,8 @@ export const usePlanGenerator = () => {
     latestPlanId,
     levelText,
     loading,
+    latestSavedPlanExerciseChangeMarkers,
+    latestSavedRemovedExerciseNames,
     moveExerciseDown: moveEditingPlanExerciseDown,
     moveExerciseUp: moveEditingPlanExerciseUp,
     latestSavedPlanEditSummaryHighlights,

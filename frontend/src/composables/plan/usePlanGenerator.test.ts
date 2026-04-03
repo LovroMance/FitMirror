@@ -300,6 +300,8 @@ describe('usePlanGenerator', () => {
       '已调整总时长为 15 分钟',
       '已删除动作：“平板支撑”'
     ]);
+    expect(generator.latestSavedPlanExerciseChangeMarkers.value).toEqual([null]);
+    expect(generator.latestSavedRemovedExerciseNames.value).toEqual(['平板支撑']);
     expect(messageSuccess).toHaveBeenCalledWith('训练计划已更新：已更新计划标题；已调整总时长为 15 分钟；已删除动作：“平板支撑”');
   });
 

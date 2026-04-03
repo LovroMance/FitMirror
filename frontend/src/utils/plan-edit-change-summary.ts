@@ -1,4 +1,4 @@
-import type { PlanEditChangeSummary, TrainingPlan } from '@/types/plan';
+import type { PlanEditChangeSummary, PlanExerciseChangeMarker, TrainingPlan } from '@/types/plan';
 
 const buildExerciseNameCountMap = (exerciseNames: string[]): Map<string, number> => {
   const countMap = new Map<string, number>();
@@ -129,4 +129,45 @@ export const buildPlanEditChangeSummaryMessage = (summary: PlanEditChangeSummary
   }
 
   return `训练计划已更新：${messageParts.join('；')}`;
+};
+
+export const buildPlanExerciseChangeMarkers = (
+  summary: PlanEditChangeSummary | null,
+  plan: TrainingPlan | null
+): Array<PlanExerciseChangeMarker | null> => {
+  if (!summary || !plan) {
+    return [];
+  }
+
+  const replacementMap = new Map<string, string[]>();
+  for (const item of summary.replacedExercises) {
+    replacementMap.set(item.nextName, [...(replacementMap.get(item.nextName) ?? []), item.previousName]);
+  }
+
+  const addedCountMap = buildExerciseNameCountMap(summary.addedExerciseNames);
+
+  return plan.exercises.map((exercise) => {
+    const replacementQueue = replacementMap.get(exercise.name) ?? [];
+    if (replacementQueue.length > 0) {
+      const previousName = replacementQueue.shift();
+      replacementMap.set(exercise.name, replacementQueue);
+
+      return {
+        kind: 'replaced',
+        label: '已替换',
+        previousName
+      };
+    }
+
+    const addedCount = addedCountMap.get(exercise.name) ?? 0;
+    if (addedCount > 0) {
+      addedCountMap.set(exercise.name, addedCount - 1);
+      return {
+        kind: 'added',
+        label: '新增'
+      };
+    }
+
+    return null;
+  });
 };
