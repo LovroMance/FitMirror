@@ -199,6 +199,7 @@ describe('nutrition.service', () => {
     expect(result.summary).toContain('减脂阶段');
     expect(result.meals.breakfast.title).toContain('稳定');
     expect(result.noteResponse?.title).toContain('补充');
+    expect(result.noteResponse?.summary).toContain('工作日做饭时间少');
     expect(result.tips.length).toBeGreaterThanOrEqual(2);
   });
 

@@ -112,6 +112,18 @@ const LIFESTYLE_KEYWORD_GROUPS = [
     patterns: ['不吃辣', '不要辣', '不能吃辣']
   }
 ] as const;
+const NOTE_KNOWLEDGE_RESPONSES: Record<string, string> = {
+  减脂增肌区别:
+    '减脂更强调控制总热量、保留饱腹感并减少额外油糖；增肌则更强调主食和总能量充足，尤其要把训练前后加餐安排稳定。',
+  工作日省时:
+    '工作日做饭时间少时，优先保留蛋白质、主食和蔬菜三件套，用鸡蛋、燕麦、即食鸡胸肉和微波主食这类快手食材先把结构搭对。',
+  外卖应对:
+    '外卖场景也能先定主食份量，再补蛋白质和蔬菜，尽量避开厚重酱汁和纯油炸搭配。',
+  乳糖不耐受:
+    '如果乳糖不耐受，可把普通牛奶换成无糖酸奶、豆腐、鸡蛋或鸡胸肉等更稳妥的蛋白来源。',
+  不吃辣:
+    '不吃辣时可以改用黑胡椒、菌菇、蒜香和清蒸煎烤的做法保留风味，不必靠重油重辣来提升口感。'
+};
 
 const loadJsonFile = <T>(fileName: string): T => {
   const runtimePath = path.join(__dirname, 'data', fileName);
@@ -632,7 +644,7 @@ const buildFallbackMeals = (
     lunch: buildMealRecommendation({
       title: '午餐保持主食、蛋白质和蔬菜三件套',
       suggestedFoods: [rice?.name, chicken?.name, vegetable?.name].filter((item): item is string => Boolean(item)),
-      suggestedPortions: [`主食 ${lunchCarbPortion}1 拳`, '蛋白质 1 掌心', '蔬菜 2 拳'],
+      suggestedPortions: [`主食 ${lunchCarbPortion} 1 拳`, '蛋白质 1 掌心', '蔬菜 2 拳'],
       why: lunchGuide || '午餐是最稳的一餐，结构清晰比菜单花哨更重要。',
       alternatives: ['虾仁', '豆腐', '红薯'],
       detail: '如果在外就餐，也尽量按主食、瘦肉、蔬菜的顺序点单。'
@@ -640,7 +652,7 @@ const buildFallbackMeals = (
     dinner: buildMealRecommendation({
       title: '晚餐继续清晰搭配，但不过度堆热量',
       suggestedFoods: [salmon?.name, vegetable?.name, rice?.name].filter((item): item is string => Boolean(item)),
-      suggestedPortions: [`主食 ${dinnerCarbPortion}1 拳`, '蛋白质 1 掌心', '蔬菜 1-2 拳'],
+      suggestedPortions: [`主食 ${dinnerCarbPortion} 1 拳`, '蛋白质 1 掌心', '蔬菜 1-2 拳'],
       why: dinnerGuide || '晚餐更强调好消化和执行稳定，避免高油高糖带来额外负担。',
       alternatives: ['鸡蛋', '鸡胸肉', '菠菜'],
       detail: '晚餐可以比午餐更清淡，但不建议把蛋白质直接省掉。'
@@ -691,6 +703,15 @@ const buildFallbackNoteResponse = (
   const keywordBullets = Array.from(
     new Set([...noteSignals.questionKeywords, ...noteSignals.lifestyleKeywords, ...noteSignals.restrictionTokens])
   ).slice(0, 3);
+  const matchedKnowledgeAnswers = Array.from(
+    new Set(
+      [...noteSignals.questionKeywords, ...noteSignals.lifestyleKeywords]
+        .map((keyword) => NOTE_KNOWLEDGE_RESPONSES[keyword])
+        .filter((item): item is string => Boolean(item))
+    )
+  ).slice(0, 2);
+  const fallbackSummary = topGuideline?.content || '我会优先根据你的时间、限制或饮食偏好，调整食物选择、份量和可替代项。';
+  const combinedSummary = (matchedKnowledgeAnswers.length > 0 ? matchedKnowledgeAnswers : [fallbackSummary]).join(' ');
 
   if (noteSignals.type === 'question' || noteSignals.type === 'mixed') {
     return {
@@ -698,8 +719,7 @@ const buildFallbackNoteResponse = (
       type: noteSignals.type,
       title: '你这次提到的问题，我先直接回答',
       summary:
-        topGuideline?.content ||
-        '我会先说明问题背后的差异，再把这个理解落实到三餐安排、份量和可替代食物里。',
+        combinedSummary || '我会先说明问题背后的差异，再把这个理解落实到三餐安排、份量和可替代食物里。',
       bullets: keywordBullets.length > 0 ? keywordBullets : ['目标差异', '餐次结构', '执行方式']
     };
   }
@@ -708,8 +728,7 @@ const buildFallbackNoteResponse = (
     input: note,
     type: noteSignals.type,
     title: '你这次的补充要求，我已经一起带入推荐',
-    summary:
-      topGuideline?.content || '我会优先根据你的时间、限制或饮食偏好，调整食物选择、份量和可替代项。',
+    summary: combinedSummary,
     bullets: keywordBullets.length > 0 ? keywordBullets : ['限制过滤', '执行难度', '可替代食物']
   };
 };

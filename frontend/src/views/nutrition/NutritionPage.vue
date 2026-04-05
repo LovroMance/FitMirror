@@ -38,7 +38,7 @@
           <div class="nutrition-page__field">
             <span class="nutrition-page__label">偏好</span>
             <el-checkbox-group v-model="preferences" class="nutrition-page__checkbox-group">
-              <el-checkbox v-for="item in preferenceOptions" :key="item.value" :label="item.value">
+              <el-checkbox v-for="item in preferenceOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
               </el-checkbox>
             </el-checkbox-group>
