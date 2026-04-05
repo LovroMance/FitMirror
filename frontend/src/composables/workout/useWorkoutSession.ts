@@ -138,6 +138,10 @@ export const useWorkoutSession = () => {
     key: 'setCount' | 'repsPerSet' | 'durationSeconds',
     value: number
   ): void => {
+    if (started.value) {
+      return;
+    }
+
     const target = sessionExercises.value[index];
     if (!target) {
       return;

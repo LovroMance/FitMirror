@@ -31,20 +31,12 @@
               <h2 class="workout-session__plan-title">{{ plan.title }}</h2>
               <p class="workout-session__plan-meta">{{ plan.durationMinutes }} 分钟 · {{ plan.exercises.length }} 个动作</p>
             </div>
-            <span class="workout-session__progress-chip">
-              {{ completedExercises }}/{{ plan.exercises.length }}
-            </span>
           </div>
           <p class="workout-session__summary-text">{{ plan.summary }}</p>
           <div class="workout-session__session-stats">
-            <article>
-              <span>总组数</span>
-              <strong>{{ totalSets }}</strong>
-            </article>
-            <article>
-              <span>已完成</span>
-              <strong>{{ completedSets }}</strong>
-            </article>
+            <span class="workout-session__summary-pill">动作进度 {{ completedExercises }}/{{ plan.exercises.length }}</span>
+            <span class="workout-session__summary-pill">总组数 {{ totalSets }}</span>
+            <span class="workout-session__summary-pill">已完成 {{ completedSets }}</span>
           </div>
         </el-card>
 
@@ -114,9 +106,15 @@
               <span class="workout-session__step-index">第 {{ currentExerciseIndex + 1 }} / {{ plan.exercises.length }} 步</span>
             </div>
 
-            <div class="workout-session__current-progress">
-              <span class="workout-session__set-chip">{{ currentSetLabel }}</span>
-              <span class="workout-session__volume-chip">{{ currentExerciseVolumeLabel }}</span>
+            <div class="workout-session__focus-panel">
+              <div class="workout-session__focus-main">
+                <strong>{{ currentSetLabel }}</strong>
+                <p>{{ currentExerciseVolumeLabel }}</p>
+              </div>
+              <div class="workout-session__focus-side">
+                <span>组间休息</span>
+                <strong>{{ currentExercise.restSeconds }} 秒</strong>
+              </div>
             </div>
 
             <div class="workout-session__set-track" aria-label="组数进度">
@@ -128,41 +126,7 @@
               ></span>
             </div>
 
-            <p class="workout-session__exercise-meta">组间休息 {{ currentExercise.restSeconds }} 秒</p>
             <p class="workout-session__exercise-instruction">{{ currentExercise.instruction }}</p>
-
-            <div class="workout-session__live-grid">
-              <label class="workout-session__draft-field">
-                <span>组数</span>
-                <el-input-number
-                  :model-value="currentExercise.setCount"
-                  :min="1"
-                  :max="12"
-                  controls-position="right"
-                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'setCount', Number(value))"
-                />
-              </label>
-              <label v-if="currentExercise.mode === 'reps'" class="workout-session__draft-field">
-                <span>每组次数</span>
-                <el-input-number
-                  :model-value="currentExercise.repsPerSet"
-                  :min="1"
-                  :max="50"
-                  controls-position="right"
-                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'repsPerSet', Number(value))"
-                />
-              </label>
-              <label v-else class="workout-session__draft-field">
-                <span>每组时长(秒)</span>
-                <el-input-number
-                  :model-value="currentExercise.durationSeconds"
-                  :min="5"
-                  :max="300"
-                  controls-position="right"
-                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'durationSeconds', Number(value))"
-                />
-              </label>
-            </div>
 
             <div class="workout-session__actions">
               <el-button
@@ -282,28 +246,21 @@ const {
 }
 
 .workout-session__session-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
-.workout-session__session-stats article {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.workout-session__session-stats span {
+.workout-session__summary-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--color-text-secondary);
   font-size: 12px;
-}
-
-.workout-session__session-stats strong {
-  color: var(--color-primary);
-  font-size: 24px;
+  font-weight: 700;
 }
 
 .workout-session__plan-title {
@@ -392,31 +349,39 @@ const {
   letter-spacing: 0.04em;
 }
 
-.workout-session__current-progress {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.workout-session__set-chip,
-.workout-session__volume-chip {
-  display: inline-flex;
+.workout-session__focus-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(50, 213, 131, 0.12), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(50, 213, 131, 0.12);
+}
+
+.workout-session__focus-main,
+.workout-session__focus-side {
+  display: grid;
+  gap: 4px;
+}
+
+.workout-session__focus-main strong,
+.workout-session__focus-side strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.workout-session__focus-main p,
+.workout-session__focus-side span {
+  margin: 0;
+  color: var(--color-text-secondary);
   font-size: 12px;
-  font-weight: 700;
+  line-height: 1.5;
 }
 
-.workout-session__set-chip {
-  background: rgba(50, 213, 131, 0.16);
-  color: var(--color-primary);
-}
-
-.workout-session__volume-chip {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--color-text-primary);
+.workout-session__focus-side {
+  justify-items: end;
 }
 
 .workout-session__set-track {
@@ -466,6 +431,14 @@ const {
   .workout-session__draft-grid,
   .workout-session__live-grid {
     grid-template-columns: 1fr;
+  }
+
+  .workout-session__focus-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .workout-session__focus-side {
+    justify-items: start;
   }
 }
 </style>
