@@ -4,6 +4,7 @@ import express from 'express';
 import { env, validateRequiredEnv } from './config/env';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler';
 import { authRouter } from './modules/auth/auth.router';
+import { nutritionRouter } from './modules/nutrition/nutrition.router';
 import { plansRouter } from './modules/plans/plans.router';
 import { workoutRecordsRouter } from './modules/workout-records/workout-records.router';
 import { sendSuccess } from './utils/response';
@@ -16,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
+app.use('/api/nutrition', nutritionRouter);
 app.use('/api/plans', plansRouter);
 app.use('/api/workout-records', workoutRecordsRouter);
 

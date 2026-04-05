@@ -102,6 +102,33 @@
           </div>
         </el-card>
 
+        <el-card shadow="never" class="fm-card home-view__card home-view__nutrition-card">
+          <template #header>
+            <div class="home-view__card-header">
+              <div>
+                <p class="home-view__section-eyebrow">Eat Smarter</p>
+                <h2 class="home-view__section-title home-view__section-title--card">饮食管理</h2>
+                <p class="home-view__card-note">告诉我你的目标和偏好，生成今日饮食建议并查看关键营养信息。</p>
+              </div>
+            </div>
+          </template>
+          <div class="home-view__nutrition-body">
+            <div class="home-view__nutrition-tags">
+              <span>1 天方案</span>
+              <span>营养卡片</span>
+              <span>目标导向</span>
+            </div>
+            <el-button
+              type="primary"
+              size="large"
+              class="fm-button-primary home-view__primary-button"
+              @click="handleOpenNutrition"
+            >
+              开始饮食规划
+            </el-button>
+          </div>
+        </el-card>
+
         <section class="home-view__recommend">
           <div class="home-view__section-head">
             <div>
@@ -169,6 +196,7 @@ import { useHomeDashboard } from '@/composables/home/useHomeDashboard';
 const {
   handleGeneratePlan,
   handleOpenLibrary,
+  handleOpenNutrition,
   handleOpenPlanHistory,
   handleTabClick,
   heatmapError,
@@ -387,6 +415,34 @@ const {
 .home-view__summary-item strong {
   color: var(--color-text-primary);
   font-size: 16px;
+  font-weight: 700;
+}
+
+.home-view__nutrition-card {
+  overflow: hidden;
+}
+
+.home-view__nutrition-body {
+  display: grid;
+  gap: 14px;
+}
+
+.home-view__nutrition-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-view__nutrition-tags span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.1);
+  color: var(--color-primary);
+  font-size: 12px;
   font-weight: 700;
 }
 

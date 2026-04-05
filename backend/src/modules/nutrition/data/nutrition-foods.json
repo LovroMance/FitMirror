@@ -1,0 +1,155 @@
+[
+  {
+    "id": "food-rice-cooked",
+    "name": "熟米饭",
+    "aliases": ["白米饭", "米饭"],
+    "category": "staple",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 116,
+      "proteinG": 2.6,
+      "carbohydrateG": 25.9,
+      "fatG": 0.3,
+      "fiberG": 0.3
+    },
+    "highlights": ["主要提供碳水化合物", "适合作为训练前后基础能量来源"],
+    "benefits": ["帮助补充日常活动与训练所需能量"],
+    "keywords": ["米饭", "碳水", "主食"]
+  },
+  {
+    "id": "food-oats",
+    "name": "燕麦",
+    "aliases": ["燕麦片", "即食燕麦"],
+    "category": "staple",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 389,
+      "proteinG": 16.9,
+      "carbohydrateG": 66.3,
+      "fatG": 6.9,
+      "fiberG": 10.6
+    },
+    "highlights": ["含较多复合碳水和膳食纤维", "适合早餐或训练前后搭配"],
+    "benefits": ["有助于提升饱腹感并提供更平稳的能量释放"],
+    "keywords": ["燕麦", "早餐", "碳水", "纤维"]
+  },
+  {
+    "id": "food-chicken-breast",
+    "name": "鸡胸肉",
+    "aliases": ["鸡胸", "去皮鸡胸肉"],
+    "category": "protein",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 165,
+      "proteinG": 31,
+      "carbohydrateG": 0,
+      "fatG": 3.6,
+      "fiberG": 0
+    },
+    "highlights": ["高蛋白、低碳水", "适合减脂和增肌阶段作为核心蛋白来源"],
+    "benefits": ["有助于肌肉修复与合成，同时较易控制总脂肪摄入"],
+    "keywords": ["鸡胸肉", "高蛋白", "减脂", "增肌"]
+  },
+  {
+    "id": "food-egg",
+    "name": "鸡蛋",
+    "aliases": ["全蛋", "水煮蛋"],
+    "category": "protein",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 144,
+      "proteinG": 12.6,
+      "carbohydrateG": 1.1,
+      "fatG": 9.5,
+      "fiberG": 0
+    },
+    "highlights": ["提供优质蛋白和胆碱", "适合早餐和加餐场景"],
+    "benefits": ["可帮助补充蛋白质，并提供部分脂溶性维生素和矿物质"],
+    "keywords": ["鸡蛋", "蛋白质", "早餐", "加餐"]
+  },
+  {
+    "id": "food-milk",
+    "name": "牛奶",
+    "aliases": ["纯牛奶", "低脂牛奶"],
+    "category": "dairy",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 54,
+      "proteinG": 3.4,
+      "carbohydrateG": 5,
+      "fatG": 3.2,
+      "fiberG": 0
+    },
+    "highlights": ["提供蛋白质和钙", "适合作为早餐或训练后搭配"],
+    "benefits": ["有助于补充蛋白质、钙和液体摄入"],
+    "keywords": ["牛奶", "乳制品", "蛋白质", "钙"]
+  },
+  {
+    "id": "food-blueberry",
+    "name": "蓝莓",
+    "aliases": ["新鲜蓝莓"],
+    "category": "fruit",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 57,
+      "proteinG": 0.7,
+      "carbohydrateG": 14.5,
+      "fatG": 0.3,
+      "fiberG": 2.4
+    },
+    "highlights": ["富含花青素等植物化学物", "适合作为轻量水果加餐"],
+    "benefits": ["可提供抗氧化相关营养价值，并帮助补充膳食纤维"],
+    "keywords": ["蓝莓", "花青素", "抗氧化", "水果"]
+  },
+  {
+    "id": "food-broccoli",
+    "name": "西兰花",
+    "aliases": ["青花菜"],
+    "category": "vegetable",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 34,
+      "proteinG": 2.8,
+      "carbohydrateG": 6.6,
+      "fatG": 0.4,
+      "fiberG": 2.6
+    },
+    "highlights": ["热量较低，富含膳食纤维和维生素 C", "适合减脂和保持阶段增加餐盘体积"],
+    "benefits": ["有助于提升饱腹感并补充多种微量营养素"],
+    "keywords": ["西兰花", "蔬菜", "纤维", "维生素"]
+  },
+  {
+    "id": "food-banana",
+    "name": "香蕉",
+    "aliases": ["香蕉果肉"],
+    "category": "fruit",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 89,
+      "proteinG": 1.1,
+      "carbohydrateG": 22.8,
+      "fatG": 0.3,
+      "fiberG": 2.6
+    },
+    "highlights": ["提供碳水化合物和钾", "适合作为训练前后简便补给"],
+    "benefits": ["有助于快速补充能量，并提供电解质相关营养支持"],
+    "keywords": ["香蕉", "训练前", "加餐", "碳水"]
+  },
+  {
+    "id": "food-salmon",
+    "name": "三文鱼",
+    "aliases": ["鲑鱼"],
+    "category": "protein",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 208,
+      "proteinG": 20.4,
+      "carbohydrateG": 0,
+      "fatG": 13.4,
+      "fiberG": 0
+    },
+    "highlights": ["提供优质蛋白和 Omega-3 脂肪酸", "适合保持和增肌阶段作为优质主菜"],
+    "benefits": ["有助于补充优质脂肪与蛋白质，支持训练恢复和均衡饮食结构"],
+    "keywords": ["三文鱼", "鱼类", "omega-3", "蛋白质"]
+  }
+]

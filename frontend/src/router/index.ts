@@ -27,6 +27,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/nutrition',
+    name: 'Nutrition',
+    component: () => import('@/views/nutrition/NutritionPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/workouts/session',
     name: 'WorkoutSession',
     component: () => import('@/views/workout/WorkoutSessionPage.vue'),

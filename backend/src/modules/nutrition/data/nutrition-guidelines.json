@@ -1,0 +1,145 @@
+[
+  {
+    "id": "fat-loss-general-balance-01",
+    "title": "减脂期优先控制总热量并保证蛋白质",
+    "goalTags": ["fat_loss"],
+    "preferenceTags": [],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["减脂", "控卡", "蛋白质", "饱腹感"],
+    "summary": "减脂期建议每餐都安排优质蛋白，并用高纤维食物提升饱腹感。",
+    "content": "减脂阶段应优先保证蛋白质摄入，再安排适量复合碳水和蔬菜，避免高糖饮料、油炸食品和频繁加餐。",
+    "priority": 10
+  },
+  {
+    "id": "fat-loss-breakfast-01",
+    "title": "减脂期早餐适合高蛋白加复合碳水",
+    "goalTags": ["fat_loss"],
+    "preferenceTags": ["high_protein"],
+    "mealTypes": ["breakfast"],
+    "keywords": ["早餐", "高蛋白", "燕麦", "鸡蛋"],
+    "summary": "早餐可用鸡蛋、燕麦和牛奶搭配，帮助稳定上午能量。",
+    "content": "减脂期早餐可优先选择鸡蛋、无糖牛奶或酸奶、燕麦和少量水果，兼顾蛋白质、膳食纤维与持续饱腹感。",
+    "priority": 9
+  },
+  {
+    "id": "fat-loss-lunch-01",
+    "title": "减脂期午餐适合一拳主食加充足蛋白质",
+    "goalTags": ["fat_loss"],
+    "preferenceTags": ["light", "high_protein"],
+    "mealTypes": ["lunch"],
+    "keywords": ["午餐", "米饭", "鸡胸肉", "西兰花"],
+    "summary": "午餐建议主食不过量，同时搭配瘦肉和蔬菜。",
+    "content": "减脂午餐可采用少量米饭或燕麦饭，搭配鸡胸肉、鱼类或鸡蛋，再加入西兰花等高体积蔬菜，兼顾恢复与控能量。",
+    "priority": 9
+  },
+  {
+    "id": "fat-loss-dinner-01",
+    "title": "减脂期晚餐控制油脂并适当降低主食份量",
+    "goalTags": ["fat_loss"],
+    "preferenceTags": ["light", "low_oil"],
+    "mealTypes": ["dinner"],
+    "keywords": ["晚餐", "清淡", "少油", "蔬菜"],
+    "summary": "晚餐宜清淡，避免高油高糖和过量精制主食。",
+    "content": "减脂阶段晚餐可优先选择鱼肉、鸡蛋或豆制品，加一份蔬菜，主食较午餐略少，避免夜间额外摄入高热量零食。",
+    "priority": 8
+  },
+  {
+    "id": "muscle-gain-general-01",
+    "title": "增肌期需要稳定热量盈余和高质量蛋白质",
+    "goalTags": ["muscle_gain"],
+    "preferenceTags": ["high_protein"],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["增肌", "热量盈余", "蛋白质", "恢复"],
+    "summary": "增肌期需要在规律训练基础上保证能量和蛋白质充足。",
+    "content": "增肌期应在三餐之外根据训练安排补充加餐，保证蛋白质、碳水和部分健康脂肪的平衡，避免只靠高油高糖堆热量。",
+    "priority": 10
+  },
+  {
+    "id": "muscle-gain-breakfast-01",
+    "title": "增肌期早餐要兼顾碳水和蛋白质",
+    "goalTags": ["muscle_gain"],
+    "preferenceTags": ["high_protein"],
+    "mealTypes": ["breakfast"],
+    "keywords": ["早餐", "牛奶", "鸡蛋", "燕麦", "香蕉"],
+    "summary": "早餐可帮助补足夜间空腹后的能量和蛋白质缺口。",
+    "content": "增肌早餐可考虑燕麦、牛奶、鸡蛋和香蕉的组合，为上午训练或工作提供稳定能量，并补足优质蛋白质。",
+    "priority": 9
+  },
+  {
+    "id": "muscle-gain-lunch-01",
+    "title": "增肌期午餐要保证主食与瘦肉都足量",
+    "goalTags": ["muscle_gain"],
+    "preferenceTags": ["high_protein"],
+    "mealTypes": ["lunch"],
+    "keywords": ["午餐", "米饭", "鸡胸肉", "三文鱼"],
+    "summary": "午餐通常是增肌期补足全天能量的重要一餐。",
+    "content": "增肌午餐可采用足量米饭或其他主食，搭配鸡胸肉、牛肉或三文鱼，再加入蔬菜，帮助训练后恢复与肌肉合成。",
+    "priority": 9
+  },
+  {
+    "id": "muscle-gain-snack-01",
+    "title": "增肌期加餐适合易准备的高蛋白组合",
+    "goalTags": ["muscle_gain"],
+    "preferenceTags": ["high_protein", "quick"],
+    "mealTypes": ["snack"],
+    "keywords": ["加餐", "快手", "高蛋白", "牛奶", "鸡蛋", "蓝莓"],
+    "summary": "加餐可用于补足训练前后或两餐之间的营养。",
+    "content": "增肌加餐可优先选择牛奶、鸡蛋、水果与全谷物等易准备组合，既便于执行，也能补足全天总摄入。",
+    "priority": 8
+  },
+  {
+    "id": "maintenance-general-01",
+    "title": "保持期强调饮食稳定与长期可执行性",
+    "goalTags": ["maintenance"],
+    "preferenceTags": [],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["保持", "均衡", "长期", "习惯"],
+    "summary": "保持期饮食不追求极端控制，更强调结构均衡和执行稳定。",
+    "content": "保持阶段建议三餐规律、主食和蛋白质适量、蔬菜水果充足，避免工作日过度节制、周末过度放纵的波动模式。",
+    "priority": 10
+  },
+  {
+    "id": "maintenance-dinner-01",
+    "title": "保持期晚餐以适量主食和优质蛋白为宜",
+    "goalTags": ["maintenance"],
+    "preferenceTags": ["light"],
+    "mealTypes": ["dinner"],
+    "keywords": ["晚餐", "均衡", "米饭", "鱼类", "蔬菜"],
+    "summary": "保持期晚餐宜简单均衡，避免过度进食影响睡眠与恢复。",
+    "content": "保持期晚餐可采用适量米饭、鱼类或鸡蛋，再配一份蔬菜，整体结构清晰即可，不必追求过度复杂或极端低碳。",
+    "priority": 8
+  },
+  {
+    "id": "low-oil-cooking-01",
+    "title": "少油偏好可优先蒸煮煎烤与空气炸",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["low_oil"],
+    "mealTypes": ["breakfast", "lunch", "dinner"],
+    "keywords": ["少油", "烹饪", "蒸", "煎", "烤"],
+    "summary": "少油饮食不等于完全无脂，重点是减少额外烹调用油。",
+    "content": "若偏好少油，可优先采用蒸、煮、焯、烤等方式，并控制煎炒时的用油量，避免酱料和隐形脂肪过多。",
+    "priority": 7
+  },
+  {
+    "id": "quick-meal-prep-01",
+    "title": "时间紧张时优先选择简单、可提前准备的食材",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["quick"],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["快手", "上班", "省时", "鸡蛋", "牛奶", "即食"],
+    "summary": "首版推荐应尽量考虑真实可执行性，避免复杂菜单。",
+    "content": "时间紧张时可优先选择水煮蛋、即食鸡胸肉、牛奶、燕麦、水果和微波可加热主食，先保证结构正确，再逐步优化精细度。",
+    "priority": 8
+  },
+  {
+    "id": "fruit-snack-01",
+    "title": "水果适合作为加餐补充微量营养素",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["light", "quick"],
+    "mealTypes": ["snack"],
+    "keywords": ["水果", "蓝莓", "香蕉", "加餐"],
+    "summary": "水果可与蛋白质来源搭配，提升加餐质量。",
+    "content": "水果适合作为训练前后或两餐之间的轻量补充，建议与牛奶、鸡蛋等蛋白质来源搭配，而不是单独大量食用高糖零食。",
+    "priority": 7
+  }
+]
