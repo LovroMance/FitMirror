@@ -141,6 +141,8 @@
 
     </main>
 
+    <PrimaryTabBar />
+
     <el-dialog v-model="detailVisible" title="当日训练详情" width="92%" align-center>
       <template v-if="selectedDate">
         <p class="workout-log__detail-date">{{ selectedDate }}</p>
@@ -218,6 +220,7 @@
 
 <script setup lang="ts">
 import StatePanel from '@/components/common/StatePanel.vue';
+import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { useWorkoutLog } from '@/composables/workout/useWorkoutLog';
 import { getWorkoutDayDetailHint, getWorkoutDayDetailPlanLabel } from '@/utils/workout-day-detail-copy';
 

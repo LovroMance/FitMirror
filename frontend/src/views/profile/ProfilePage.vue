@@ -18,6 +18,36 @@
       <section class="profile-page__section">
         <div class="profile-page__section-head">
           <div>
+            <p class="profile-page__section-kicker">同步概览</p>
+            <h2>当前状态</h2>
+          </div>
+        </div>
+
+        <div class="profile-page__stats-grid">
+          <article class="profile-page__stat profile-page__stat--warm">
+            <span>保存计划</span>
+            <strong>{{ stats.savedPlans }}</strong>
+          </article>
+          <article class="profile-page__stat profile-page__stat--cool">
+            <span>训练记录</span>
+            <strong>{{ stats.workoutRecords }}</strong>
+          </article>
+          <article class="profile-page__stat profile-page__stat--mint">
+            <span>完成训练</span>
+            <strong>{{ stats.completedWorkouts }}</strong>
+          </article>
+        </div>
+
+        <div class="profile-page__sync-card">
+          <span>同步说明</span>
+          <strong>{{ syncSummary }}</strong>
+          <p v-if="settings">上次本地偏好更新：{{ settings.updatedAt.slice(0, 10) }}</p>
+        </div>
+      </section>
+
+      <section class="profile-page__section">
+        <div class="profile-page__section-head">
+          <div>
             <p class="profile-page__section-kicker">快捷入口</p>
             <h2>你最常回看的内容</h2>
           </div>
@@ -30,6 +60,67 @@
           </div>
           <button type="button" class="profile-page__action-link" @click="item.action()">{{ item.actionLabel }}</button>
         </article>
+      </section>
+
+      <section class="profile-page__section">
+        <div class="profile-page__section-head">
+          <div>
+            <p class="profile-page__section-kicker">偏好</p>
+            <h2>一些基础设置</h2>
+          </div>
+        </div>
+
+        <div class="profile-page__preference-card">
+          <div class="profile-page__preference-row">
+            <div>
+              <strong>界面主题</strong>
+              <p>当前先支持记录你偏好的亮色 / 深色风格。</p>
+            </div>
+            <div class="profile-page__choice-group">
+              <button
+                type="button"
+                class="profile-page__choice"
+                :class="{ 'is-active': settings?.theme === 'light' }"
+                @click="handleThemeChange('light')"
+              >
+                亮色
+              </button>
+              <button
+                type="button"
+                class="profile-page__choice"
+                :class="{ 'is-active': settings?.theme === 'dark' }"
+                @click="handleThemeChange('dark')"
+              >
+                深色
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-page__preference-row">
+            <div>
+              <strong>计量单位</strong>
+              <p>先把常见的公制 / 英制偏好记下来，后续页面可以继续跟进。</p>
+            </div>
+            <div class="profile-page__choice-group">
+              <button
+                type="button"
+                class="profile-page__choice"
+                :class="{ 'is-active': settings?.unit === 'metric' }"
+                @click="handleUnitChange('metric')"
+              >
+                公制
+              </button>
+              <button
+                type="button"
+                class="profile-page__choice"
+                :class="{ 'is-active': settings?.unit === 'imperial' }"
+                @click="handleUnitChange('imperial')"
+              >
+                英制
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="profile-page__section">
@@ -62,7 +153,8 @@
 import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { useProfilePage } from '@/composables/profile/useProfilePage';
 
-const { currentUser, handleLogout, quickActions } = useProfilePage();
+const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickActions, settings, stats, syncSummary } =
+  useProfilePage();
 </script>
 
 <style scoped>
@@ -123,7 +215,9 @@ const { currentUser, handleLogout, quickActions } = useProfilePage();
 }
 
 .profile-page__identity,
-.profile-page__account-card {
+.profile-page__account-card,
+.profile-page__sync-card,
+.profile-page__preference-card {
   display: flex;
   gap: 14px;
   padding: 18px;
@@ -159,6 +253,67 @@ const { currentUser, handleLogout, quickActions } = useProfilePage();
 .profile-page__identity-copy span {
   color: #6c6f76;
   font-size: 14px;
+}
+
+.profile-page__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-page__stat {
+  display: grid;
+  gap: 8px;
+  min-height: 104px;
+  padding: 14px 10px;
+  border-radius: 18px;
+  text-align: center;
+}
+
+.profile-page__stat span {
+  color: #6c6f76;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.profile-page__stat strong {
+  font-size: 22px;
+}
+
+.profile-page__stat--warm {
+  background: #f7efe2;
+}
+
+.profile-page__stat--cool {
+  background: #eceff8;
+}
+
+.profile-page__stat--mint {
+  background: #e7f6ee;
+}
+
+.profile-page__sync-card,
+.profile-page__preference-card {
+  display: grid;
+}
+
+.profile-page__sync-card span {
+  color: #6c6f76;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.profile-page__sync-card strong {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.profile-page__sync-card p {
+  margin: 0;
+  color: #6c6f76;
+  font-size: 13px;
 }
 
 .profile-page__action-card {
@@ -203,6 +358,54 @@ const { currentUser, handleLogout, quickActions } = useProfilePage();
   gap: 14px;
 }
 
+.profile-page__preference-row {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-page__preference-row + .profile-page__preference-row {
+  padding-top: 14px;
+  border-top: 1px solid rgba(34, 36, 40, 0.08);
+}
+
+.profile-page__preference-row strong {
+  display: block;
+  font-size: 16px;
+}
+
+.profile-page__preference-row p {
+  margin: 6px 0 0;
+  color: #6c6f76;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.profile-page__choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-page__choice {
+  min-width: 74px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(34, 36, 40, 0.08);
+  border-radius: 999px;
+  background: #f5f2ec;
+  color: #646770;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-page__choice.is-active {
+  background: #1f2224;
+  color: #fffdf8;
+  border-color: #1f2224;
+}
+
 .profile-page__account-row {
   display: flex;
   align-items: center;
@@ -233,6 +436,15 @@ const { currentUser, handleLogout, quickActions } = useProfilePage();
 
   .profile-page__section-head h2 {
     font-size: 24px;
+  }
+
+  .profile-page__stats-grid {
+    gap: 10px;
+  }
+
+  .profile-page__stat {
+    min-height: 94px;
+    padding: 12px 8px;
   }
 }
 </style>
