@@ -44,6 +44,7 @@ export const useNutritionRecommendation = () => {
 
   const canSubmit = computed(() => !submitting.value);
   const hasResult = computed(() => Boolean(result.value));
+  const isFallbackResult = computed(() => result.value?.knowledgeMeta.source === 'fallback');
 
   const buildPayload = (): RecommendNutritionPayload => ({
     goal: goal.value,
@@ -64,7 +65,7 @@ export const useNutritionRecommendation = () => {
       const nextResult = await recommendNutritionApi(buildPayload());
       result.value = nextResult;
       pageState.value = 'ready';
-      ElMessage.success('饮食建议已生成');
+      ElMessage.success(nextResult.knowledgeMeta.source === 'fallback' ? '已生成稳定饮食建议' : '饮食建议已生成');
     } catch (error) {
       const message = error instanceof Error ? error.message : '饮食建议生成失败，请稍后重试';
       errorMessage.value = message;
@@ -82,6 +83,7 @@ export const useNutritionRecommendation = () => {
     goal,
     goalOptions: GOAL_OPTIONS,
     hasResult,
+    isFallbackResult,
     pageState,
     preferenceOptions: PREFERENCE_OPTIONS,
     preferences,

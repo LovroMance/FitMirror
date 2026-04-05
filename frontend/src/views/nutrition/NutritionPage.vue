@@ -98,6 +98,10 @@
           </template>
 
           <div class="nutrition-page__summary">
+            <div v-if="isFallbackResult" class="nutrition-page__fallback-banner">
+              <strong>本次为稳定推荐</strong>
+              <p>AI 服务暂时波动，已自动切换为基于知识库的饮食建议，你仍可直接参考执行。</p>
+            </div>
             <h3>推荐原则</h3>
             <div class="nutrition-page__summary-highlights">
               <span v-for="item in summaryViewModel.highlights" :key="item">{{ item }}</span>
@@ -191,6 +195,7 @@ const {
   goal,
   goalOptions,
   hasResult,
+  isFallbackResult,
   pageState,
   preferenceOptions,
   preferences,
@@ -386,6 +391,28 @@ const mealCards = computed(() =>
 .nutrition-page__summary {
   display: grid;
   gap: 8px;
+}
+
+.nutrition-page__fallback-banner {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(244, 192, 79, 0.12);
+  border: 1px solid rgba(244, 192, 79, 0.26);
+}
+
+.nutrition-page__fallback-banner strong {
+  color: #f4c04f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nutrition-page__fallback-banner p {
+  margin: 0;
+  color: rgba(255, 244, 214, 0.82);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .nutrition-page__summary-highlights {

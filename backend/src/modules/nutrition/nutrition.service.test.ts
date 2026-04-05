@@ -4,7 +4,8 @@ const axiosPostMock = vi.hoisted(() => vi.fn());
 
 vi.mock('axios', () => ({
   default: {
-    post: axiosPostMock
+    post: axiosPostMock,
+    isAxiosError: (error: unknown) => Boolean((error as { isAxiosError?: boolean })?.isAxiosError)
   }
 }));
 
@@ -55,6 +56,7 @@ describe('nutrition.service', () => {
     expect(result.referencedFoods.map((item) => item.name)).toEqual(['鸡胸肉', '蓝莓', '熟米饭']);
     expect(result.knowledgeMeta.guidelineCount).toBeGreaterThan(0);
     expect(result.knowledgeMeta.foodCount).toBeGreaterThan(0);
+    expect(result.knowledgeMeta.source).toBe('llm');
   });
 
   it('lets preferences affect retrieval and food alias resolution', async () => {
@@ -91,7 +93,7 @@ describe('nutrition.service', () => {
     expect(String(axiosPostMock.mock.calls[0]?.[1]?.messages?.[1]?.content ?? '')).toContain('减脂和增肌有什么不同');
   });
 
-  it('throws when llm returns invalid meals structure', async () => {
+  it('retries once and falls back to stable recommendation when llm output stays invalid', async () => {
     axiosPostMock.mockResolvedValue({
       data: {
         choices: [
@@ -111,12 +113,52 @@ describe('nutrition.service', () => {
       }
     });
 
-    await expect(
-      recommendNutrition({
-        goal: 'fat_loss',
-        preferences: ['high_protein'],
-        note: ''
-      })
-    ).rejects.toThrowError('营养推荐结果解析失败，请稍后重试');
+    const result = await recommendNutrition({
+      goal: 'fat_loss',
+      preferences: ['high_protein'],
+      note: '工作日做饭时间少'
+    });
+
+    expect(axiosPostMock).toHaveBeenCalledTimes(2);
+    expect(result.knowledgeMeta.source).toBe('fallback');
+    expect(result.summary).toContain('减脂阶段');
+    expect(result.meals.breakfast).toContain('可安排');
+    expect(result.tips.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('returns llm result after retry recovers from a transient timeout', async () => {
+    axiosPostMock
+      .mockRejectedValueOnce({ isAxiosError: true, code: 'ECONNABORTED', response: undefined })
+      .mockResolvedValueOnce({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: '增肌阶段要保证规律进餐和蛋白质摄入。',
+                  meals: {
+                    breakfast: '早餐可安排燕麦、鸡蛋和牛奶。',
+                    lunch: '午餐可安排米饭、鸡胸肉和西兰花。',
+                    dinner: '晚餐可安排三文鱼和米饭。',
+                    snack: '加餐可安排香蕉和牛奶。'
+                  },
+                  tips: ['训练后补充蛋白质', '主食不要过度不足'],
+                  referencedFoodNames: ['鸡胸肉', '香蕉']
+                })
+              }
+            }
+          ]
+        }
+      });
+
+    const result = await recommendNutrition({
+      goal: 'muscle_gain',
+      preferences: ['high_protein'],
+      note: ''
+    });
+
+    expect(axiosPostMock).toHaveBeenCalledTimes(2);
+    expect(result.knowledgeMeta.source).toBe('llm');
+    expect(result.summary).toContain('增肌');
   });
 });

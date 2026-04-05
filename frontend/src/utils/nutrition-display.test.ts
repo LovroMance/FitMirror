@@ -18,7 +18,8 @@ const result = {
   ],
   knowledgeMeta: {
     guidelineCount: 6,
-    foodCount: 4
+    foodCount: 4,
+    source: 'llm'
   }
 } as const;
 

@@ -35,6 +35,7 @@ export interface NutritionRecommendationResult {
   knowledgeMeta: {
     guidelineCount: number;
     foodCount: number;
+    source: 'llm' | 'fallback';
   };
 }
 

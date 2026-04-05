@@ -37,7 +37,8 @@ describe('useNutritionRecommendation', () => {
       referencedFoods: [],
       knowledgeMeta: {
         guidelineCount: 6,
-        foodCount: 4
+        foodCount: 4,
+        source: 'llm'
       }
     });
 
@@ -82,7 +83,8 @@ describe('useNutritionRecommendation', () => {
         referencedFoods: [],
         knowledgeMeta: {
           guidelineCount: 6,
-          foodCount: 4
+          foodCount: 4,
+          source: 'llm'
         }
       })
       .mockRejectedValueOnce(new Error('二次生成失败'));
@@ -93,5 +95,30 @@ describe('useNutritionRecommendation', () => {
 
     expect(nutrition.pageState.value).toBe('ready');
     expect(nutrition.errorMessage.value).toBe('二次生成失败');
+  });
+
+  it('marks fallback result and shows stable recommendation toast', async () => {
+    recommendNutritionApiMock.mockResolvedValue({
+      summary: '建议优先保证三餐规律。',
+      meals: {
+        breakfast: '早餐',
+        lunch: '午餐',
+        dinner: '晚餐',
+        snack: '加餐'
+      },
+      tips: ['提示1', '提示2'],
+      referencedFoods: [],
+      knowledgeMeta: {
+        guidelineCount: 5,
+        foodCount: 4,
+        source: 'fallback'
+      }
+    });
+
+    const nutrition = useNutritionRecommendation();
+    await nutrition.submitRecommendation();
+
+    expect(nutrition.isFallbackResult.value).toBe(true);
+    expect(messageSuccess).toHaveBeenCalledWith('已生成稳定饮食建议');
   });
 });

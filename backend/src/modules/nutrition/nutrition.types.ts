@@ -50,6 +50,7 @@ export interface NutritionRecommendationMeals {
 export interface NutritionKnowledgeMeta {
   guidelineCount: number;
   foodCount: number;
+  source: 'llm' | 'fallback';
 }
 
 export interface NutritionRecommendationResult {
