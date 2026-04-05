@@ -25,6 +25,8 @@ export interface WorkoutTrendSummary {
 }
 
 export type WorkoutRecordSourceType = 'plan' | 'manual';
+export type WorkoutLogCompletionFilter = 'all' | 'completed' | 'incomplete';
+export type WorkoutLogDurationFilter = 'all' | 'short' | 'medium' | 'long';
 
 export interface WorkoutDayDetailView {
   id?: number;
@@ -40,6 +42,18 @@ export interface WorkoutDayDetailView {
   planGoalText: string | null;
   canViewPlan: boolean;
   planMissing: boolean;
+}
+
+export interface WorkoutLogRecordListItem {
+  clientRecordId: string;
+  date: string;
+  duration: number;
+  completed: boolean;
+  planId: number | null;
+  title: string;
+  subtitle: string;
+  goalText: string | null;
+  sourceLabel: string;
 }
 
 export interface WorkoutRecordSyncPayload {

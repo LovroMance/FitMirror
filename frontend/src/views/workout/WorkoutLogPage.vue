@@ -67,6 +67,127 @@
       </el-card>
 
       <el-card shadow="never" class="fm-card workout-log__card">
+        <div class="workout-log__card-head workout-log__card-head--filters">
+          <div>
+            <h2>筛选与检索</h2>
+            <p>按日期、时长、完成状态或训练标题快速回看记录。</p>
+          </div>
+          <el-button text class="workout-log__reset-link" @click="clearRecordFilters">清空筛选</el-button>
+        </div>
+
+        <div class="workout-log__filters">
+          <el-input
+            v-model="searchKeyword"
+            clearable
+            class="workout-log__search"
+            placeholder="搜索训练标题、目标或日期"
+          />
+          <el-date-picker
+            v-model="selectedFilterDateRange"
+            type="daterange"
+            unlink-panels
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            range-separator="至"
+            value-format="YYYY-MM-DD"
+            class="workout-log__date-range"
+          />
+          <div class="workout-log__filter-group">
+            <span class="workout-log__filter-label">完成状态</span>
+            <div class="workout-log__chip-row">
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedCompletionFilter === 'all' }"
+                @click="setCompletionFilter('all')"
+              >
+                全部
+              </button>
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedCompletionFilter === 'completed' }"
+                @click="setCompletionFilter('completed')"
+              >
+                已完成
+              </button>
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedCompletionFilter === 'incomplete' }"
+                @click="setCompletionFilter('incomplete')"
+              >
+                未完成
+              </button>
+            </div>
+          </div>
+          <div class="workout-log__filter-group">
+            <span class="workout-log__filter-label">时长</span>
+            <div class="workout-log__chip-row">
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedDurationFilter === 'all' }"
+                @click="setDurationFilter('all')"
+              >
+                全部
+              </button>
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedDurationFilter === 'short' }"
+                @click="setDurationFilter('short')"
+              >
+                15 分钟内
+              </button>
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedDurationFilter === 'medium' }"
+                @click="setDurationFilter('medium')"
+              >
+                16-30 分钟
+              </button>
+              <button
+                type="button"
+                class="workout-log__chip"
+                :class="{ 'is-active': selectedDurationFilter === 'long' }"
+                @click="setDurationFilter('long')"
+              >
+                31 分钟以上
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="workout-log__filter-summary">
+          <span>匹配 {{ filteredRecordsSummary.count }} 条</span>
+          <strong>{{ filteredRecordsSummary.totalDuration }} 分钟</strong>
+        </div>
+
+        <div v-if="filteredRecordItems.length > 0" class="workout-log__record-list">
+          <article v-for="record in filteredRecordItems" :key="record.clientRecordId" class="workout-log__record-item">
+            <div class="workout-log__record-copy">
+              <div class="workout-log__record-top">
+                <strong>{{ record.title }}</strong>
+                <span :class="record.completed ? 'is-completed' : 'is-incomplete'">
+                  {{ record.completed ? '已完成' : '未完成' }}
+                </span>
+              </div>
+              <p>{{ record.subtitle }}</p>
+              <div class="workout-log__record-meta">
+                <span>{{ record.date }}</span>
+                <span>{{ record.duration }} min</span>
+                <span>{{ record.sourceLabel }}</span>
+              </div>
+            </div>
+            <el-button text class="workout-log__record-action" @click="openDayDetail(record.date)">查看当天</el-button>
+          </article>
+        </div>
+        <p v-else class="workout-log__empty">当前筛选条件下没有匹配记录</p>
+      </el-card>
+
+      <el-card shadow="never" class="fm-card workout-log__card">
         <div class="workout-log__card-head">
           <div>
             <h2>训练热图</h2>
@@ -238,6 +359,9 @@ const {
   editingDuration,
   editingRecordId,
   cancelEditingRecord,
+  clearRecordFilters,
+  filteredRecordItems,
+  filteredRecordsSummary,
   goHome,
   goToPlanGenerator,
   heatmapRows,
@@ -250,8 +374,14 @@ const {
   refreshRecords,
   retryDayDetail,
   saveEditedRecord,
+  searchKeyword,
+  selectedCompletionFilter,
+  selectedDurationFilter,
+  selectedFilterDateRange,
   selectedPeriod,
   selectedDate,
+  setCompletionFilter,
+  setDurationFilter,
   summary,
   startEditingRecord,
   trendSummary,
@@ -399,6 +529,10 @@ const {
   gap: 12px;
 }
 
+.workout-log__card-head--filters {
+  align-items: center;
+}
+
 .workout-log__card-head h2 {
   margin: 0;
   font-size: 22px;
@@ -416,6 +550,145 @@ const {
   display: grid;
   gap: 12px;
   justify-items: end;
+}
+
+.workout-log__reset-link {
+  align-self: flex-start;
+  padding-right: 0;
+}
+
+.workout-log__filters {
+  display: grid;
+  gap: 14px;
+}
+
+.workout-log__search,
+.workout-log__date-range {
+  width: 100%;
+}
+
+.workout-log__filter-group {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-log__filter-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.workout-log__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workout-log__chip {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workout-log__chip.is-active {
+  border-color: rgba(50, 213, 131, 0.26);
+  background: rgba(50, 213, 131, 0.14);
+  color: var(--color-primary);
+}
+
+.workout-log__filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.workout-log__filter-summary strong {
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+.workout-log__record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.workout-log__record-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-log__record-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-log__record-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workout-log__record-top strong {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.workout-log__record-top span {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workout-log__record-top span.is-completed {
+  background: rgba(50, 213, 131, 0.14);
+  color: var(--color-primary);
+}
+
+.workout-log__record-top span.is-incomplete {
+  background: rgba(245, 196, 81, 0.14);
+  color: var(--color-warning);
+}
+
+.workout-log__record-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.workout-log__record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.workout-log__record-action {
+  align-self: center;
 }
 
 .workout-log__period-toggle {
@@ -719,6 +992,17 @@ const {
 
   .workout-log__card-head h2 {
     font-size: 20px;
+  }
+
+  .workout-log__card-head--filters,
+  .workout-log__filter-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .workout-log__record-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .workout-log__head-actions {

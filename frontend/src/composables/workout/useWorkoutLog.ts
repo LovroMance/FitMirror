@@ -7,7 +7,14 @@ import { useAuthStore } from '@/store/auth';
 import { plansRepository, workoutRecordsRepository } from '@/repositories';
 import type { WorkoutRecordEntity } from '@/types/local-db';
 import type { PageState } from '@/types/ui';
-import type { DailyHeatmapPoint, WorkoutDayDetailView, WorkoutPeriod } from '@/types/workout';
+import type {
+  DailyHeatmapPoint,
+  WorkoutDayDetailView,
+  WorkoutLogCompletionFilter,
+  WorkoutLogDurationFilter,
+  WorkoutLogRecordListItem,
+  WorkoutPeriod
+} from '@/types/workout';
 import {
   buildDailyHeatmapPoints,
   buildHeatmapRows,
@@ -18,6 +25,7 @@ import {
 import { buildWorkoutDayDetailViews } from '@/utils/workout-record-details';
 
 const JUST_COMPLETED_BANNER_TITLE = '刚完成训练';
+const DEFAULT_FILTER_RANGE: string[] = [];
 
 export const useWorkoutLog = () => {
   const router = useRouter();
@@ -36,15 +44,89 @@ export const useWorkoutLog = () => {
   const editingCompleted = ref(true);
   const detailSaving = ref(false);
   const detailCacheByDate = ref<Record<string, WorkoutDayDetailView[]>>({});
+  const linkedPlanSummaryById = ref<Record<number, { title: string; goalText: string }>>({});
   const detailRequestToken = ref(0);
   const hasHandledCompletedDate = ref(false);
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
   const selectedPeriod = ref<WorkoutPeriod>('week');
+  const searchKeyword = ref('');
+  const selectedFilterDateRange = ref<string[]>(DEFAULT_FILTER_RANGE);
+  const selectedCompletionFilter = ref<WorkoutLogCompletionFilter>('all');
+  const selectedDurationFilter = ref<WorkoutLogDurationFilter>('all');
 
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
   const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
   const heatmapRows = computed(() => buildHeatmapRows(dailyPoints.value));
+  const filteredRecordItems = computed<WorkoutLogRecordListItem[]>(() => {
+    const keyword = searchKeyword.value.trim().toLowerCase();
+    const [startDate, endDate] = selectedFilterDateRange.value;
+
+    return [...records.value]
+      .sort((a, b) => {
+        if (a.date !== b.date) {
+          return a.date < b.date ? 1 : -1;
+        }
+
+        return a.updatedAt < b.updatedAt ? 1 : -1;
+      })
+      .map((record) => {
+        const planId = typeof record.planId === 'number' && record.planId > 0 ? record.planId : null;
+        const linkedPlan = planId ? linkedPlanSummaryById.value[planId] : null;
+        const sourceLabel = planId ? '计划训练' : '手动记录';
+        return {
+          clientRecordId: record.clientRecordId,
+          date: record.date,
+          duration: record.duration,
+          completed: record.completed,
+          planId,
+          title: linkedPlan?.title || (planId ? '关联计划已删除' : '手动训练记录'),
+          subtitle: linkedPlan?.goalText || (planId ? '原计划已不可查看' : '未关联训练计划'),
+          goalText: linkedPlan?.goalText ?? null,
+          sourceLabel
+        };
+      })
+      .filter((record) => {
+        if (startDate && record.date < startDate) {
+          return false;
+        }
+
+        if (endDate && record.date > endDate) {
+          return false;
+        }
+
+        if (selectedCompletionFilter.value === 'completed' && !record.completed) {
+          return false;
+        }
+
+        if (selectedCompletionFilter.value === 'incomplete' && record.completed) {
+          return false;
+        }
+
+        if (selectedDurationFilter.value === 'short' && record.duration > 15) {
+          return false;
+        }
+
+        if (selectedDurationFilter.value === 'medium' && (record.duration < 16 || record.duration > 30)) {
+          return false;
+        }
+
+        if (selectedDurationFilter.value === 'long' && record.duration < 31) {
+          return false;
+        }
+
+        if (!keyword) {
+          return true;
+        }
+
+        const haystack = [record.title, record.subtitle, record.sourceLabel, record.date].join(' ').toLowerCase();
+        return haystack.includes(keyword);
+      });
+  });
+  const filteredRecordsSummary = computed(() => ({
+    count: filteredRecordItems.value.length,
+    totalDuration: filteredRecordItems.value.reduce((sum, record) => sum + record.duration, 0)
+  }));
   const completedDateTarget = computed(() => resolveCompletedDateTarget());
   const completedPlanTarget = computed(() => resolveCompletedPlanTarget());
   const completionBanner = computed(() => {
@@ -110,16 +192,26 @@ export const useWorkoutLog = () => {
       await syncWorkoutRecordsForUser(userId).catch(() => {
         ElMessage.warning('云端记录同步失败，已先展示本地数据');
       });
-      const { startDate, endDate, dates } = getDateRangeByPeriod(selectedPeriod.value);
-      const loaded = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
+      const loaded = await workoutRecordsRepository.listRecordsByUser(userId);
       records.value = loaded;
-      dailyPoints.value = buildDailyHeatmapPoints(loaded, dates);
+      const planIds = [
+        ...new Set(loaded.map((record) => record.planId).filter((planId): planId is number => typeof planId === 'number' && planId > 0))
+      ];
+      const linkedPlans = await Promise.all(planIds.map((planId) => plansRepository.getPlanById(userId, planId)));
+      linkedPlanSummaryById.value = Object.fromEntries(
+        linkedPlans
+          .filter((plan): plan is NonNullable<typeof plan> => Boolean(plan))
+          .map((plan) => [plan.id as number, { title: plan.planJson.title, goalText: plan.goalText }])
+      );
+      const { startDate, endDate, dates } = getDateRangeByPeriod(selectedPeriod.value);
+      const periodRecords = loaded.filter((record) => record.date >= startDate && record.date <= endDate);
+      dailyPoints.value = buildDailyHeatmapPoints(periodRecords, dates);
       detailCacheByDate.value = {};
       const handledCompletedDate = await openCompletedDateDetailIfNeeded();
       if (!handledCompletedDate && selectedDate.value) {
         await openDayDetail(selectedDate.value);
       }
-      recordsState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
+      recordsState.value = loaded.length > 0 ? 'ready' : 'empty';
       recordsError.value = '';
     } catch {
       if (dailyPoints.value.length > 0) {
@@ -419,7 +511,23 @@ export const useWorkoutLog = () => {
     await openDayDetail(completedDate);
   };
 
+  const setCompletionFilter = (filter: WorkoutLogCompletionFilter): void => {
+    selectedCompletionFilter.value = filter;
+  };
+
+  const setDurationFilter = (filter: WorkoutLogDurationFilter): void => {
+    selectedDurationFilter.value = filter;
+  };
+
+  const clearRecordFilters = (): void => {
+    searchKeyword.value = '';
+    selectedFilterDateRange.value = DEFAULT_FILTER_RANGE;
+    selectedCompletionFilter.value = 'all';
+    selectedDurationFilter.value = 'all';
+  };
+
   return {
+    clearRecordFilters,
     dateRangeLabel,
     completionBanner,
     completedDateTarget,
@@ -432,6 +540,8 @@ export const useWorkoutLog = () => {
     editingCompleted,
     editingDuration,
     editingRecordId,
+    filteredRecordItems,
+    filteredRecordsSummary,
     goHome,
     goToPlanGenerator,
     heatmapRows,
@@ -446,8 +556,14 @@ export const useWorkoutLog = () => {
     resolveCompletedPlanTarget,
     retryDayDetail,
     saveEditedRecord,
+    searchKeyword,
+    selectedCompletionFilter,
+    selectedDurationFilter,
+    selectedFilterDateRange,
     selectedPeriod,
     selectedDate,
+    setCompletionFilter,
+    setDurationFilter,
     summary,
     startEditingRecord,
     trendSummary,
