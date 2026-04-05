@@ -4,7 +4,7 @@
       <section class="nutrition-page__hero">
         <p class="nutrition-page__eyebrow">Fuel Better</p>
         <h1 class="nutrition-page__title">饮食管理</h1>
-        <p class="nutrition-page__description">基于你的目标、偏好和忌口，生成更容易执行的 1 天饮食建议。</p>
+        <p class="nutrition-page__description">基于你的目标、偏好和补充要求，生成更容易执行的 1 天饮食建议。</p>
       </section>
 
       <section class="nutrition-page__content">
@@ -45,14 +45,14 @@
           </div>
 
           <div class="nutrition-page__field">
-            <span class="nutrition-page__label">忌口或限制</span>
+            <span class="nutrition-page__label">补充要求或问题</span>
             <el-input
-              v-model="avoidances"
+              v-model="note"
               type="textarea"
               :rows="3"
               resize="none"
               class="fm-textarea"
-              placeholder="例如：不吃辣、乳糖不耐受、工作日做饭时间少"
+              placeholder="例如：不吃辣、工作日做饭时间少、减脂和增肌有什么不同"
             />
           </div>
 
@@ -169,7 +169,7 @@
           v-else-if="pageState !== 'loading'"
           variant="empty"
           title="还没有饮食建议"
-          description="先选一个目标，再告诉我你的偏好和忌口。"
+          description="先选一个目标，再告诉我你的偏好和补充要求。"
           action-label="开始生成"
           @action="submitRecommendation"
         />
@@ -185,7 +185,7 @@ import { useNutritionRecommendation } from '@/composables/nutrition/useNutrition
 import { buildNutritionMealViewModels, buildNutritionSummaryViewModel } from '@/utils/nutrition-display';
 
 const {
-  avoidances,
+  note,
   canSubmit,
   errorMessage,
   goal,

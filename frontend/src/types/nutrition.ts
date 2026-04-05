@@ -41,5 +41,5 @@ export interface NutritionRecommendationResult {
 export interface RecommendNutritionPayload {
   goal: NutritionGoal;
   preferences: NutritionPreference[];
-  avoidances: string;
+  note: string;
 }

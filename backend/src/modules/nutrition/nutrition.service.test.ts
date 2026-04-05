@@ -47,7 +47,7 @@ describe('nutrition.service', () => {
     const result = await recommendNutrition({
       goal: 'fat_loss',
       preferences: ['high_protein', 'light'],
-      avoidances: ''
+      note: ''
     });
 
     expect(result.summary).toContain('蛋白质');
@@ -83,12 +83,12 @@ describe('nutrition.service', () => {
     const result = await recommendNutrition({
       goal: 'muscle_gain',
       preferences: ['high_protein', 'quick'],
-      avoidances: ''
+      note: '减脂和增肌有什么不同'
     });
 
     expect(result.referencedFoods.map((item) => item.name)).toEqual(['鸡胸肉', '香蕉']);
     expect(axiosPostMock).toHaveBeenCalledTimes(1);
-    expect(String(axiosPostMock.mock.calls[0]?.[1]?.messages?.[1]?.content ?? '')).toContain('快手省时');
+    expect(String(axiosPostMock.mock.calls[0]?.[1]?.messages?.[1]?.content ?? '')).toContain('减脂和增肌有什么不同');
   });
 
   it('throws when llm returns invalid meals structure', async () => {
@@ -115,7 +115,7 @@ describe('nutrition.service', () => {
       recommendNutrition({
         goal: 'fat_loss',
         preferences: ['high_protein'],
-        avoidances: ''
+        note: ''
       })
     ).rejects.toThrowError('营养推荐结果解析失败，请稍后重试');
   });

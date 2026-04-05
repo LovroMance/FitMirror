@@ -43,14 +43,14 @@ describe('useNutritionRecommendation', () => {
 
     const nutrition = useNutritionRecommendation();
     nutrition.preferences.value = ['high_protein', 'quick'];
-    nutrition.avoidances.value = '不吃辣';
+    nutrition.note.value = '不吃辣';
 
     await nutrition.submitRecommendation();
 
     expect(recommendNutritionApiMock).toHaveBeenCalledWith({
       goal: 'fat_loss',
       preferences: ['high_protein', 'quick'],
-      avoidances: '不吃辣'
+      note: '不吃辣'
     });
     expect(nutrition.pageState.value).toBe('ready');
     expect(nutrition.result.value?.meals.breakfast).toContain('燕麦');

@@ -36,7 +36,7 @@ const PREFERENCE_OPTIONS: NutritionPreferenceOption[] = [
 export const useNutritionRecommendation = () => {
   const goal = ref<NutritionGoal>('fat_loss');
   const preferences = ref<NutritionPreference[]>([]);
-  const avoidances = ref('');
+  const note = ref('');
   const pageState = ref<PageState>('idle');
   const submitting = ref(false);
   const errorMessage = ref('');
@@ -48,7 +48,7 @@ export const useNutritionRecommendation = () => {
   const buildPayload = (): RecommendNutritionPayload => ({
     goal: goal.value,
     preferences: [...preferences.value],
-    avoidances: avoidances.value.trim()
+    note: note.value.trim()
   });
 
   const submitRecommendation = async (): Promise<void> => {
@@ -76,7 +76,7 @@ export const useNutritionRecommendation = () => {
   };
 
   return {
-    avoidances,
+    note,
     canSubmit,
     errorMessage,
     goal,

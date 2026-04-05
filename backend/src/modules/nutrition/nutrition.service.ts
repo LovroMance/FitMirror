@@ -71,22 +71,37 @@ const tokenize = (value: string): string[] =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const containsAvoidance = (source: string, avoidances: string): boolean => {
-  const normalizedAvoidances = avoidances.trim().toLowerCase();
-  if (!normalizedAvoidances) {
+const extractRestrictionTokens = (note: string): string[] => {
+  const normalized = note.trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const restrictedMatches = Array.from(
+    normalized.matchAll(/(?:不吃|不要|不想吃|不能吃|忌口|过敏|乳糖不耐受)([^，。；;、\s]+)/g)
+  )
+    .map((match) => match[1]?.trim() ?? '')
+    .filter(Boolean);
+
+  return Array.from(new Set(restrictedMatches));
+};
+
+const containsRestriction = (source: string, note: string): boolean => {
+  const restrictionTokens = extractRestrictionTokens(note);
+  if (restrictionTokens.length === 0) {
     return false;
   }
 
-  return tokenize(normalizedAvoidances).some((token) => token && source.toLowerCase().includes(token));
+  return restrictionTokens.some((token) => token && source.toLowerCase().includes(token.toLowerCase()));
 };
 
 const scoreGuideline = (
   guideline: NutritionGuideline,
   goal: NutritionGoal,
   preferences: NutritionPreference[],
-  avoidances: string
+  note: string
 ): number => {
-  if (containsAvoidance(`${guideline.title} ${guideline.summary} ${guideline.content}`, avoidances)) {
+  if (containsRestriction(`${guideline.title} ${guideline.summary} ${guideline.content}`, note)) {
     return -1;
   }
 
@@ -114,31 +129,40 @@ const scoreGuideline = (
 };
 
 const retrieveGuidelines = (input: RecommendNutritionInput): RetrievedGuideline[] => {
+  const queryText = `${input.note} ${GOAL_LABEL_MAP[input.goal]} ${input.preferences.map((item) => PREFERENCE_LABEL_MAP[item]).join(' ')}`
+    .trim()
+    .toLowerCase();
+
   return loadGuidelines()
     .map((guideline) => ({
       ...guideline,
-      score: scoreGuideline(guideline, input.goal, input.preferences, input.avoidances)
+      score:
+        scoreGuideline(guideline, input.goal, input.preferences, input.note) +
+        guideline.keywords.reduce(
+          (total, keyword) => (queryText.includes(keyword.toLowerCase()) ? total + 1 : total),
+          0
+        )
     }))
     .filter((guideline) => guideline.score > 0)
     .sort((left, right) => right.score - left.score || right.priority - left.priority)
     .slice(0, 6);
 };
 
-const buildFoodQueryText = (guidelines: RetrievedGuideline[], avoidances: string): string =>
+const buildFoodQueryText = (guidelines: RetrievedGuideline[], note: string): string =>
   [
     ...guidelines.flatMap((guideline) => [guideline.title, guideline.summary, guideline.content, ...guideline.keywords]),
-    avoidances
+    note
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
-const retrieveFoods = (guidelines: RetrievedGuideline[], avoidances: string): NutritionFoodCard[] => {
-  const queryText = buildFoodQueryText(guidelines, avoidances);
+const retrieveFoods = (guidelines: RetrievedGuideline[], note: string): NutritionFoodCard[] => {
+  const queryText = buildFoodQueryText(guidelines, note);
 
   return loadFoods()
     .map((food) => {
-      if (containsAvoidance([food.name, ...food.aliases, ...food.keywords].join(' '), avoidances)) {
+      if (containsRestriction([food.name, ...food.aliases, ...food.keywords].join(' '), note)) {
         return { food, score: -1 };
       }
 
@@ -295,7 +319,7 @@ const buildPrompt = (
     'referencedFoodNames 必须是系统已提供食物名称组成的数组。',
     `用户目标：${GOAL_LABEL_MAP[input.goal]}`,
     `用户偏好：${input.preferences.length > 0 ? input.preferences.map((item) => PREFERENCE_LABEL_MAP[item]).join('、') : '无特殊偏好'}`,
-    `忌口或限制：${input.avoidances || '无'}`,
+    `用户补充要求或问题：${input.note || '无'}`,
     '系统饮食知识：',
     guidelineText,
     '系统食物营养信息：',
@@ -372,7 +396,7 @@ export const recommendNutrition = async (input: RecommendNutritionInput): Promis
     throw new HttpError('未找到适合当前目标的饮食知识，请调整条件后重试', 400, 40035);
   }
 
-  const foods = retrieveFoods(guidelines, input.avoidances);
+  const foods = retrieveFoods(guidelines, input.note);
   if (foods.length === 0) {
     throw new Error('暂无可用食物营养信息，请稍后重试');
   }

@@ -5,7 +5,7 @@ export type NutritionPreference = 'high_protein' | 'low_oil' | 'light' | 'quick'
 export interface RecommendNutritionInput {
   goal: NutritionGoal;
   preferences: NutritionPreference[];
-  avoidances: string;
+  note: string;
 }
 
 export interface NutritionGuideline {

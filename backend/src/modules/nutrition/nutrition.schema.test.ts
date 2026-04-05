@@ -7,12 +7,12 @@ describe('nutrition.schema', () => {
       parseRecommendNutritionBody({
         goal: 'fat_loss',
         preferences: ['high_protein', 'quick'],
-        avoidances: '不吃辣'
+        note: '不吃辣'
       })
     ).toEqual({
       goal: 'fat_loss',
       preferences: ['high_protein', 'quick'],
-      avoidances: '不吃辣'
+      note: '不吃辣'
     });
   });
 
@@ -20,7 +20,7 @@ describe('nutrition.schema', () => {
     expect(() =>
       parseRecommendNutritionBody({
         preferences: [],
-        avoidances: ''
+        note: ''
       })
     ).toThrowError('goal is invalid');
   });
@@ -30,7 +30,7 @@ describe('nutrition.schema', () => {
       parseRecommendNutritionBody({
         goal: 'bulk',
         preferences: [],
-        avoidances: ''
+        note: ''
       })
     ).toThrowError('goal is invalid');
   });
@@ -40,18 +40,18 @@ describe('nutrition.schema', () => {
       parseRecommendNutritionBody({
         goal: 'fat_loss',
         preferences: 'high_protein',
-        avoidances: ''
+        note: ''
       })
     ).toThrowError('preferences must be an array');
   });
 
-  it('throws when avoidances is too long', () => {
+  it('throws when note is too long', () => {
     expect(() =>
       parseRecommendNutritionBody({
         goal: 'fat_loss',
         preferences: [],
-        avoidances: 'a'.repeat(201)
+        note: 'a'.repeat(201)
       })
-    ).toThrowError('avoidances is too long');
+    ).toThrowError('note is too long');
   });
 });
