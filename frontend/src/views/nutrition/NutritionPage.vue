@@ -252,7 +252,7 @@ const mealCards = computed(() =>
 .nutrition-page__screen {
   width: min(100%, 402px);
   min-height: 100vh;
-  padding: 28px 20px 32px;
+  padding: 28px 20px calc(136px + env(safe-area-inset-bottom, 0px));
 }
 
 .nutrition-page__hero {
@@ -626,7 +626,7 @@ const mealCards = computed(() =>
 
 @media (max-width: 420px) {
   .nutrition-page__screen {
-    padding: 24px 14px 28px;
+    padding: 24px 14px calc(128px + env(safe-area-inset-bottom, 0px));
   }
 
   .nutrition-page__title {
