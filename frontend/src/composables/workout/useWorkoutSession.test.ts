@@ -73,7 +73,7 @@ describe('useWorkoutSession', () => {
     vi.useRealTimers();
   });
 
-  it('writes the linked plan id into the completed workout record', async () => {
+  it('writes the linked plan id into the completed workout record with customized set volume', async () => {
     plansRepositoryMocks.getPlanById.mockResolvedValue({
       id: 11,
       userId: 7,
@@ -103,7 +103,19 @@ describe('useWorkoutSession', () => {
     const session = useWorkoutSession();
     await mountedCallbacks[0]?.();
 
+    expect(session.sessionExercises.value[0]?.setCount).toBe(4);
+    expect(session.sessionExercises.value[0]?.repsPerSet).toBe(15);
+
+    session.updateExerciseDraftValue(0, 'setCount', 5);
+    session.updateExerciseDraftValue(0, 'repsPerSet', 10);
     session.startSession();
+    expect(session.currentSetLabel.value).toBe('第 1 / 5 组');
+
+    await session.advanceSession();
+    expect(session.currentSetLabel.value).toBe('第 2 / 5 组');
+    await session.advanceSession();
+    await session.advanceSession();
+    await session.advanceSession();
     await session.advanceSession();
 
     expect(workoutRecordsRepositoryMocks.createRecord).toHaveBeenCalledWith({
@@ -121,5 +133,40 @@ describe('useWorkoutSession', () => {
         completedPlanId: '11'
       }
     });
+  });
+
+  it('uses grouped progress for timed exercises too', async () => {
+    plansRepositoryMocks.getPlanById.mockResolvedValue({
+      id: 12,
+      userId: 7,
+      clientPlanId: 'plan-12',
+      goalText: '燃脂循环',
+      createdAt: '2026-04-02T08:00:00.000Z',
+      updatedAt: '2026-04-02T08:00:00.000Z',
+      planJson: {
+        title: '燃脂循环',
+        level: 'beginner',
+        durationMinutes: 12,
+        summary: '短时循环',
+        exercises: [
+          {
+            name: '开合跳',
+            durationSeconds: 30,
+            restSeconds: 15,
+            instruction: '保持均匀呼吸'
+          }
+        ]
+      }
+    });
+    workoutRecordsRepositoryMocks.createRecord.mockResolvedValue({
+      id: 2
+    });
+
+    const session = useWorkoutSession();
+    await mountedCallbacks[0]?.();
+
+    expect(session.sessionExercises.value[0]?.setCount).toBe(3);
+    expect(session.sessionExercises.value[0]?.durationSeconds).toBe(30);
+    expect(session.currentExerciseVolumeLabel.value).toBe('3 组 x 30 秒');
   });
 });

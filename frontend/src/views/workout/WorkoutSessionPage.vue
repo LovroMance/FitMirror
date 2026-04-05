@@ -36,23 +36,68 @@
             </span>
           </div>
           <p class="workout-session__summary-text">{{ plan.summary }}</p>
+          <div class="workout-session__session-stats">
+            <article>
+              <span>总组数</span>
+              <strong>{{ totalSets }}</strong>
+            </article>
+            <article>
+              <span>已完成</span>
+              <strong>{{ completedSets }}</strong>
+            </article>
+          </div>
         </el-card>
 
         <el-card shadow="never" class="fm-card workout-session__card">
           <template v-if="!started">
             <div class="workout-session__intro">
               <h2>准备开始</h2>
-              <p>点击开始后按顺序完成动作。训练完成会自动记录到热图。</p>
+              <p>先确认每个动作的组数和次数。点击开始后会按“组”推进，训练完成会自动记录到热图。</p>
             </div>
             <ol class="workout-session__preview-list">
               <li
-                v-for="(exercise, idx) in plan.exercises"
+                v-for="(exercise, idx) in sessionExercises"
                 :key="`${exercise.name}-${idx}`"
                 class="workout-session__preview-item"
               >
-                <span>#{{ idx + 1 }}</span>
-                <strong>{{ exercise.name }}</strong>
-                <small>{{ exercise.durationSeconds ? `${exercise.durationSeconds} 秒` : exercise.reps }}</small>
+                <div class="workout-session__preview-top">
+                  <span>#{{ idx + 1 }}</span>
+                  <strong>{{ exercise.name }}</strong>
+                  <small>{{ formatExerciseVolume(exercise) }}</small>
+                </div>
+                <p>{{ exercise.instruction }}</p>
+                <div class="workout-session__draft-grid">
+                  <label class="workout-session__draft-field">
+                    <span>组数</span>
+                    <el-input-number
+                      :model-value="exercise.setCount"
+                      :min="1"
+                      :max="12"
+                      controls-position="right"
+                      @update:model-value="(value) => updateExerciseDraftValue(idx, 'setCount', Number(value))"
+                    />
+                  </label>
+                  <label v-if="exercise.mode === 'reps'" class="workout-session__draft-field">
+                    <span>每组次数</span>
+                    <el-input-number
+                      :model-value="exercise.repsPerSet"
+                      :min="1"
+                      :max="50"
+                      controls-position="right"
+                      @update:model-value="(value) => updateExerciseDraftValue(idx, 'repsPerSet', Number(value))"
+                    />
+                  </label>
+                  <label v-else class="workout-session__draft-field">
+                    <span>每组时长(秒)</span>
+                    <el-input-number
+                      :model-value="exercise.durationSeconds"
+                      :min="5"
+                      :max="300"
+                      controls-position="right"
+                      @update:model-value="(value) => updateExerciseDraftValue(idx, 'durationSeconds', Number(value))"
+                    />
+                  </label>
+                </div>
               </li>
             </ol>
             <div class="workout-session__actions">
@@ -69,11 +114,55 @@
               <span class="workout-session__step-index">第 {{ currentExerciseIndex + 1 }} / {{ plan.exercises.length }} 步</span>
             </div>
 
-            <p class="workout-session__exercise-meta">
-              {{ currentExercise.durationSeconds ? `${currentExercise.durationSeconds} 秒` : currentExercise.reps }} ·
-              休息 {{ currentExercise.restSeconds }} 秒
-            </p>
+            <div class="workout-session__current-progress">
+              <span class="workout-session__set-chip">{{ currentSetLabel }}</span>
+              <span class="workout-session__volume-chip">{{ currentExerciseVolumeLabel }}</span>
+            </div>
+
+            <div class="workout-session__set-track" aria-label="组数进度">
+              <span
+                v-for="setIndex in currentExercise.setCount"
+                :key="`${currentExercise.name}-set-${setIndex}`"
+                class="workout-session__set-dot"
+                :class="{ 'is-completed': setIndex <= currentExercise.completedSets }"
+              ></span>
+            </div>
+
+            <p class="workout-session__exercise-meta">组间休息 {{ currentExercise.restSeconds }} 秒</p>
             <p class="workout-session__exercise-instruction">{{ currentExercise.instruction }}</p>
+
+            <div class="workout-session__live-grid">
+              <label class="workout-session__draft-field">
+                <span>组数</span>
+                <el-input-number
+                  :model-value="currentExercise.setCount"
+                  :min="1"
+                  :max="12"
+                  controls-position="right"
+                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'setCount', Number(value))"
+                />
+              </label>
+              <label v-if="currentExercise.mode === 'reps'" class="workout-session__draft-field">
+                <span>每组次数</span>
+                <el-input-number
+                  :model-value="currentExercise.repsPerSet"
+                  :min="1"
+                  :max="50"
+                  controls-position="right"
+                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'repsPerSet', Number(value))"
+                />
+              </label>
+              <label v-else class="workout-session__draft-field">
+                <span>每组时长(秒)</span>
+                <el-input-number
+                  :model-value="currentExercise.durationSeconds"
+                  :min="5"
+                  :max="300"
+                  controls-position="right"
+                  @update:model-value="(value) => updateExerciseDraftValue(currentExerciseIndex, 'durationSeconds', Number(value))"
+                />
+              </label>
+            </div>
 
             <div class="workout-session__actions">
               <el-button
@@ -82,7 +171,7 @@
                 :disabled="saving"
                 @click="advanceSession"
               >
-                {{ isLastExercise ? '完成训练' : '下一个动作' }}
+                {{ primaryActionLabel }}
               </el-button>
             </div>
           </template>
@@ -99,16 +188,23 @@ import { useWorkoutSession } from '@/composables/workout/useWorkoutSession';
 const {
   advanceSession,
   completedExercises,
+  completedSets,
   currentExercise,
   currentExerciseIndex,
+  currentExerciseVolumeLabel,
+  currentSetLabel,
+  formatExerciseVolume,
   goBackToPlans,
-  isLastExercise,
   plan,
+  primaryActionLabel,
   saving,
+  sessionExercises,
   sessionError,
   sessionState,
   startSession,
-  started
+  started,
+  totalSets,
+  updateExerciseDraftValue
 } = useWorkoutSession();
 </script>
 
@@ -185,6 +281,31 @@ const {
   gap: 14px;
 }
 
+.workout-session__session-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workout-session__session-stats article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-session__session-stats span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.workout-session__session-stats strong {
+  color: var(--color-primary);
+  font-size: 24px;
+}
+
 .workout-session__plan-title {
   font-size: 26px;
   line-height: 1.2;
@@ -220,13 +341,18 @@ const {
 
 .workout-session__preview-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-session__preview-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
 }
 
 .workout-session__preview-item span,
@@ -238,6 +364,77 @@ const {
 
 .workout-session__preview-item strong {
   font-size: 15px;
+}
+
+.workout-session__preview-item p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.workout-session__draft-grid,
+.workout-session__live-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workout-session__draft-field {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-session__draft-field span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.workout-session__current-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.workout-session__set-chip,
+.workout-session__volume-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workout-session__set-chip {
+  background: rgba(50, 213, 131, 0.16);
+  color: var(--color-primary);
+}
+
+.workout-session__volume-chip {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary);
+}
+
+.workout-session__set-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workout-session__set-dot {
+  width: 28px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.workout-session__set-dot.is-completed {
+  background: var(--color-primary);
+  box-shadow: 0 0 18px rgba(50, 213, 131, 0.28);
 }
 
 .workout-session__actions {
@@ -263,6 +460,12 @@ const {
 
   .workout-session__plan-title {
     font-size: 23px;
+  }
+
+  .workout-session__session-stats,
+  .workout-session__draft-grid,
+  .workout-session__live-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
