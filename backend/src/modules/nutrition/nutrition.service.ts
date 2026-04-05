@@ -81,13 +81,6 @@ const loadFoods = (): NutritionFood[] => {
   return foodsCache;
 };
 
-const tokenize = (value: string): string[] =>
-  value
-    .toLowerCase()
-    .split(/[\s,，。；;、/]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 const extractRestrictionTokens = (note: string): string[] => {
   const normalized = note.trim();
   if (!normalized) {

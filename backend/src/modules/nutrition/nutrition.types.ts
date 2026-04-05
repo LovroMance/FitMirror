@@ -38,7 +38,7 @@ export interface NutritionFood {
   keywords: string[];
 }
 
-export interface NutritionFoodCard extends NutritionFood {}
+export type NutritionFoodCard = NutritionFood;
 
 export interface NutritionRecommendationMeals {
   breakfast: string;
