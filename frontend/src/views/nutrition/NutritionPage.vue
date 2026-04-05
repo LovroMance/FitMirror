@@ -102,6 +102,16 @@
               <strong>本次为稳定推荐</strong>
               <p>AI 服务暂时波动，已自动切换为基于知识库的饮食建议，你仍可直接参考执行。</p>
             </div>
+            <div v-if="result.noteResponse" class="nutrition-page__note-response">
+              <div class="nutrition-page__note-response-head">
+                <span>已理解你的补充输入</span>
+                <strong>{{ result.noteResponse.title }}</strong>
+              </div>
+              <p>{{ result.noteResponse.summary }}</p>
+              <div v-if="result.noteResponse.bullets.length > 0" class="nutrition-page__summary-highlights">
+                <span v-for="item in result.noteResponse.bullets" :key="item">{{ item }}</span>
+              </div>
+            </div>
             <h3>推荐原则</h3>
             <div class="nutrition-page__summary-highlights">
               <span v-for="item in summaryViewModel.highlights" :key="item">{{ item }}</span>
@@ -122,6 +132,11 @@
                 <span v-for="food in meal.foods" :key="food">{{ food }}</span>
               </div>
               <p>{{ meal.detail }}</p>
+              <p class="nutrition-page__meal-why">{{ meal.why }}</p>
+              <div v-if="meal.alternatives.length > 0" class="nutrition-page__meal-alternatives">
+                <span>可替代</span>
+                <strong>{{ meal.alternatives.join('、') }}</strong>
+              </div>
             </article>
           </div>
 
@@ -415,6 +430,33 @@ const mealCards = computed(() =>
   line-height: 1.6;
 }
 
+.nutrition-page__note-response {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(50, 213, 131, 0.08);
+  border: 1px solid rgba(50, 213, 131, 0.22);
+}
+
+.nutrition-page__note-response-head {
+  display: grid;
+  gap: 4px;
+}
+
+.nutrition-page__note-response-head span {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nutrition-page__note-response-head strong {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 .nutrition-page__summary-highlights {
   display: flex;
   flex-wrap: wrap;
@@ -490,6 +532,25 @@ const mealCards = computed(() =>
 
 .nutrition-page__meal-foods {
   margin-bottom: 10px;
+}
+
+.nutrition-page__meal-why {
+  margin-top: 10px;
+}
+
+.nutrition-page__meal-alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.nutrition-page__meal-alternatives span {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .nutrition-page__tips ul {

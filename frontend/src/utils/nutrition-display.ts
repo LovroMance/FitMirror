@@ -11,6 +11,8 @@ export interface NutritionMealViewModel {
   title: string;
   portions: string[];
   foods: string[];
+  why: string;
+  alternatives: string[];
   detail: string;
 }
 
@@ -76,18 +78,20 @@ export const buildNutritionMealViewModels = (
   referencedFoods: NutritionFoodCard[]
 ): NutritionMealViewModel[] => {
   return (Object.keys(meals) as Array<keyof typeof meals>).map((key) => {
-    const rawText = meals[key];
-    const cleaned = trimMealPrefix(rawText);
-    const segments = splitSentence(cleaned);
-    const title = segments[0] ?? cleaned;
-    const detail = segments.slice(1).join('，') || title;
+    const meal = meals[key];
+    const title = trimMealPrefix(meal.title);
+    const detail = meal.detail || meal.why;
+    const suggestedFoods =
+      meal.suggestedFoods.length > 0 ? meal.suggestedFoods : extractFoodMentions(`${meal.title}${meal.detail}`, referencedFoods);
 
     return {
       key,
       label: MEAL_LABELS[key],
       title,
-      portions: extractQuantities(rawText),
-      foods: extractFoodMentions(rawText, referencedFoods),
+      portions: meal.suggestedPortions.length > 0 ? meal.suggestedPortions : extractQuantities(`${meal.detail} ${meal.why}`),
+      foods: suggestedFoods,
+      why: meal.why,
+      alternatives: meal.alternatives,
       detail
     };
   });

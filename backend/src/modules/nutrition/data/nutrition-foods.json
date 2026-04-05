@@ -151,5 +151,107 @@
     "highlights": ["提供优质蛋白和 Omega-3 脂肪酸", "适合保持和增肌阶段作为优质主菜"],
     "benefits": ["有助于补充优质脂肪与蛋白质，支持训练恢复和均衡饮食结构"],
     "keywords": ["三文鱼", "鱼类", "omega-3", "蛋白质"]
+  },
+  {
+    "id": "food-sweet-potato",
+    "name": "红薯",
+    "aliases": ["蒸红薯", "地瓜"],
+    "category": "staple",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 86,
+      "proteinG": 1.6,
+      "carbohydrateG": 20.1,
+      "fatG": 0.1,
+      "fiberG": 3
+    },
+    "highlights": ["提供复合碳水和膳食纤维", "适合工作日提前准备"],
+    "benefits": ["有助于补充主食能量，同时提升饱腹感和执行便利度"],
+    "keywords": ["红薯", "地瓜", "主食", "省时"]
+  },
+  {
+    "id": "food-tofu",
+    "name": "北豆腐",
+    "aliases": ["豆腐", "老豆腐"],
+    "category": "protein",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 81,
+      "proteinG": 8.1,
+      "carbohydrateG": 1.9,
+      "fatG": 4.2,
+      "fiberG": 0.5
+    },
+    "highlights": ["植物性蛋白来源稳定", "适合清淡、少油和乳制品替代场景"],
+    "benefits": ["可作为牛奶或高油肉类之外的替代蛋白来源，提升搭配灵活性"],
+    "keywords": ["豆腐", "植物蛋白", "乳糖不耐受", "清淡"]
+  },
+  {
+    "id": "food-shrimp",
+    "name": "虾仁",
+    "aliases": ["鲜虾仁", "虾"],
+    "category": "protein",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 99,
+      "proteinG": 24,
+      "carbohydrateG": 0.2,
+      "fatG": 0.3,
+      "fiberG": 0
+    },
+    "highlights": ["高蛋白、低脂肪", "适合外卖和快手翻炒场景"],
+    "benefits": ["有助于在控制脂肪的同时补足蛋白质，适合减脂和增肌阶段"],
+    "keywords": ["虾仁", "高蛋白", "外卖", "快手"]
+  },
+  {
+    "id": "food-yogurt",
+    "name": "无糖酸奶",
+    "aliases": ["希腊酸奶", "原味酸奶"],
+    "category": "dairy",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 62,
+      "proteinG": 5.2,
+      "carbohydrateG": 4.8,
+      "fatG": 2.8,
+      "fiberG": 0
+    },
+    "highlights": ["比普通甜味酸奶更易控糖", "适合作为早餐和加餐配料"],
+    "benefits": ["可作为早餐或加餐的便利蛋白来源，和水果或燕麦搭配更稳妥"],
+    "keywords": ["无糖酸奶", "希腊酸奶", "早餐", "加餐"]
+  },
+  {
+    "id": "food-apple",
+    "name": "苹果",
+    "aliases": ["苹果果肉"],
+    "category": "fruit",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 52,
+      "proteinG": 0.3,
+      "carbohydrateG": 13.8,
+      "fatG": 0.2,
+      "fiberG": 2.4
+    },
+    "highlights": ["容易获取，适合作为日常加餐水果", "比甜饮和零食更稳定"],
+    "benefits": ["可帮助补充碳水和膳食纤维，方便在工作日作为简便加餐"],
+    "keywords": ["苹果", "水果", "工作日", "加餐"]
+  },
+  {
+    "id": "food-spinach",
+    "name": "菠菜",
+    "aliases": ["鲜菠菜"],
+    "category": "vegetable",
+    "unit": "100g",
+    "nutritionPer100g": {
+      "energyKcal": 23,
+      "proteinG": 2.9,
+      "carbohydrateG": 3.6,
+      "fatG": 0.4,
+      "fiberG": 2.2
+    },
+    "highlights": ["热量低，适合搭配主食和蛋白质补体积", "焯水或清炒都容易执行"],
+    "benefits": ["有助于补充叶酸、钾和膳食纤维，让餐盘结构更完整"],
+    "keywords": ["菠菜", "蔬菜", "清淡", "少油"]
   }
 ]

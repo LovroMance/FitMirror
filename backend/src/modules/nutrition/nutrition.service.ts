@@ -8,6 +8,8 @@ import type {
   NutritionFoodCard,
   NutritionGoal,
   NutritionGuideline,
+  NutritionMealRecommendation,
+  NutritionNoteResponse,
   NutritionPreference,
   NutritionRecommendationMeals,
   NutritionRecommendationResult,
@@ -20,9 +22,18 @@ interface RetrievedGuideline extends NutritionGuideline {
 
 interface NutritionLlmPayload {
   summary?: unknown;
+  noteResponse?: unknown;
   meals?: unknown;
   tips?: unknown;
   referencedFoodNames?: unknown;
+}
+
+interface NoteSignals {
+  type: NutritionNoteResponse['type'];
+  normalized: string;
+  questionKeywords: string[];
+  lifestyleKeywords: string[];
+  restrictionTokens: string[];
 }
 
 type NutritionLlmFailureReason =
@@ -57,6 +68,50 @@ const RETRYABLE_LLM_FAILURE_REASONS = new Set<NutritionLlmFailureReason>([
   'invalid_response',
   'unknown'
 ]);
+const QUESTION_KEYWORD_GROUPS = [
+  {
+    canonical: '减脂增肌区别',
+    patterns: ['减脂和增肌', '减脂增肌', '区别', '不同', '差别']
+  },
+  {
+    canonical: '工作日省时',
+    patterns: ['工作日', '上班', '做饭时间少', '没时间', '时间少', '省时', '快手']
+  },
+  {
+    canonical: '外卖应对',
+    patterns: ['外卖', '食堂', '在外吃', '外食']
+  },
+  {
+    canonical: '乳糖不耐受',
+    patterns: ['乳糖不耐受', '不能喝牛奶', '乳制品不耐受']
+  },
+  {
+    canonical: '不吃辣',
+    patterns: ['不吃辣', '不要辣', '不能吃辣']
+  },
+  {
+    canonical: '高蛋白安排',
+    patterns: ['高蛋白', '蛋白质']
+  }
+] as const;
+const LIFESTYLE_KEYWORD_GROUPS = [
+  {
+    canonical: '工作日省时',
+    patterns: ['工作日', '上班', '做饭时间少', '没时间', '时间少', '省时', '快手']
+  },
+  {
+    canonical: '外卖应对',
+    patterns: ['外卖', '食堂', '在外吃', '外食']
+  },
+  {
+    canonical: '乳糖不耐受',
+    patterns: ['乳糖不耐受', '不能喝牛奶', '乳制品不耐受']
+  },
+  {
+    canonical: '不吃辣',
+    patterns: ['不吃辣', '不要辣', '不能吃辣']
+  }
+] as const;
 
 const loadJsonFile = <T>(fileName: string): T => {
   const runtimePath = path.join(__dirname, 'data', fileName);
@@ -81,6 +136,22 @@ const loadFoods = (): NutritionFood[] => {
   return foodsCache;
 };
 
+const normalizeText = (value: string): string => value.trim().toLowerCase();
+
+const collectMatchedKeywords = (
+  text: string,
+  groups: ReadonlyArray<{ canonical: string; patterns: readonly string[] }>
+): string[] => {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return [];
+  }
+
+  return groups
+    .filter((group) => group.patterns.some((pattern) => normalized.includes(pattern.toLowerCase())))
+    .map((group) => group.canonical);
+};
+
 const extractRestrictionTokens = (note: string): string[] => {
   const normalized = note.trim();
   if (!normalized) {
@@ -96,30 +167,64 @@ const extractRestrictionTokens = (note: string): string[] => {
   return Array.from(new Set(restrictedMatches));
 };
 
+const detectNoteType = (note: string, restrictionTokens: string[]): NutritionNoteResponse['type'] => {
+  const normalized = note.trim();
+  if (!normalized) {
+    return 'general';
+  }
+
+  const hasQuestion = /[？?]|什么|区别|不同|差别|怎么|如何|为什么|能不能|是否/.test(normalized);
+  const hasConstraint =
+    restrictionTokens.length > 0 || /不吃|不要|不能吃|忌口|过敏|乳糖不耐受|时间少|工作日|上班|外卖/.test(normalized);
+
+  if (hasQuestion && hasConstraint) {
+    return 'mixed';
+  }
+
+  if (hasQuestion) {
+    return 'question';
+  }
+
+  if (hasConstraint) {
+    return 'constraint';
+  }
+
+  return 'general';
+};
+
+const deriveNoteSignals = (note: string): NoteSignals => {
+  const normalized = note.trim();
+  const restrictionTokens = extractRestrictionTokens(normalized);
+
+  return {
+    type: detectNoteType(normalized, restrictionTokens),
+    normalized,
+    questionKeywords: collectMatchedKeywords(normalized, QUESTION_KEYWORD_GROUPS),
+    lifestyleKeywords: collectMatchedKeywords(normalized, LIFESTYLE_KEYWORD_GROUPS),
+    restrictionTokens
+  };
+};
+
 const containsRestriction = (source: string, note: string): boolean => {
-  const restrictionTokens = extractRestrictionTokens(note);
-  if (restrictionTokens.length === 0) {
+  const noteSignals = deriveNoteSignals(note);
+  if (noteSignals.restrictionTokens.length === 0) {
     return false;
   }
 
-  return restrictionTokens.some((token) => token && source.toLowerCase().includes(token.toLowerCase()));
+  return noteSignals.restrictionTokens.some((token) => token && source.toLowerCase().includes(token.toLowerCase()));
 };
 
 const scoreGuideline = (
   guideline: NutritionGuideline,
   goal: NutritionGoal,
   preferences: NutritionPreference[],
-  note: string
+  noteSignals: NoteSignals
 ): number => {
-  if (containsRestriction(`${guideline.title} ${guideline.summary} ${guideline.content}`, note)) {
+  if (noteSignals.restrictionTokens.length > 0 && containsRestriction(`${guideline.title} ${guideline.summary} ${guideline.content}`, noteSignals.normalized)) {
     return -1;
   }
 
-  if (!guideline.goalTags.includes(goal)) {
-    return 0;
-  }
-
-  let score = 8 + guideline.priority;
+  let score = guideline.goalTags.includes(goal) ? 8 + guideline.priority : 0;
 
   preferences.forEach((preference) => {
     if (guideline.preferenceTags.includes(preference)) {
@@ -135,11 +240,30 @@ const scoreGuideline = (
     }
   });
 
+  noteSignals.questionKeywords.forEach((keyword) => {
+    if (guideline.keywords.some((item) => item.toLowerCase().includes(keyword.toLowerCase()))) {
+      score += 6;
+    }
+    if (`${guideline.title} ${guideline.summary} ${guideline.content}`.toLowerCase().includes(keyword.toLowerCase())) {
+      score += 3;
+    }
+  });
+
+  noteSignals.lifestyleKeywords.forEach((keyword) => {
+    if (guideline.keywords.some((item) => item.toLowerCase().includes(keyword.toLowerCase()))) {
+      score += 4;
+    }
+    if (`${guideline.title} ${guideline.summary} ${guideline.content}`.toLowerCase().includes(keyword.toLowerCase())) {
+      score += 2;
+    }
+  });
+
   return score;
 };
 
 const retrieveGuidelines = (input: RecommendNutritionInput): RetrievedGuideline[] => {
-  const queryText = `${input.note} ${GOAL_LABEL_MAP[input.goal]} ${input.preferences.map((item) => PREFERENCE_LABEL_MAP[item]).join(' ')}`
+  const noteSignals = deriveNoteSignals(input.note);
+  const queryText = `${input.note} ${GOAL_LABEL_MAP[input.goal]} ${input.preferences.map((item) => PREFERENCE_LABEL_MAP[item]).join(' ')} ${noteSignals.questionKeywords.join(' ')} ${noteSignals.lifestyleKeywords.join(' ')}`
     .trim()
     .toLowerCase();
 
@@ -147,7 +271,7 @@ const retrieveGuidelines = (input: RecommendNutritionInput): RetrievedGuideline[
     .map((guideline) => ({
       ...guideline,
       score:
-        scoreGuideline(guideline, input.goal, input.preferences, input.note) +
+        scoreGuideline(guideline, input.goal, input.preferences, noteSignals) +
         guideline.keywords.reduce(
           (total, keyword) => (queryText.includes(keyword.toLowerCase()) ? total + 1 : total),
           0
@@ -158,21 +282,24 @@ const retrieveGuidelines = (input: RecommendNutritionInput): RetrievedGuideline[
     .slice(0, 6);
 };
 
-const buildFoodQueryText = (guidelines: RetrievedGuideline[], note: string): string =>
+const buildFoodQueryText = (guidelines: RetrievedGuideline[], noteSignals: NoteSignals): string =>
   [
     ...guidelines.flatMap((guideline) => [guideline.title, guideline.summary, guideline.content, ...guideline.keywords]),
-    note
+    noteSignals.normalized,
+    ...noteSignals.questionKeywords,
+    ...noteSignals.lifestyleKeywords
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
 const retrieveFoods = (guidelines: RetrievedGuideline[], note: string): NutritionFoodCard[] => {
-  const queryText = buildFoodQueryText(guidelines, note);
+  const noteSignals = deriveNoteSignals(note);
+  const queryText = buildFoodQueryText(guidelines, noteSignals);
 
   return loadFoods()
     .map((food) => {
-      if (containsRestriction([food.name, ...food.aliases, ...food.keywords].join(' '), note)) {
+      if (noteSignals.restrictionTokens.length > 0 && containsRestriction([food.name, ...food.aliases, ...food.keywords].join(' '), noteSignals.normalized)) {
         return { food, score: -1 };
       }
 
@@ -238,6 +365,42 @@ const toShortText = (value: unknown, fallback: string): string => {
   return trimmed || fallback;
 };
 
+const normalizeStringArray = (value: unknown, limit: number): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+};
+
+const normalizeMealRecommendation = (value: unknown): NutritionMealRecommendation | null => {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+
+  const payload = value as Record<string, unknown>;
+  const title = toShortText(payload.title, '');
+  const why = toShortText(payload.why, '');
+  const detail = toShortText(payload.detail, why || title);
+
+  if (!title || !why) {
+    return null;
+  }
+
+  return {
+    title,
+    suggestedFoods: normalizeStringArray(payload.suggestedFoods, 5),
+    suggestedPortions: normalizeStringArray(payload.suggestedPortions, 4),
+    why,
+    alternatives: normalizeStringArray(payload.alternatives, 4),
+    detail
+  };
+};
+
 const normalizeMeals = (value: unknown): NutritionRecommendationMeals | null => {
   if (typeof value !== 'object' || value === null) {
     return null;
@@ -245,17 +408,57 @@ const normalizeMeals = (value: unknown): NutritionRecommendationMeals | null => 
 
   const payload = value as Record<string, unknown>;
   const meals: NutritionRecommendationMeals = {
-    breakfast: toShortText(payload.breakfast, ''),
-    lunch: toShortText(payload.lunch, ''),
-    dinner: toShortText(payload.dinner, ''),
-    snack: toShortText(payload.snack, '')
-  };
+    breakfast: normalizeMealRecommendation(payload.breakfast),
+    lunch: normalizeMealRecommendation(payload.lunch),
+    dinner: normalizeMealRecommendation(payload.dinner),
+    snack: normalizeMealRecommendation(payload.snack)
+  } as NutritionRecommendationMeals;
 
   if (MEAL_ORDER.some((key) => !meals[key])) {
     return null;
   }
 
   return meals;
+};
+
+const normalizeNoteResponse = (value: unknown, input: RecommendNutritionInput): NutritionNoteResponse | null => {
+  if (!input.note.trim()) {
+    return null;
+  }
+
+  const noteSignals = deriveNoteSignals(input.note);
+  const fallbackTitle =
+    noteSignals.type === 'question'
+      ? '你这次的问题，我先这样理解'
+      : noteSignals.type === 'constraint'
+        ? '你这次的补充要求，我已经纳入安排'
+        : noteSignals.type === 'mixed'
+          ? '你的问题和限制，我一起考虑了'
+          : '这次补充要求，我已经一起带入推荐';
+
+  if (typeof value !== 'object' || value === null) {
+    return {
+      input: input.note.trim(),
+      type: noteSignals.type,
+      title: fallbackTitle,
+      summary:
+        noteSignals.type === 'question'
+          ? '我会先回答你最关心的问题，再把这个理解体现在三餐安排里。'
+          : '我会把你的补充要求优先落实到餐次结构、食物选择和可替代项里。',
+      bullets: Array.from(new Set([...noteSignals.questionKeywords, ...noteSignals.lifestyleKeywords, ...noteSignals.restrictionTokens])).slice(0, 3)
+    };
+  }
+
+  const payload = value as Record<string, unknown>;
+  const bullets = normalizeStringArray(payload.bullets, 4);
+
+  return {
+    input: input.note.trim(),
+    type: noteSignals.type,
+    title: toShortText(payload.title, fallbackTitle),
+    summary: toShortText(payload.summary, '我已经把这次补充要求一起带入推荐结果。'),
+    bullets
+  };
 };
 
 const normalizeTips = (value: unknown): string[] => {
@@ -365,11 +568,21 @@ const pickFoodByCategory = (
 const pickFoodById = (foods: NutritionFoodCard[], ids: string[]): NutritionFoodCard | null =>
   ids.map((id) => foods.find((food) => food.id === id) ?? null).find((food): food is NutritionFoodCard => food !== null) ?? null;
 
-const joinFoodNames = (foods: Array<NutritionFoodCard | null>): string =>
-  foods
-    .filter((food): food is NutritionFoodCard => food !== null)
-    .map((food) => food.name)
-    .join('、');
+const buildMealRecommendation = (payload: {
+  title: string;
+  suggestedFoods: string[];
+  suggestedPortions: string[];
+  why: string;
+  alternatives?: string[];
+  detail?: string;
+}): NutritionMealRecommendation => ({
+  title: payload.title,
+  suggestedFoods: payload.suggestedFoods.filter(Boolean).slice(0, 5),
+  suggestedPortions: payload.suggestedPortions.filter(Boolean).slice(0, 4),
+  why: payload.why,
+  alternatives: (payload.alternatives ?? []).filter(Boolean).slice(0, 4),
+  detail: payload.detail?.trim() || payload.why
+});
 
 const buildFallbackSummary = (goal: NutritionGoal, guidelines: RetrievedGuideline[]): string => {
   const summaryText = guidelines
@@ -408,12 +621,38 @@ const buildFallbackMeals = (
   const snackGuide = guidelines.find((guideline) => guideline.mealTypes.includes('snack'))?.summary;
 
   return {
-    breakfast: `${breakfastGuide || '早餐先保证稳定能量和蛋白质摄入。'} 可安排 ${joinFoodNames([oats, egg, milk, fruit])} 作为基础组合。`,
-    lunch: `${lunchGuide || '午餐以主食、蛋白质和蔬菜的清晰搭配为主。'} 建议用 ${lunchCarbPortion}${joinFoodNames([rice])} 搭配 ${joinFoodNames([chicken, vegetable])}。`,
-    dinner: `${dinnerGuide || '晚餐保持清晰结构，避免高油高糖。'} 可用 ${joinFoodNames([salmon, vegetable])}${
-      rice ? `，并配 ${dinnerCarbPortion}${rice.name}` : ''
-    }。`,
-    snack: `${snackGuide || '加餐尽量简单好执行。'} 可选择 ${joinFoodNames([fruit, milk]) || joinFoodNames([fruit, egg])}。`
+    breakfast: buildMealRecommendation({
+      title: '稳定开启一天，先把蛋白质和基础能量补上',
+      suggestedFoods: [oats?.name, egg?.name, milk?.name, fruit?.name].filter((item): item is string => Boolean(item)),
+      suggestedPortions: ['燕麦 40-60g', '鸡蛋 1-2 个', '牛奶 250ml'],
+      why: breakfastGuide || '早餐先把蛋白质和复合碳水补齐，更容易稳定上午精力和饱腹感。',
+      alternatives: ['无糖酸奶', '全麦面包', '豆腐'],
+      detail: '如果早上时间紧，优先保留蛋白质来源，再配一个主食或水果。'
+    }),
+    lunch: buildMealRecommendation({
+      title: '午餐保持主食、蛋白质和蔬菜三件套',
+      suggestedFoods: [rice?.name, chicken?.name, vegetable?.name].filter((item): item is string => Boolean(item)),
+      suggestedPortions: [`主食 ${lunchCarbPortion}1 拳`, '蛋白质 1 掌心', '蔬菜 2 拳'],
+      why: lunchGuide || '午餐是最稳的一餐，结构清晰比菜单花哨更重要。',
+      alternatives: ['虾仁', '豆腐', '红薯'],
+      detail: '如果在外就餐，也尽量按主食、瘦肉、蔬菜的顺序点单。'
+    }),
+    dinner: buildMealRecommendation({
+      title: '晚餐继续清晰搭配，但不过度堆热量',
+      suggestedFoods: [salmon?.name, vegetable?.name, rice?.name].filter((item): item is string => Boolean(item)),
+      suggestedPortions: [`主食 ${dinnerCarbPortion}1 拳`, '蛋白质 1 掌心', '蔬菜 1-2 拳'],
+      why: dinnerGuide || '晚餐更强调好消化和执行稳定，避免高油高糖带来额外负担。',
+      alternatives: ['鸡蛋', '鸡胸肉', '菠菜'],
+      detail: '晚餐可以比午餐更清淡，但不建议把蛋白质直接省掉。'
+    }),
+    snack: buildMealRecommendation({
+      title: '加餐尽量简单，负责补足而不是额外放纵',
+      suggestedFoods: [fruit?.name, milk?.name, egg?.name].filter((item): item is string => Boolean(item)),
+      suggestedPortions: ['水果 1 份', '牛奶 250ml 或鸡蛋 1 个'],
+      why: snackGuide || '加餐的核心是把两餐之间的空档稳住，别让你饿到失控。',
+      alternatives: ['无糖酸奶', '香蕉', '蓝莓'],
+      detail: '训练前后或下午容易饿的时候，加餐可以优先选水果配蛋白质来源。'
+    })
   };
 };
 
@@ -438,12 +677,50 @@ const buildFallbackTips = (
   return Array.from(new Set(tips)).slice(0, 4);
 };
 
+const buildFallbackNoteResponse = (
+  input: RecommendNutritionInput,
+  guidelines: RetrievedGuideline[]
+): NutritionNoteResponse | null => {
+  const note = input.note.trim();
+  if (!note) {
+    return null;
+  }
+
+  const noteSignals = deriveNoteSignals(note);
+  const topGuideline = guidelines[0];
+  const keywordBullets = Array.from(
+    new Set([...noteSignals.questionKeywords, ...noteSignals.lifestyleKeywords, ...noteSignals.restrictionTokens])
+  ).slice(0, 3);
+
+  if (noteSignals.type === 'question' || noteSignals.type === 'mixed') {
+    return {
+      input: note,
+      type: noteSignals.type,
+      title: '你这次提到的问题，我先直接回答',
+      summary:
+        topGuideline?.content ||
+        '我会先说明问题背后的差异，再把这个理解落实到三餐安排、份量和可替代食物里。',
+      bullets: keywordBullets.length > 0 ? keywordBullets : ['目标差异', '餐次结构', '执行方式']
+    };
+  }
+
+  return {
+    input: note,
+    type: noteSignals.type,
+    title: '你这次的补充要求，我已经一起带入推荐',
+    summary:
+      topGuideline?.content || '我会优先根据你的时间、限制或饮食偏好，调整食物选择、份量和可替代项。',
+    bullets: keywordBullets.length > 0 ? keywordBullets : ['限制过滤', '执行难度', '可替代食物']
+  };
+};
+
 const buildFallbackNutritionResult = (
   input: RecommendNutritionInput,
   guidelines: RetrievedGuideline[],
   foods: NutritionFoodCard[]
 ): NutritionRecommendationResult => ({
   summary: buildFallbackSummary(input.goal, guidelines),
+  noteResponse: buildFallbackNoteResponse(input, guidelines),
   meals: buildFallbackMeals(input.goal, guidelines, foods),
   tips: buildFallbackTips(input, guidelines, foods),
   referencedFoods: foods.slice(0, 4),
@@ -477,8 +754,10 @@ const buildPrompt = (
     '请基于系统提供的饮食知识和食物营养信息，为用户生成 1 天饮食建议。',
     '必须优先依据系统知识，不要给出医疗诊断、药物建议、极端节食建议。',
     '只返回合法 JSON，不要返回 markdown，不要额外解释。',
-    'JSON 字段必须包含：summary, meals, tips, referencedFoodNames。',
-    'meals 必须包含 breakfast, lunch, dinner, snack 四个字段，值为中文完整句子。',
+    'JSON 字段必须包含：summary, noteResponse, meals, tips, referencedFoodNames。',
+    '如果用户填写了补充要求或问题，noteResponse 必须包含 title、summary、bullets；若用户未填写，可返回 null。',
+    'meals 必须包含 breakfast, lunch, dinner, snack 四个字段。',
+    '每个 meal 必须包含：title, suggestedFoods, suggestedPortions, why, alternatives, detail。',
     'tips 必须是 2 到 4 条中文建议。',
     'referencedFoodNames 必须是系统已提供食物名称组成的数组。',
     `用户目标：${GOAL_LABEL_MAP[input.goal]}`,
@@ -544,6 +823,7 @@ const callDeepSeekForNutrition = async (
 
   return {
     summary: toShortText(parsed.summary, '建议优先保证三餐结构清晰、蛋白质充足并控制加工食品摄入。'),
+    noteResponse: normalizeNoteResponse(parsed.noteResponse, input),
     meals,
     tips,
     referencedFoods: normalizeReferencedFoods(parsed.referencedFoodNames, foods),

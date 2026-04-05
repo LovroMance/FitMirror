@@ -27,11 +27,46 @@ describe('useNutritionRecommendation', () => {
   it('submits recommendation and stores result', async () => {
     recommendNutritionApiMock.mockResolvedValue({
       summary: '建议每餐优先安排蛋白质和蔬菜。',
+      noteResponse: {
+        input: '不吃辣',
+        type: 'constraint',
+        title: '你这次的补充要求，我已经一起带入推荐',
+        summary: '这次我会避开辣味刺激，优先保留清晰结构和可执行性。',
+        bullets: ['不吃辣', '清淡口味']
+      },
       meals: {
-        breakfast: '早餐可安排燕麦、鸡蛋和牛奶。',
-        lunch: '午餐可安排米饭、鸡胸肉和西兰花。',
-        dinner: '晚餐可安排三文鱼和蔬菜。',
-        snack: '加餐可安排蓝莓和牛奶。'
+        breakfast: {
+          title: '早餐先稳住能量',
+          suggestedFoods: ['燕麦', '鸡蛋', '牛奶'],
+          suggestedPortions: ['燕麦 50g'],
+          why: '帮助提升饱腹感。',
+          alternatives: ['无糖酸奶'],
+          detail: '优先高蛋白加复合碳水。'
+        },
+        lunch: {
+          title: '午餐结构保持清晰',
+          suggestedFoods: ['熟米饭', '鸡胸肉', '西兰花'],
+          suggestedPortions: ['主食 1 拳'],
+          why: '兼顾恢复与控制总能量。',
+          alternatives: ['虾仁'],
+          detail: '尽量避开重油重辣。'
+        },
+        dinner: {
+          title: '晚餐继续保留蛋白质',
+          suggestedFoods: ['三文鱼', '蔬菜'],
+          suggestedPortions: ['蛋白质 1 掌心'],
+          why: '避免晚间额外负担。',
+          alternatives: ['鸡蛋'],
+          detail: '整体更清淡。'
+        },
+        snack: {
+          title: '加餐简化执行',
+          suggestedFoods: ['蓝莓', '牛奶'],
+          suggestedPortions: ['水果 1 份'],
+          why: '减少零食波动。',
+          alternatives: ['苹果'],
+          detail: '两餐之间更稳。'
+        }
       },
       tips: ['控制零食频率', '少油烹饪'],
       referencedFoods: [],
@@ -54,7 +89,7 @@ describe('useNutritionRecommendation', () => {
       note: '不吃辣'
     });
     expect(nutrition.pageState.value).toBe('ready');
-    expect(nutrition.result.value?.meals.breakfast).toContain('燕麦');
+    expect(nutrition.result.value?.meals.breakfast.suggestedFoods).toContain('燕麦');
     expect(messageSuccess).toHaveBeenCalledWith('饮食建议已生成');
   });
 
@@ -73,11 +108,12 @@ describe('useNutritionRecommendation', () => {
     recommendNutritionApiMock
       .mockResolvedValueOnce({
         summary: '建议',
+        noteResponse: null,
         meals: {
-          breakfast: '早餐',
-          lunch: '午餐',
-          dinner: '晚餐',
-          snack: '加餐'
+          breakfast: { title: '早餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+          lunch: { title: '午餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+          dinner: { title: '晚餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+          snack: { title: '加餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' }
         },
         tips: ['提示1', '提示2'],
         referencedFoods: [],
@@ -100,11 +136,12 @@ describe('useNutritionRecommendation', () => {
   it('marks fallback result and shows stable recommendation toast', async () => {
     recommendNutritionApiMock.mockResolvedValue({
       summary: '建议优先保证三餐规律。',
+      noteResponse: null,
       meals: {
-        breakfast: '早餐',
-        lunch: '午餐',
-        dinner: '晚餐',
-        snack: '加餐'
+        breakfast: { title: '早餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+        lunch: { title: '午餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+        dinner: { title: '晚餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' },
+        snack: { title: '加餐', suggestedFoods: [], suggestedPortions: [], why: 'why', alternatives: [], detail: 'detail' }
       },
       tips: ['提示1', '提示2'],
       referencedFoods: [],

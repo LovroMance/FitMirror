@@ -20,15 +20,33 @@ export interface NutritionFoodCard {
   keywords: string[];
 }
 
+export interface NutritionNoteResponse {
+  input: string;
+  type: 'question' | 'constraint' | 'mixed' | 'general';
+  title: string;
+  summary: string;
+  bullets: string[];
+}
+
+export interface NutritionMealRecommendation {
+  title: string;
+  suggestedFoods: string[];
+  suggestedPortions: string[];
+  why: string;
+  alternatives: string[];
+  detail: string;
+}
+
 export interface NutritionRecommendationMeals {
-  breakfast: string;
-  lunch: string;
-  dinner: string;
-  snack: string;
+  breakfast: NutritionMealRecommendation;
+  lunch: NutritionMealRecommendation;
+  dinner: NutritionMealRecommendation;
+  snack: NutritionMealRecommendation;
 }
 
 export interface NutritionRecommendationResult {
   summary: string;
+  noteResponse: NutritionNoteResponse | null;
   meals: NutritionRecommendationMeals;
   tips: string[];
   referencedFoods: NutritionFoodCard[];

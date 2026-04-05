@@ -141,5 +141,60 @@
     "summary": "水果可与蛋白质来源搭配，提升加餐质量。",
     "content": "水果适合作为训练前后或两餐之间的轻量补充，建议与牛奶、鸡蛋等蛋白质来源搭配，而不是单独大量食用高糖零食。",
     "priority": 7
+  },
+  {
+    "id": "goal-difference-01",
+    "title": "减脂和增肌的关键差异在于热量策略与主食份量",
+    "goalTags": ["fat_loss", "muscle_gain"],
+    "preferenceTags": [],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["减脂增肌区别", "减脂和增肌", "区别", "不同", "差别", "热量策略", "主食份量"],
+    "summary": "减脂更强调总热量控制和饱腹感，增肌更强调稳定热量盈余和训练前后补给。",
+    "content": "减脂和增肌都需要蛋白质，但减脂更关注控制总热量、减少额外油糖和保持饱腹感；增肌则更需要保证主食和总能量足够，并把训练前后加餐安排得更稳定。",
+    "priority": 11
+  },
+  {
+    "id": "workday-quick-02",
+    "title": "工作日做饭时间少时，先保证结构正确再谈花样",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["quick"],
+    "mealTypes": ["breakfast", "lunch", "dinner", "snack"],
+    "keywords": ["工作日省时", "工作日", "上班", "做饭时间少", "没时间", "省时", "快手"],
+    "summary": "时间紧张时，优先保留蛋白质、主食和蔬菜的基本结构，比追求复杂菜单更重要。",
+    "content": "如果工作日做饭时间少，可优先准备鸡蛋、牛奶、燕麦、即食鸡胸肉、冷冻蔬菜和微波主食，先让每餐都有蛋白质和主食，再逐步细化食材搭配。",
+    "priority": 10
+  },
+  {
+    "id": "takeout-balance-01",
+    "title": "外卖或食堂场景也能按主食、蛋白质、蔬菜三路点单",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["quick", "light"],
+    "mealTypes": ["lunch", "dinner"],
+    "keywords": ["外卖应对", "外卖", "食堂", "外食", "在外吃"],
+    "summary": "在外吃时先定主食份量，再补蛋白质和蔬菜，能明显减少失控概率。",
+    "content": "如果主要靠外卖或食堂，可优先选米饭、红薯等主食，搭配鸡胸肉、鱼类、虾仁、豆腐等蛋白质，再补一份蔬菜；尽量少选厚重酱汁和纯油炸搭配。",
+    "priority": 9
+  },
+  {
+    "id": "lactose-intolerance-01",
+    "title": "乳糖不耐受时，可把乳制品换成更温和的蛋白来源",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["high_protein", "light"],
+    "mealTypes": ["breakfast", "snack"],
+    "keywords": ["乳糖不耐受", "不能喝牛奶", "乳制品不耐受", "替代蛋白"],
+    "summary": "乳糖不耐受不等于不能补蛋白，关键是及时换成更合适的来源。",
+    "content": "如果存在乳糖不耐受，可优先用无糖酸奶、豆腐、鸡蛋、鸡胸肉、虾仁等替代普通牛奶，把蛋白质补足，同时避免因为不适感影响执行。",
+    "priority": 9
+  },
+  {
+    "id": "no-spicy-01",
+    "title": "不吃辣时，口味可以清晰但不必只剩寡淡",
+    "goalTags": ["fat_loss", "muscle_gain", "maintenance"],
+    "preferenceTags": ["light", "low_oil"],
+    "mealTypes": ["lunch", "dinner"],
+    "keywords": ["不吃辣", "不要辣", "不能吃辣", "清淡口味"],
+    "summary": "不吃辣时可改用葱姜蒜、胡椒、柠檬或菌菇提味，减少对重油重辣的依赖。",
+    "content": "如果不吃辣，可用清蒸、煎烤、黑胡椒、菌菇和少量蒜香等方式保留风味，不必因为去掉辣味就转向高油高糖的调味方案。",
+    "priority": 8
   }
 ]
