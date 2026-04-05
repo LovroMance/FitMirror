@@ -1,10 +1,10 @@
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { syncWorkoutRecordsForUser } from '@/composables/workout/useWorkoutRecordSync';
 import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
-import { homeRecommendations, homeTabs } from '@/config/home';
+import { homeRecommendations } from '@/config/home';
 import type { PageState } from '@/types/ui';
 import {
   buildDailyHeatmapPoints,
@@ -16,7 +16,6 @@ import {
 
 export const useHomeDashboard = () => {
   const router = useRouter();
-  const route = useRoute();
   const authStore = useAuthStore();
 
   const planPrompt = ref('');
@@ -24,8 +23,6 @@ export const useHomeDashboard = () => {
   const summary = ref({ trainingDays: 0, totalDuration: 0, streakDays: 0 });
   const heatmapState = ref<PageState>('idle');
   const heatmapError = ref('暂时无法读取训练记录，请稍后重试。');
-
-  const activeRouteName = computed(() => route.name);
 
   const resolveUserId = (): number | null => {
     const userId = authStore.currentUser?.id ?? null;
@@ -102,16 +99,6 @@ export const useHomeDashboard = () => {
     await safePush('Nutrition');
   };
 
-  const isTabActive = (routeName: string): boolean => activeRouteName.value === routeName;
-
-  const handleTabClick = async (routeName: string): Promise<void> => {
-    if (activeRouteName.value === routeName) {
-      return;
-    }
-
-    await safePush(routeName);
-  };
-
   onMounted(async () => {
     await loadHeatmap();
   });
@@ -121,13 +108,10 @@ export const useHomeDashboard = () => {
     handleOpenLibrary,
     handleOpenNutrition,
     handleOpenPlanHistory,
-    handleTabClick,
     heatmapError,
     heatmapState,
     homeHeatmapColumns,
     homeRecommendations,
-    homeTabs,
-    isTabActive,
     loadHeatmap,
     planPrompt,
     summary

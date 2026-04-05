@@ -194,12 +194,15 @@
         />
       </section>
     </main>
+
+    <PrimaryTabBar />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import StatePanel from '@/components/common/StatePanel.vue';
+import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { useNutritionRecommendation } from '@/composables/nutrition/useNutritionRecommendation';
 import { buildNutritionMealViewModels, buildNutritionSummaryViewModel } from '@/utils/nutrition-display';
 

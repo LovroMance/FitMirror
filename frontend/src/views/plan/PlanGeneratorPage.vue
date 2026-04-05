@@ -236,12 +236,15 @@
         </ul>
       </el-card>
     </main>
+
+    <PrimaryTabBar />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import StatePanel from '@/components/common/StatePanel.vue';
+import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { usePlanGenerator } from '@/composables/plan/usePlanGenerator';
 
 const {

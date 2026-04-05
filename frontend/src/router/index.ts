@@ -33,6 +33,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/profile/ProfilePage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/workouts/session',
     name: 'WorkoutSession',
     component: () => import('@/views/workout/WorkoutSessionPage.vue'),
