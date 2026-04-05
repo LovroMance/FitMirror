@@ -44,21 +44,27 @@
           <template v-if="!started">
             <div class="workout-session__intro">
               <h2>准备开始</h2>
-              <p>先确认每个动作的组数和次数。点击开始后会按“组”推进，训练完成会自动记录到热图。</p>
+              <p>先快速浏览整套动作，再逐个展开需要调整的项。点击开始后会按“组”推进，训练完成会自动记录到热图。</p>
             </div>
             <ol class="workout-session__preview-list">
               <li
                 v-for="(exercise, idx) in sessionExercises"
                 :key="`${exercise.name}-${idx}`"
                 class="workout-session__preview-item"
+                :class="{ 'is-active': activeConfigIndex === idx }"
               >
-                <div class="workout-session__preview-top">
-                  <span>#{{ idx + 1 }}</span>
-                  <strong>{{ exercise.name }}</strong>
-                  <small>{{ formatExerciseVolume(exercise) }}</small>
-                </div>
-                <p>{{ exercise.instruction }}</p>
-                <div class="workout-session__draft-grid">
+                <button type="button" class="workout-session__preview-toggle" @click="toggleConfigCard(idx)">
+                  <div class="workout-session__preview-top">
+                    <span>#{{ idx + 1 }}</span>
+                    <strong>{{ exercise.name }}</strong>
+                    <small>{{ formatExerciseVolume(exercise) }}</small>
+                  </div>
+                  <span class="workout-session__toggle-copy">
+                    {{ activeConfigIndex === idx ? '收起' : '编辑' }}
+                  </span>
+                </button>
+                <p v-if="activeConfigIndex === idx">{{ exercise.instruction }}</p>
+                <div v-if="activeConfigIndex === idx" class="workout-session__draft-grid">
                   <label class="workout-session__draft-field">
                     <span>组数</span>
                     <el-input-number
@@ -146,8 +152,15 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import StatePanel from '@/components/common/StatePanel.vue';
 import { useWorkoutSession } from '@/composables/workout/useWorkoutSession';
+
+const activeConfigIndex = ref<number | null>(0);
+
+const toggleConfigCard = (index: number): void => {
+  activeConfigIndex.value = activeConfigIndex.value === index ? null : index;
+};
 
 const {
   advanceSession,
@@ -298,11 +311,27 @@ const {
 
 .workout-session__preview-item {
   display: grid;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.workout-session__preview-item.is-active {
+  border-color: rgba(50, 213, 131, 0.16);
+  background: rgba(50, 213, 131, 0.05);
+}
+
+.workout-session__preview-toggle {
+  display: grid;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .workout-session__preview-top {
@@ -310,6 +339,12 @@ const {
   grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
+}
+
+.workout-session__toggle-copy {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .workout-session__preview-item span,
