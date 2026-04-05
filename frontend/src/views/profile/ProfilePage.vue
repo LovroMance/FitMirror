@@ -162,8 +162,11 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  background: linear-gradient(180deg, #f4f1ea 0%, #f7f5f0 100%);
-  color: #202224;
+  background:
+    radial-gradient(circle at top right, rgba(50, 213, 131, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(18, 26, 20, 0.98) 0%, rgba(11, 11, 14, 1) 38%),
+    var(--color-bg-page);
+  color: var(--color-text-primary);
   font-family: 'DM Sans', 'PingFang SC', 'MiSans', 'Source Han Sans SC', sans-serif;
 }
 
@@ -184,7 +187,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 .profile-page__eyebrow,
 .profile-page__section-kicker {
   margin: 0;
-  color: #728474;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -209,7 +212,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 
 .profile-page__description {
   margin: 0;
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -222,9 +225,9 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   gap: 14px;
   padding: 18px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(34, 36, 40, 0.06);
-  box-shadow: 0 10px 26px rgba(31, 35, 35, 0.05);
+  background: linear-gradient(180deg, rgba(22, 22, 26, 0.96), rgba(18, 19, 22, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
 }
 
 .profile-page__avatar {
@@ -234,10 +237,13 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ecf5ee;
-  color: #245d3f;
+  background:
+    linear-gradient(135deg, rgba(50, 213, 131, 0.2) 0%, rgba(50, 213, 131, 0.08) 100%),
+    rgba(18, 19, 22, 0.92);
+  color: var(--color-primary);
   font-size: 24px;
   font-weight: 700;
+  border: 1px solid rgba(50, 213, 131, 0.12);
 }
 
 .profile-page__identity-copy {
@@ -251,7 +257,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 }
 
 .profile-page__identity-copy span {
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
@@ -271,25 +277,26 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 }
 
 .profile-page__stat span {
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .profile-page__stat strong {
   font-size: 22px;
+  color: var(--color-text-primary);
 }
 
 .profile-page__stat--warm {
-  background: #f7efe2;
+  background: rgba(245, 196, 81, 0.1);
 }
 
 .profile-page__stat--cool {
-  background: #eceff8;
+  background: rgba(110, 140, 255, 0.1);
 }
 
 .profile-page__stat--mint {
-  background: #e7f6ee;
+  background: rgba(50, 213, 131, 0.1);
 }
 
 .profile-page__sync-card,
@@ -298,7 +305,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 }
 
 .profile-page__sync-card span {
-  color: #6c6f76;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -312,7 +319,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 
 .profile-page__sync-card p {
   margin: 0;
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
@@ -322,7 +329,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   justify-content: space-between;
   gap: 14px;
   padding: 16px 0;
-  border-bottom: 1px solid rgba(34, 36, 40, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .profile-page__action-card:last-child {
@@ -336,7 +343,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 
 .profile-page__action-card p {
   margin: 6px 0 0;
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -345,7 +352,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   border: 0;
   padding: 0;
   background: transparent;
-  color: #202224;
+  color: var(--color-primary);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -365,7 +372,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 
 .profile-page__preference-row + .profile-page__preference-row {
   padding-top: 14px;
-  border-top: 1px solid rgba(34, 36, 40, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .profile-page__preference-row strong {
@@ -375,7 +382,7 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 
 .profile-page__preference-row p {
   margin: 6px 0 0;
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -390,10 +397,10 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   min-width: 74px;
   min-height: 38px;
   padding: 0 14px;
-  border: 1px solid rgba(34, 36, 40, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  background: #f5f2ec;
-  color: #646770;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -401,9 +408,9 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
 }
 
 .profile-page__choice.is-active {
-  background: #1f2224;
-  color: #fffdf8;
-  border-color: #1f2224;
+  background: rgba(50, 213, 131, 0.14);
+  color: var(--color-primary);
+  border-color: rgba(50, 213, 131, 0.28);
 }
 
 .profile-page__account-row {
@@ -411,12 +418,12 @@ const { currentUser, handleLogout, handleThemeChange, handleUnitChange, quickAct
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  color: #6c6f76;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .profile-page__account-row strong {
-  color: #202224;
+  color: var(--color-text-primary);
   font-size: 14px;
 }
 
