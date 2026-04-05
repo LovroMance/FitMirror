@@ -105,7 +105,7 @@
 
           <template v-else-if="currentExercise">
             <div class="workout-session__current-head">
-              <div>
+              <div class="workout-session__current-copy">
                 <p class="workout-session__step-label">当前动作</p>
                 <h2 class="workout-session__exercise-title">{{ currentExercise.name }}</h2>
               </div>
@@ -114,6 +114,7 @@
 
             <div class="workout-session__focus-panel">
               <div class="workout-session__focus-main">
+                <span class="workout-session__focus-kicker">当前目标</span>
                 <strong>{{ currentSetLabel }}</strong>
                 <p>{{ currentExerciseVolumeLabel }}</p>
               </div>
@@ -132,7 +133,9 @@
               ></span>
             </div>
 
-            <p class="workout-session__exercise-instruction">{{ currentExercise.instruction }}</p>
+            <div class="workout-session__instruction-card">
+              <p class="workout-session__exercise-instruction">{{ currentExercise.instruction }}</p>
+            </div>
 
             <div class="workout-session__actions">
               <el-button
@@ -206,7 +209,6 @@ const {
 
 .workout-session__header,
 .workout-session__summary,
-.workout-session__current-head,
 .workout-session__intro {
   display: grid;
   gap: 10px;
@@ -292,13 +294,28 @@ const {
 
 .workout-session__progress-chip,
 .workout-session__step-index {
-  justify-self: flex-start;
-  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
   background: rgba(50, 213, 131, 0.14);
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
+}
+
+.workout-session__current-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workout-session__current-copy {
+  display: grid;
+  gap: 6px;
 }
 
 .workout-session__preview-list {
@@ -387,24 +404,34 @@ const {
 .workout-session__focus-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 18px;
   align-items: center;
-  padding: 14px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(50, 213, 131, 0.12), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(50, 213, 131, 0.12);
+  padding: 18px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(50, 213, 131, 0.1), rgba(255, 255, 255, 0.015)),
+    rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(50, 213, 131, 0.16);
 }
 
 .workout-session__focus-main,
 .workout-session__focus-side {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .workout-session__focus-main strong,
 .workout-session__focus-side strong {
-  font-size: 18px;
-  line-height: 1.2;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.workout-session__focus-kicker {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .workout-session__focus-main p,
@@ -435,6 +462,13 @@ const {
 .workout-session__set-dot.is-completed {
   background: var(--color-primary);
   box-shadow: 0 0 18px rgba(50, 213, 131, 0.28);
+}
+
+.workout-session__instruction-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .workout-session__actions {
@@ -470,10 +504,17 @@ const {
 
   .workout-session__focus-panel {
     grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
   }
 
   .workout-session__focus-side {
     justify-items: start;
+  }
+
+  .workout-session__current-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
