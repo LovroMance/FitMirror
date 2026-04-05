@@ -99,13 +99,25 @@
 
           <div class="nutrition-page__summary">
             <h3>推荐原则</h3>
+            <div class="nutrition-page__summary-highlights">
+              <span v-for="item in summaryViewModel.highlights" :key="item">{{ item }}</span>
+            </div>
             <p>{{ result.summary }}</p>
           </div>
 
           <div class="nutrition-page__meal-grid">
             <article v-for="meal in mealCards" :key="meal.key" class="nutrition-page__meal-card">
-              <span class="nutrition-page__meal-label">{{ meal.label }}</span>
-              <p>{{ meal.content }}</p>
+              <div class="nutrition-page__meal-head">
+                <span class="nutrition-page__meal-label">{{ meal.label }}</span>
+                <div v-if="meal.portions.length > 0" class="nutrition-page__meal-portions">
+                  <span v-for="portion in meal.portions" :key="portion">{{ portion }}</span>
+                </div>
+              </div>
+              <h4>{{ meal.title }}</h4>
+              <div v-if="meal.foods.length > 0" class="nutrition-page__meal-foods">
+                <span v-for="food in meal.foods" :key="food">{{ food }}</span>
+              </div>
+              <p>{{ meal.detail }}</p>
             </article>
           </div>
 
@@ -170,6 +182,7 @@
 import { computed } from 'vue';
 import StatePanel from '@/components/common/StatePanel.vue';
 import { useNutritionRecommendation } from '@/composables/nutrition/useNutritionRecommendation';
+import { buildNutritionMealViewModels, buildNutritionSummaryViewModel } from '@/utils/nutrition-display';
 
 const {
   avoidances,
@@ -186,15 +199,17 @@ const {
   submitting
 } = useNutritionRecommendation();
 
-const mealCards = computed(() =>
+const summaryViewModel = computed(() =>
   result.value
-    ? [
-        { key: 'breakfast', label: '早餐', content: result.value.meals.breakfast },
-        { key: 'lunch', label: '午餐', content: result.value.meals.lunch },
-        { key: 'dinner', label: '晚餐', content: result.value.meals.dinner },
-        { key: 'snack', label: '加餐', content: result.value.meals.snack }
-      ]
-    : []
+    ? buildNutritionSummaryViewModel(result.value)
+    : {
+        highlights: [],
+        description: ''
+      }
+);
+
+const mealCards = computed(() =>
+  result.value ? buildNutritionMealViewModels(result.value.meals, result.value.referencedFoods) : []
 );
 </script>
 
@@ -373,6 +388,26 @@ const mealCards = computed(() =>
   gap: 8px;
 }
 
+.nutrition-page__summary-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nutrition-page__summary-highlights span,
+.nutrition-page__meal-portions span,
+.nutrition-page__meal-foods span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(50, 213, 131, 0.1);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .nutrition-page__summary p,
 .nutrition-page__meal-card p,
 .nutrition-page__food-benefit {
@@ -395,14 +430,39 @@ const mealCards = computed(() =>
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.nutrition-page__meal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
 .nutrition-page__meal-label {
   display: inline-flex;
-  margin-bottom: 8px;
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.nutrition-page__meal-portions,
+.nutrition-page__meal-foods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nutrition-page__meal-card h4 {
+  margin: 0 0 10px;
+  color: var(--color-text-primary);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.nutrition-page__meal-foods {
+  margin-bottom: 10px;
 }
 
 .nutrition-page__tips ul {
