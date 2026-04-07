@@ -195,15 +195,16 @@
           </div>
           <div class="workout-log__head-actions">
             <div class="workout-log__month-nav" aria-label="热图月份翻页">
-              <button type="button" class="workout-log__month-button" @click="goToPreviousMonth">上月</button>
+              <button type="button" class="workout-log__month-button" aria-label="查看上个月" @click="goToPreviousMonth">‹</button>
               <span class="workout-log__month-label">{{ periodTitle }}</span>
               <button
                 type="button"
                 class="workout-log__month-button"
+                aria-label="查看下个月"
                 :disabled="!canNavigateToNextMonth"
                 @click="goToNextMonth"
               >
-                下月
+                ›
               </button>
             </div>
             <div class="workout-log__legend">
@@ -238,12 +239,22 @@
           action-label="去开始训练"
           @action="goToPlanGenerator"
         />
-        <WorkoutCalendarHeatmap
-          v-else
-          :points="heatmapPoints"
-          :month-start="selectedMonthStart"
-          @select-date="openDayDetail"
-        />
+        <div v-else class="workout-log__heatmap-panel">
+          <div class="workout-log__weekday-row" aria-hidden="true">
+            <span>一</span>
+            <span>二</span>
+            <span>三</span>
+            <span>四</span>
+            <span>五</span>
+            <span>六</span>
+            <span>日</span>
+          </div>
+          <WorkoutCalendarHeatmap
+            :points="heatmapPoints"
+            :month-start="selectedMonthStart"
+            @select-date="openDayDetail"
+          />
+        </div>
       </el-card>
 
     </main>
@@ -681,21 +692,26 @@ const {
 
 .workout-log__month-nav {
   display: inline-flex;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .workout-log__month-button {
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--color-text-secondary);
-  padding: 8px 12px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -706,7 +722,7 @@ const {
 }
 
 .workout-log__month-label {
-  min-width: 88px;
+  min-width: 78px;
   align-self: center;
   text-align: center;
   color: var(--color-text-primary);
@@ -714,6 +730,23 @@ const {
   font-weight: 700;
 }
 
+.workout-log__heatmap-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-log__weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.workout-log__weekday-row span {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  line-height: 1;
+}
 .workout-log__trend-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -923,7 +956,24 @@ const {
     justify-self: stretch;
   }
 
-  .workout-log__trend-grid {
+  .workout-log__heatmap-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-log__weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.workout-log__weekday-row span {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  line-height: 1;
+}
+.workout-log__trend-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
@@ -964,8 +1014,22 @@ const {
   }
 
   .workout-log__month-nav {
-    width: 100%;
-    justify-content: space-between;
-  }
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
 }
 </style>
+
+
+
+
+
+
+
+
+

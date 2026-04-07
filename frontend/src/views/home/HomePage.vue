@@ -62,46 +62,6 @@
           </p>
         </div>
 
-        <StatePanel
-          v-if="heatmapState === 'loading'"
-          variant="loading"
-          title="正在加载训练热图"
-          description="稍等片刻，我们正在读取你的最近训练记录。"
-        />
-        <StatePanel
-          v-else-if="heatmapState === 'error'"
-          variant="error"
-          title="热图加载失败"
-          :description="heatmapError"
-          action-label="重试加载"
-          @action="loadHeatmap"
-        />
-        <StatePanel
-          v-else-if="heatmapState === 'empty'"
-          variant="empty"
-          title="今天还没有训练记录"
-          description="先完成一次训练，热图会自动点亮。"
-          action-label="去生成训练计划"
-          @action="handleGeneratePlan"
-        />
-        <div v-else class="home-view__heatmap-wrap">
-          <div class="heatmap" aria-label="最近六周训练热力图">
-            <div
-              v-for="(column, columnIndex) in homeHeatmapColumns"
-              :key="`col-${columnIndex}`"
-              class="heatmap__column"
-            >
-              <span
-                v-for="(point, rowIndex) in column"
-                :key="`cell-${columnIndex}-${rowIndex}`"
-                class="heatmap__cell"
-                :class="`heatmap__cell--level-${point.intensityLevel}`"
-                :title="buildHeatmapTooltip(point.date, point.count, point.totalDuration)"
-                :aria-label="buildHeatmapTooltip(point.date, point.count, point.totalDuration)"
-              ></span>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="home-view__nutrition">
@@ -156,32 +116,18 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs';
-import StatePanel from '@/components/common/StatePanel.vue';
 import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { useHomeDashboard } from '@/composables/home/useHomeDashboard';
-
 
 const {
   handleGeneratePlan,
   handleOpenLibrary,
   handleOpenNutrition,
   handleOpenPlanHistory,
-  heatmapError,
-  heatmapState,
-  homeHeatmapColumns,
   homeRecommendations,
-  loadHeatmap,
   planPrompt,
   summary
 } = useHomeDashboard();
-
-const buildHeatmapTooltip = (date: string, count: number, totalDuration: number): string => {
-  const formattedDate = dayjs(date).format('MM月DD日');
-  const countLabel = `${count} 次训练`;
-  const durationLabel = `${totalDuration} 分钟`;
-  return `${formattedDate} | ${countLabel} | ${durationLabel}`;
-};
 </script>
 
 <style scoped>
@@ -359,47 +305,6 @@ const buildHeatmapTooltip = (date: string, count: number, totalDuration: number)
   color: rgba(255, 152, 180, 0.9);
 }
 
-.home-view__heatmap-wrap {
-  display: grid;
-  gap: 10px;
-}
-
-.heatmap {
-  width: min(100%, 332px);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.heatmap__column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.heatmap__cell {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  background: #16161a;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.heatmap__cell--level-1 {
-  background: #1b3c30;
-}
-
-.heatmap__cell--level-2 {
-  background: #236f52;
-}
-
-.heatmap__cell--level-3 {
-  background: #29a56f;
-}
-
-.heatmap__cell--level-4 {
-  background: #44d08c;
-}
 
 .home-view__nutrition-body {
   display: grid;
@@ -515,18 +420,13 @@ const buildHeatmapTooltip = (date: string, count: number, totalDuration: number)
   .home-view__metric-value {
     font-size: 17px;
   }
-
-  .heatmap {
-    width: min(100%, 312px);
-    gap: 5px;
-  }
-
-  .heatmap__column {
-    gap: 5px;
-  }
-
-  .heatmap__cell {
-    border-radius: 7px;
-  }
 }
 </style>
+
+
+
+
+
+
+
+

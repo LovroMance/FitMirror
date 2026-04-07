@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
 import type { DailyHeatmapPoint } from '@/types/workout';
@@ -57,45 +58,46 @@ const paint = async (): Promise<void> => {
     emit('selectDate', dayjs(timestamp).format('YYYY-MM-DD'));
   });
 
-  await nextCalendar.paint({
-    itemSelector: container,
-    range: 1,
-    domain: {
-      type: 'month',
-      gutter: 8,
-      label: {
-        text: null
+  try {
+    await nextCalendar.paint({
+      itemSelector: container,
+      range: 1,
+      domain: {
+        type: 'month',
+        gutter: 6,
+        label: {
+          text: null
+        }
+      },
+      subDomain: {
+        type: 'ghDay',
+        width: 15,
+        height: 15,
+        gutter: 5,
+        radius: 4
+      },
+      date: {
+        start: dayjs(props.monthStart, 'YYYY-MM-DD').startOf('month').toDate(),
+        locale: 'zh-cn'
+      },
+      data: {
+        source: source.value,
+        x: 'timestamp',
+        y: 'intensity',
+        groupY: 'max',
+        defaultValue: 0
+      },
+      scale: {
+        color: {
+          type: 'threshold',
+          domain: [1, 2, 3, 4],
+          range: ['#16161a', '#244436', '#24c06f', '#32d583', '#6ee7a8']
+        }
       }
-    },
-    subDomain: {
-      type: 'day',
-      width: 14,
-      height: 14,
-      gutter: 4,
-      radius: 4
-    },
-    date: {
-      start: dayjs(props.monthStart, 'YYYY-MM-DD').startOf('month').toDate(),
-      locale: {
-        name: 'fitmirror-locale',
-        weekStart: 1
-      }
-    },
-    data: {
-      source: source.value,
-      x: 'timestamp',
-      y: 'intensity',
-      groupY: 'max',
-      defaultValue: 0
-    },
-    scale: {
-      color: {
-        type: 'threshold',
-        domain: [1, 2, 3, 4],
-        range: ['#16161a', '#244436', '#24c06f', '#32d583', '#6ee7a8']
-      }
-    }
-  });
+    });
+  } catch {
+    container.innerHTML = '';
+  }
 
   if (currentToken !== paintToken) {
     await nextCalendar.destroy();
@@ -129,6 +131,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .workout-calendar-heatmap {
   width: 100%;
+  min-height: 148px;
   overflow-x: auto;
 }
 
@@ -138,6 +141,7 @@ onBeforeUnmount(() => {
 }
 
 .workout-calendar-heatmap :deep(.ch-subdomain-bg) {
+  stroke: rgba(255, 255, 255, 0.07);
   transition: transform var(--duration-fast) ease;
 }
 
