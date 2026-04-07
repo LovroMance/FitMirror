@@ -10,7 +10,7 @@ vi.mock('axios', () => ({
 }));
 
 import { env } from '../../config/env';
-import { generatePlanWithFallback } from './plans.service';
+import { generatePlanFromGoal, generatePlanWithFallback } from './plans.service';
 
 describe('plans.service', () => {
   const originalApiKey = env.deepseekApiKey;
@@ -93,4 +93,19 @@ describe('plans.service', () => {
     expect(events).toContain('llm_failed:invalid_response');
     expect(events).toContain('fallback_start:');
   });
+  it('builds targeted fallback plan for back-focused goal', () => {
+    const plan = generatePlanFromGoal('我今天要练背，着重练中下背');
+    const names = plan.exercises.map((item) => item.name).join(' ');
+
+    expect(plan.exercises.length).toBeGreaterThanOrEqual(5);
+    expect(names).toMatch(/划船|超人|靠墙天使|鸟狗|背/);
+  });
+
+  it('keeps no-equipment preference in smart fallback', () => {
+    const plan = generatePlanFromGoal('居家无器械练背，重点中下背');
+
+    expect(plan.summary).toContain('无器械');
+    expect(plan.exercises.length).toBeGreaterThanOrEqual(5);
+  });
 });
+

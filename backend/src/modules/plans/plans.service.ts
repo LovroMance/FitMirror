@@ -1,4 +1,6 @@
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 import { env } from '../../config/env';
 
 interface PlanExercise {
@@ -17,6 +19,17 @@ interface GeneratedPlan {
   exercises: PlanExercise[];
 }
 
+interface ExerciseLibraryItem {
+  id: string;
+  name: string;
+  bodyPart: string;
+  equipment: string;
+  level: string;
+  reps?: string;
+  instructions?: string[];
+  tags?: string[];
+  description?: string;
+}
 type PlanSource = 'deepseek' | 'template';
 
 type LlmFailureReason =
@@ -61,6 +74,316 @@ const MIN_EXERCISE_ITEMS = 5;
 const MAX_EXERCISE_ITEMS = 7;
 const SUMMARY_MAX_CHARS = 360;
 const TITLE_MAX_CHARS = 100;
+const FALLBACK_MAX_MAIN_EXERCISES = 5;
+const GENERIC_INSTRUCTION_SUFFIX = '全程保持动作控制和均匀呼吸，出现代偿时先降低幅度再继续。';
+
+let cachedExerciseLibrary: ExerciseLibraryItem[] | null = null;
+
+const resolveExerciseLibraryPath = (): string | null => {
+  const candidates = [
+    path.resolve(process.cwd(), '../frontend/public/data/exercises.json'),
+    path.resolve(process.cwd(), 'frontend/public/data/exercises.json'),
+    path.resolve(__dirname, '../../../../frontend/public/data/exercises.json'),
+    path.resolve(__dirname, '../../../../../frontend/public/data/exercises.json')
+  ];
+
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+
+  return null;
+};
+
+const loadExerciseLibrary = (): ExerciseLibraryItem[] => {
+  if (cachedExerciseLibrary) {
+    return cachedExerciseLibrary;
+  }
+
+  const libraryPath = resolveExerciseLibraryPath();
+  if (!libraryPath) {
+    cachedExerciseLibrary = [];
+    return cachedExerciseLibrary;
+  }
+
+  try {
+    const raw = fs.readFileSync(libraryPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    cachedExerciseLibrary = Array.isArray(parsed) ? (parsed as ExerciseLibraryItem[]) : [];
+  } catch {
+    cachedExerciseLibrary = [];
+  }
+
+  return cachedExerciseLibrary;
+};
+
+const normalizeText = (value: string): string => value.replace(/\s+/g, '').toLowerCase();
+
+const containsAnyPattern = (text: string, patterns: RegExp[]): boolean => patterns.some((pattern) => pattern.test(text));
+
+const detectFocusAreas = (
+  goalText: string
+): Array<'back' | 'chest' | 'shoulder' | 'arm' | 'core' | 'leg' | 'fat-loss' | 'mobility'> => {
+  const rules: Array<{
+    focus: 'back' | 'chest' | 'shoulder' | 'arm' | 'core' | 'leg' | 'fat-loss' | 'mobility';
+    patterns: RegExp[];
+  }> = [
+    {
+      focus: 'back',
+      patterns: [/背/, /中背/, /下背/, /上背/, /背阔/, /菱形/, /斜方/, /竖脊/, /肩胛/, /划船/, /拉力/]
+    },
+    {
+      focus: 'chest',
+      patterns: [/胸/, /胸肌/, /胸大肌/, /推力/, /卧推/, /俯卧撑/]
+    },
+    {
+      focus: 'shoulder',
+      patterns: [/肩/, /三角肌/, /肩部/, /推举/, /侧平举/]
+    },
+    {
+      focus: 'arm',
+      patterns: [/手臂/, /二头/, /三头/, /肱二头/, /肱三头/]
+    },
+    {
+      focus: 'core',
+      patterns: [/腹/, /腰/, /核心/, /马甲线/, /瘦肚子/]
+    },
+    {
+      focus: 'leg',
+      patterns: [/腿/, /下肢/, /臀/, /股四/, /股二/, /腘绳/, /小腿/, /深蹲/, /弓步/]
+    },
+    {
+      focus: 'fat-loss',
+      patterns: [/减脂/, /燃脂/, /瘦身/, /有氧/, /心肺/, /hiit/i]
+    },
+    {
+      focus: 'mobility',
+      patterns: [/拉伸/, /放松/, /恢复/, /灵活/, /活动度/, /康复/]
+    }
+  ];
+
+  const matched = rules.filter((rule) => containsAnyPattern(goalText, rule.patterns)).map((rule) => rule.focus);
+  return matched.length > 0 ? matched : ['fat-loss'];
+};
+
+const parseExerciseReps = (reps: string): { reps?: string; durationSeconds?: number } => {
+  const trimmed = reps.trim();
+  const secondsMatched = trimmed.match(/(\d{1,3})\s*[-~到至]?\s*(\d{1,3})?\s*秒/);
+  if (secondsMatched) {
+    const first = Number(secondsMatched[1]);
+    const second = secondsMatched[2] ? Number(secondsMatched[2]) : first;
+    const value = Math.round((first + second) / 2);
+    if (Number.isFinite(value) && value > 0) {
+      return { durationSeconds: Math.min(Math.max(value, 20), 120) };
+    }
+  }
+
+  const minutesMatched = trimmed.match(/(\d{1,2})\s*分钟/);
+  if (minutesMatched) {
+    const value = Number(minutesMatched[1]) * 60;
+    if (Number.isFinite(value) && value > 0) {
+      return { durationSeconds: Math.min(Math.max(value, 30), 180) };
+    }
+  }
+
+  return { reps: trimmed };
+};
+
+const buildExerciseInstruction = (exercise: ExerciseLibraryItem): string => {
+  const joined = Array.isArray(exercise.instructions) ? exercise.instructions.join('，') : '';
+  const description = typeof exercise.description === 'string' ? exercise.description.trim() : '';
+  const text = [joined, description].filter(Boolean).join('。');
+  const normalized = text.trim();
+  if (!normalized) {
+    return `重点关注「${exercise.name}」的发力轨迹与关节稳定。${GENERIC_INSTRUCTION_SUFFIX}`;
+  }
+
+  if (normalized.length >= 20) {
+    return `${normalized}。${GENERIC_INSTRUCTION_SUFFIX}`;
+  }
+
+  return `${normalized}，${GENERIC_INSTRUCTION_SUFFIX}`;
+};
+
+const scoreExerciseForGoal = (
+  exercise: ExerciseLibraryItem,
+  goalText: string,
+  focusAreas: Array<'back' | 'chest' | 'shoulder' | 'arm' | 'core' | 'leg' | 'fat-loss' | 'mobility'>,
+  noEquipment: boolean
+): number => {
+  const bodyPart = (exercise.bodyPart || '').toLowerCase();
+  const tags = Array.isArray(exercise.tags) ? exercise.tags.join('') : '';
+  const text = normalizeText(`${exercise.name}${exercise.description ?? ''}${tags}${(exercise.instructions ?? []).join('')}`);
+  let score = 0;
+
+  if (noEquipment) {
+    score += exercise.equipment === 'none' ? 6 : -6;
+  } else {
+    score += exercise.equipment !== 'none' ? 2 : 1;
+  }
+
+  if (focusAreas.includes('back')) {
+    if (bodyPart === 'upper') {
+      score += 8;
+    }
+    if (containsAnyPattern(text, [/背/, /划船/, /菱形/, /斜方/, /肩胛/, /后链/])) {
+      score += 14;
+    }
+    if (containsAnyPattern(goalText, [/中下背/, /中背/]) && containsAnyPattern(text, [/中背/, /菱形/, /肩胛/, /划船/])) {
+      score += 10;
+    }
+    if (containsAnyPattern(goalText, [/中下背/, /下背/]) && containsAnyPattern(text, [/下背/, /竖脊/, /后链/, /超人/])) {
+      score += 10;
+    }
+  }
+
+  if (focusAreas.includes('chest') && (bodyPart === 'upper' || containsAnyPattern(text, [/胸/, /推/]))) {
+    score += 10;
+  }
+
+  if (focusAreas.includes('shoulder') && (bodyPart === 'upper' || containsAnyPattern(text, [/肩/, /三角/]))) {
+    score += 10;
+  }
+
+  if (focusAreas.includes('arm') && (bodyPart === 'upper' || containsAnyPattern(text, [/手臂/, /二头/, /三头/]))) {
+    score += 10;
+  }
+
+  if (focusAreas.includes('core') && bodyPart === 'core') {
+    score += 11;
+  }
+
+  if (focusAreas.includes('leg') && bodyPart === 'lower') {
+    score += 11;
+  }
+
+  if (focusAreas.includes('fat-loss') && (bodyPart === 'full_body' || containsAnyPattern(text, [/有氧/, /燃脂/, /hiit/, /循环/]))) {
+    score += 9;
+  }
+
+  if (focusAreas.includes('mobility') && (bodyPart === 'mobility' || containsAnyPattern(text, [/热身/, /拉伸/, /放松/, /恢复/, /灵活/]))) {
+    score += 9;
+  }
+
+  return score;
+};
+
+const pickByScore = (items: ExerciseLibraryItem[], count: number, excludedIds: Set<string>): ExerciseLibraryItem[] => {
+  const selected: ExerciseLibraryItem[] = [];
+  for (const item of items) {
+    if (selected.length >= count) {
+      break;
+    }
+    if (excludedIds.has(item.id)) {
+      continue;
+    }
+    selected.push(item);
+    excludedIds.add(item.id);
+  }
+  return selected;
+};
+
+const buildSmartFallbackPlan = (goalText: string): GeneratedPlan | null => {
+  const library = loadExerciseLibrary();
+  if (library.length === 0) {
+    return null;
+  }
+
+  const durationMinutes = parseDuration(goalText);
+  const noEquipment = detectNoEquipment(goalText);
+  const level = detectLevel(goalText);
+  const focusAreas = detectFocusAreas(goalText);
+  const targetExerciseCount = durationMinutes >= 28 ? 7 : durationMinutes >= 18 ? 6 : 5;
+
+  const scored = library
+    .map((item) => ({
+      item,
+      score: scoreExerciseForGoal(item, goalText, focusAreas, noEquipment)
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const warmupCandidates = scored
+    .filter(({ item }) => {
+      const text = normalizeText(`${item.name}${item.description ?? ''}${(item.tags ?? []).join('')}`);
+      return item.bodyPart === 'mobility' || containsAnyPattern(text, [/热身/, /激活/, /动态/]);
+    })
+    .map(({ item }) => item);
+
+  const cooldownCandidates = scored
+    .filter(({ item }) => {
+      const text = normalizeText(`${item.name}${item.description ?? ''}${(item.tags ?? []).join('')}`);
+      return item.bodyPart === 'mobility' || containsAnyPattern(text, [/拉伸/, /放松/, /恢复/, /灵活/]);
+    })
+    .map(({ item }) => item);
+
+  const primaryCandidates = scored
+    .filter(({ score }) => score > 0)
+    .map(({ item }) => item);
+
+  const fallbackCandidates = scored.map(({ item }) => item);
+  const usedIds = new Set<string>();
+  const selected: ExerciseLibraryItem[] = [];
+
+  const warmup = pickByScore(warmupCandidates, 1, usedIds);
+  selected.push(...warmup);
+
+  const mainCount = Math.min(FALLBACK_MAX_MAIN_EXERCISES, Math.max(targetExerciseCount - 2, 3));
+  selected.push(...pickByScore(primaryCandidates, mainCount, usedIds));
+
+  if (selected.length < targetExerciseCount - 1) {
+    selected.push(...pickByScore(fallbackCandidates, targetExerciseCount - 1 - selected.length, usedIds));
+  }
+
+  const cooldown = pickByScore(cooldownCandidates, 1, usedIds);
+  selected.push(...cooldown);
+
+  if (selected.length < MIN_EXERCISE_ITEMS) {
+    selected.push(...pickByScore(fallbackCandidates, MIN_EXERCISE_ITEMS - selected.length, usedIds));
+  }
+
+  const exercises = selected.slice(0, MAX_EXERCISE_ITEMS).map((item) => {
+    const repsRaw = typeof item.reps === 'string' ? item.reps.trim() : '';
+    const parsedRepOrDuration = repsRaw ? parseExerciseReps(repsRaw) : { durationSeconds: 40 };
+    return {
+      name: item.name,
+      instruction: buildExerciseInstruction(item),
+      restSeconds: containsAnyPattern(normalizeText(`${item.name}${(item.tags ?? []).join('')}`), [/hiit/, /高强度/]) ? 30 : 20,
+      ...(parsedRepOrDuration.durationSeconds
+        ? { durationSeconds: parsedRepOrDuration.durationSeconds }
+        : { reps: parsedRepOrDuration.reps ?? '12-15次' })
+    };
+  });
+
+  if (exercises.length < MIN_EXERCISE_ITEMS) {
+    return null;
+  }
+
+  const focusLabel =
+    focusAreas[0] === 'back'
+      ? '背部强化'
+      : focusAreas[0] === 'core'
+        ? '核心强化'
+        : focusAreas[0] === 'leg'
+          ? '下肢强化'
+          : focusAreas[0] === 'fat-loss'
+            ? '燃脂唤醒'
+            : '个性化';
+
+  const summary = [
+    `本计划围绕你的目标「${goalText.slice(0, 28)}${goalText.length > 28 ? '...' : ''}」做了动作匹配，重点强化${focusLabel.replace('强化', '') || '目标肌群'}。`,
+    noEquipment ? '已优先选用无器械动作，适配居家场景。' : '已兼顾器械与徒手动作，提高训练刺激与可执行性。',
+    '结构采用热身-主训练-放松，并优先覆盖目标肌群的主力动作与稳定性动作。'
+  ].join('');
+
+  return {
+    title: `${durationMinutes}分钟${focusLabel}训练`,
+    level,
+    durationMinutes,
+    summary,
+    exercises
+  };
+};
 
 const parseDuration = (goalText: string): number => {
   const matched = goalText.match(/(\d{1,2})\s*分钟/);
@@ -232,6 +555,27 @@ const safeParseJson = (content: string): unknown | null => {
   } catch {
     return null;
   }
+};
+const extractFirstJsonObject = (content: string): string => {
+  const firstBrace = content.indexOf('{');
+  if (firstBrace < 0) {
+    return content;
+  }
+
+  let depth = 0;
+  for (let i = firstBrace; i < content.length; i += 1) {
+    const char = content[i];
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return content.slice(firstBrace, i + 1);
+      }
+    }
+  }
+
+  return content;
 };
 
 const toFiniteNumber = (value: unknown): number | null => {
@@ -495,7 +839,7 @@ const generatePlanFromDeepSeek = async (goalText: string): Promise<DeepSeekPlanR
       };
     }
 
-    const parsed = safeParseJson(text);
+    const parsed = safeParseJson(text) ?? safeParseJson(extractFirstJsonObject(text));
     if (!parsed) {
       return {
         plan: null,
@@ -523,6 +867,11 @@ const generatePlanFromDeepSeek = async (goalText: string): Promise<DeepSeekPlanR
 };
 
 export const generatePlanFromGoal = (goalText: string): GeneratedPlan => {
+  const smartPlan = buildSmartFallbackPlan(goalText);
+  if (smartPlan) {
+    return smartPlan;
+  }
+
   const durationMinutes = parseDuration(goalText);
   const noEquipment = detectNoEquipment(goalText);
   const goalType = detectGoalType(goalText);
@@ -604,3 +953,4 @@ export type {
   PlanProgressEventType,
   PlanSource
 };
+
