@@ -6,20 +6,54 @@ import { useAuthStore } from '@/store/auth';
 import { workoutRecordsRepository } from '@/repositories';
 import { homeRecommendations } from '@/config/home';
 import type { PageState } from '@/types/ui';
-import {
-  buildDailyHeatmapPoints,
-  buildHeatmapColumnsFromRows,
-  buildHeatmapRows,
-  calculateWorkoutSummary,
-  getRecentDateRange
-} from '@/utils/workout-heatmap';
+import type { DailyHeatmapPoint } from '@/types/workout';
+import { buildDailyHeatmapPoints, buildHeatmapRows, calculateWorkoutSummary, getRecentDateRange } from '@/utils/workout-heatmap';
+
+const getHomeHeatmapLevelByDuration = (duration: number): 0 | 1 | 2 | 3 | 4 => {
+  if (duration <= 0) {
+    return 0;
+  }
+
+  if (duration >= 60) {
+    return 4;
+  }
+
+  if (duration >= 40) {
+    return 3;
+  }
+
+  if (duration >= 20) {
+    return 2;
+  }
+
+  return 1;
+};
+
+const buildHeatmapPointColumnsFromRows = (rows: DailyHeatmapPoint[][]): DailyHeatmapPoint[][] => {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const columns: DailyHeatmapPoint[][] = Array.from({ length: rows[0].length }, () => []);
+
+  rows.forEach((row) => {
+    row.forEach((point, idx) => {
+      columns[idx].push({
+        ...point,
+        intensityLevel: getHomeHeatmapLevelByDuration(point.totalDuration)
+      });
+    });
+  });
+
+  return columns;
+};
 
 export const useHomeDashboard = () => {
   const router = useRouter();
   const authStore = useAuthStore();
 
   const planPrompt = ref('');
-  const homeHeatmapColumns = ref<Array<Array<0 | 1 | 2 | 3 | 4>>>([]);
+  const homeHeatmapColumns = ref<DailyHeatmapPoint[][]>([]);
   const summary = ref({ trainingDays: 0, totalDuration: 0, streakDays: 0 });
   const heatmapState = ref<PageState>('idle');
   const heatmapError = ref('暂时无法读取训练记录，请稍后重试。');
@@ -50,7 +84,7 @@ export const useHomeDashboard = () => {
       const records = await workoutRecordsRepository.listRecordsByDateRange(userId, startDate, endDate);
       const points = buildDailyHeatmapPoints(records, dates);
       const rows = buildHeatmapRows(points);
-      homeHeatmapColumns.value = buildHeatmapColumnsFromRows(rows);
+      homeHeatmapColumns.value = buildHeatmapPointColumnsFromRows(rows);
       summary.value = calculateWorkoutSummary(points);
       heatmapState.value = summary.value.trainingDays > 0 ? 'ready' : 'empty';
       heatmapError.value = '';

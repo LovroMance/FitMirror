@@ -92,10 +92,12 @@
               class="heatmap__column"
             >
               <span
-                v-for="(level, rowIndex) in column"
+                v-for="(point, rowIndex) in column"
                 :key="`cell-${columnIndex}-${rowIndex}`"
                 class="heatmap__cell"
-                :class="`heatmap__cell--level-${level}`"
+                :class="`heatmap__cell--level-${point.intensityLevel}`"
+                :title="buildHeatmapTooltip(point.date, point.count, point.totalDuration)"
+                :aria-label="buildHeatmapTooltip(point.date, point.count, point.totalDuration)"
               ></span>
             </div>
           </div>
@@ -155,6 +157,7 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs';
 import { useRouter } from 'vue-router';
 import StatePanel from '@/components/common/StatePanel.vue';
 import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
@@ -175,6 +178,13 @@ const {
   planPrompt,
   summary
 } = useHomeDashboard();
+
+const buildHeatmapTooltip = (date: string, count: number, totalDuration: number): string => {
+  const formattedDate = dayjs(date).format('MM月DD日');
+  const countLabel = `${count} 次训练`;
+  const durationLabel = `${totalDuration} 分钟`;
+  return `${formattedDate} | ${countLabel} | ${durationLabel}`;
+};
 </script>
 
 <style scoped>
@@ -183,8 +193,10 @@ const {
   display: flex;
   justify-content: center;
   background:
-    linear-gradient(180deg, #f4f1ea 0%, #f7f5f0 34%, #f8f7f3 100%);
-  color: #1c1d1f;
+    radial-gradient(circle at top center, rgba(50, 213, 131, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(18, 26, 20, 0.96) 0%, rgba(11, 11, 14, 0.98) 30%),
+    var(--color-bg-page);
+  color: var(--color-text-primary);
   font-family: 'DM Sans', 'PingFang SC', 'MiSans', 'Source Han Sans SC', sans-serif;
 }
 
@@ -208,7 +220,7 @@ const {
 .home-view__eyebrow,
 .home-view__section-kicker {
   margin: 0;
-  color: #6d7f70;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -246,7 +258,7 @@ const {
 
 .home-view__description {
   margin: 10px 0 0;
-  color: #6f7177;
+  color: var(--color-text-secondary);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -257,7 +269,7 @@ const {
   border: 0;
   padding: 0;
   background: transparent;
-  color: #222428;
+  color: var(--color-text-primary);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -269,9 +281,9 @@ const {
 .home-view__nutrition {
   padding: 18px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(34, 36, 40, 0.06);
-  box-shadow: 0 10px 26px rgba(31, 35, 35, 0.05);
+  background: linear-gradient(180deg, rgba(22, 22, 26, 0.96), rgba(18, 19, 22, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
 }
 
 .home-view__pill {
@@ -282,8 +294,8 @@ const {
   height: 34px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #ecf5ee;
-  color: #245d3f;
+  background: rgba(50, 213, 131, 0.12);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -304,7 +316,7 @@ const {
 }
 
 .home-view__summary-head strong {
-  color: #202224;
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
@@ -313,39 +325,40 @@ const {
 .home-view__metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .home-view__metric {
   display: grid;
-  gap: 8px;
-  min-height: 108px;
-  padding: 16px 10px;
-  border-radius: 18px;
+  gap: 6px;
+  min-height: 84px;
+  padding: 12px 8px;
+  border-radius: 16px;
   text-align: center;
 }
 
 .home-view__metric span {
-  color: #73767d;
-  font-size: 12px;
-  line-height: 1.4;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .home-view__metric strong {
-  font-size: 22px;
-  line-height: 1.1;
+  font-size: 20px;
+  line-height: 1.05;
+  color: var(--color-text-primary);
 }
 
 .home-view__metric--warm {
-  background: #f7efe2;
+  background: rgba(245, 196, 81, 0.1);
 }
 
 .home-view__metric--cool {
-  background: #eceff8;
+  background: rgba(110, 140, 255, 0.1);
 }
 
 .home-view__metric--rose {
-  background: #f8e8eb;
+  background: rgba(255, 130, 160, 0.1);
 }
 
 .home-view__heatmap-wrap {
@@ -354,37 +367,40 @@ const {
 }
 
 .heatmap {
+  width: min(100%, 332px);
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .heatmap__column {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .heatmap__cell {
   aspect-ratio: 1;
-  border-radius: 10px;
-  background: #ebebe8;
+  border-radius: 8px;
+  background: #16161a;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .heatmap__cell--level-1 {
-  background: #d8e7dd;
+  background: #1b3c30;
 }
 
 .heatmap__cell--level-2 {
-  background: #9fd8b1;
+  background: #236f52;
 }
 
 .heatmap__cell--level-3 {
-  background: #5ac77d;
+  background: #29a56f;
 }
 
 .heatmap__cell--level-4 {
-  background: #32d583;
+  background: #44d08c;
 }
 
 .home-view__nutrition-body {
@@ -394,7 +410,7 @@ const {
 
 .home-view__nutrition-copy p {
   margin: 0;
-  color: #646770;
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -412,8 +428,8 @@ const {
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #f1efe9;
-  color: #44484d;
+  background: rgba(50, 213, 131, 0.1);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -428,7 +444,7 @@ const {
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 14px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(34, 36, 40, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .home-view__recommend-item:last-child {
@@ -443,13 +459,13 @@ const {
 .recommend-card__visual--core {
   background:
     linear-gradient(135deg, rgba(50, 213, 131, 0.78) 0%, rgba(50, 213, 131, 0.16) 100%),
-    linear-gradient(180deg, #eef7f1 0%, #e2efe7 100%);
+    linear-gradient(180deg, #1a201b 0%, #0d0f12 100%);
 }
 
 .recommend-card__visual--leg {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(80, 108, 88, 0.12) 100%),
-    linear-gradient(180deg, #ece9e3 0%, #e2ded6 100%);
+    linear-gradient(135deg, rgba(250, 250, 249, 0.24) 0%, rgba(50, 213, 131, 0.08) 100%),
+    linear-gradient(180deg, #20242b 0%, #111318 100%);
 }
 
 .home-view__recommend-body {
@@ -466,7 +482,7 @@ const {
 
 .home-view__recommend-body p {
   margin: 0;
-  color: #64836b;
+  color: var(--color-primary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -475,7 +491,7 @@ const {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: #74777f;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -495,16 +511,29 @@ const {
   }
 
   .home-view__metric-grid {
-    gap: 10px;
+    gap: 8px;
   }
 
   .home-view__metric {
-    min-height: 98px;
-    padding: 14px 8px;
+    min-height: 78px;
+    padding: 10px 6px;
   }
 
   .home-view__metric strong {
-    font-size: 20px;
+    font-size: 18px;
+  }
+
+  .heatmap {
+    width: min(100%, 312px);
+    gap: 5px;
+  }
+
+  .heatmap__column {
+    gap: 5px;
+  }
+
+  .heatmap__cell {
+    border-radius: 7px;
   }
 }
 </style>
