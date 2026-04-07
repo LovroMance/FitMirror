@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import type { WorkoutRecordEntity } from '@/types/local-db';
-import type { DailyHeatmapPoint, WorkoutPeriod, WorkoutSummary, WorkoutTrendSummary } from '@/types/workout';
+import type { DailyHeatmapPoint, WorkoutSummary, WorkoutTrendSummary } from '@/types/workout';
 
 const getIntensityLevel = (count: number, totalDuration: number): 0 | 1 | 2 | 3 | 4 => {
   if (count <= 0) {
@@ -56,17 +56,27 @@ export const getRecentDateRange = (days: number): { startDate: string; endDate: 
   };
 };
 
-export const getDateRangeByPeriod = (
-  period: WorkoutPeriod
-): { startDate: string; endDate: string; dates: string[]; label: string; title: string } => {
-  const days = period === 'month' ? 30 : 42;
-  const range = getRecentDateRange(days);
-  const title = period === 'month' ? '近 30 天训练热图' : '近 6 周训练热图';
+export const getNaturalMonthDateRange = (
+  monthAnchor?: string
+): { startDate: string; endDate: string; dates: string[]; label: string; title: string; monthLabel: string } => {
+  const parsedAnchor = monthAnchor ? dayjs(monthAnchor, 'YYYY-MM-DD', true) : dayjs();
+  const anchor = parsedAnchor.isValid() ? parsedAnchor : dayjs();
+  const start = anchor.startOf('month');
+  const end = anchor.endOf('month');
+  const dayCount = end.date();
+  const dates: string[] = [];
+
+  for (let index = 0; index < dayCount; index += 1) {
+    dates.push(start.add(index, 'day').format('YYYY-MM-DD'));
+  }
 
   return {
-    ...range,
-    label: `${dayjs(range.startDate).format('MM.DD')}-${dayjs(range.endDate).format('MM.DD')}`,
-    title
+    startDate: start.format('YYYY-MM-DD'),
+    endDate: end.format('YYYY-MM-DD'),
+    dates,
+    label: `${start.format('MM.DD')}-${end.format('MM.DD')}`,
+    title: `${start.format('YYYY年M月')}训练热图`,
+    monthLabel: start.format('YYYY年M月')
   };
 };
 

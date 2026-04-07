@@ -7,7 +7,7 @@
         </div>
         <p class="workout-log__eyebrow">Workout Log</p>
         <h1 class="workout-log__title">训练记录热图</h1>
-        <p class="workout-log__description">查看最近六周训练活跃度，并可点击日期查看详细记录。</p>
+        <p class="workout-log__description">按自然月查看训练活跃度，并可点击日期查看详细记录。</p>
       </header>
 
       <el-card shadow="never" class="fm-card workout-log__card">
@@ -194,22 +194,16 @@
             <p>{{ dateRangeLabel }} · 点击方格查看当天详情</p>
           </div>
           <div class="workout-log__head-actions">
-            <div class="workout-log__period-toggle" role="tablist" aria-label="热图时间范围">
+            <div class="workout-log__month-nav" aria-label="热图月份翻页">
+              <button type="button" class="workout-log__month-button" @click="goToPreviousMonth">上月</button>
+              <span class="workout-log__month-label">{{ periodTitle }}</span>
               <button
                 type="button"
-                class="workout-log__period-button"
-                :class="{ 'is-active': selectedPeriod === 'week' }"
-                @click="changePeriod('week')"
+                class="workout-log__month-button"
+                :disabled="!canNavigateToNextMonth"
+                @click="goToNextMonth"
               >
-                近 6 周
-              </button>
-              <button
-                type="button"
-                class="workout-log__period-button"
-                :class="{ 'is-active': selectedPeriod === 'month' }"
-                @click="changePeriod('month')"
-              >
-                近 30 天
+                下月
               </button>
             </div>
             <div class="workout-log__legend">
@@ -217,6 +211,7 @@
               <span class="workout-log__legend-cell workout-log__legend-cell--1"></span>
               <span class="workout-log__legend-cell workout-log__legend-cell--2"></span>
               <span class="workout-log__legend-cell workout-log__legend-cell--3"></span>
+              <span class="workout-log__legend-cell workout-log__legend-cell--4"></span>
             </div>
           </div>
         </div>
@@ -243,21 +238,12 @@
           action-label="去开始训练"
           @action="goToPlanGenerator"
         />
-        <div v-else class="workout-log__heatmap" role="grid" aria-label="训练热图">
-          <div v-for="(row, rowIndex) in heatmapRows" :key="`row-${rowIndex}`" class="workout-log__heatmap-row">
-            <button
-              v-for="point in row"
-              :key="point.date"
-              type="button"
-              class="workout-log__cell"
-              :class="`workout-log__cell--level-${point.intensityLevel}`"
-              :title="`${point.date} · ${point.count} 次 · ${point.totalDuration} 分钟`"
-              @click="openDayDetail(point.date)"
-            >
-              <span class="sr-only">{{ point.date }}</span>
-            </button>
-          </div>
-        </div>
+        <WorkoutCalendarHeatmap
+          v-else
+          :points="heatmapPoints"
+          :month-start="selectedMonthStart"
+          @select-date="openDayDetail"
+        />
       </el-card>
 
     </main>
@@ -364,7 +350,7 @@ const {
   filteredRecordsSummary,
   goHome,
   goToPlanGenerator,
-  heatmapRows,
+  heatmapPoints,
   handleCompletionBannerAction,
   openDayDetail,
   openRelatedPlan,
@@ -378,14 +364,16 @@ const {
   selectedCompletionFilter,
   selectedDurationFilter,
   selectedFilterDateRange,
-  selectedPeriod,
+  selectedMonthStart,
+  canNavigateToNextMonth,
   selectedDate,
   setCompletionFilter,
   setDurationFilter,
   summary,
   startEditingRecord,
   trendSummary,
-  changePeriod
+  goToPreviousMonth,
+  goToNextMonth
 } = useWorkoutLog();
 </script>
 
@@ -691,7 +679,7 @@ const {
   align-self: center;
 }
 
-.workout-log__period-toggle {
+.workout-log__month-nav {
   display: inline-flex;
   gap: 6px;
   padding: 4px;
@@ -700,7 +688,7 @@ const {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.workout-log__period-button {
+.workout-log__month-button {
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -712,9 +700,18 @@ const {
   cursor: pointer;
 }
 
-.workout-log__period-button.is-active {
-  background: rgba(50, 213, 131, 0.16);
-  color: var(--color-primary);
+.workout-log__month-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.workout-log__month-label {
+  min-width: 88px;
+  align-self: center;
+  text-align: center;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .workout-log__trend-grid {
@@ -766,50 +763,14 @@ const {
 }
 
 .workout-log__legend-cell--3 {
-  background: #6ee7a8;
-}
-
-.workout-log__heatmap {
-  display: grid;
-  gap: 7px;
-}
-
-.workout-log__heatmap-row {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.workout-log__cell {
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  background: #16161a;
-  transition:
-    transform var(--duration-fast) ease,
-    box-shadow var(--duration-fast) ease;
-}
-
-.workout-log__cell:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24);
-}
-
-.workout-log__cell--level-1 {
-  background: #244436;
-}
-
-.workout-log__cell--level-2 {
-  background: #24c06f;
-}
-
-.workout-log__cell--level-3 {
   background: #32d583;
 }
 
-.workout-log__cell--level-4 {
+.workout-log__legend-cell--4 {
   background: #6ee7a8;
 }
+
+
 
 .workout-log__detail-date {
   margin: 0;
@@ -978,14 +939,6 @@ const {
     font-size: 18px;
   }
 
-  .workout-log__heatmap-row {
-    gap: 6px;
-  }
-
-  .workout-log__cell {
-    border-radius: 7px;
-  }
-
   .workout-log__title {
     font-size: 30px;
   }
@@ -1010,7 +963,7 @@ const {
     justify-items: stretch;
   }
 
-  .workout-log__period-toggle {
+  .workout-log__month-nav {
     width: 100%;
     justify-content: space-between;
   }

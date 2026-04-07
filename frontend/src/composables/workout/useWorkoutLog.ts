@@ -12,15 +12,13 @@ import type {
   WorkoutDayDetailView,
   WorkoutLogCompletionFilter,
   WorkoutLogDurationFilter,
-  WorkoutLogRecordListItem,
-  WorkoutPeriod
+  WorkoutLogRecordListItem
 } from '@/types/workout';
 import {
   buildDailyHeatmapPoints,
-  buildHeatmapRows,
   calculateWorkoutTrendSummary,
   calculateWorkoutSummary,
-  getDateRangeByPeriod
+  getNaturalMonthDateRange
 } from '@/utils/workout-heatmap';
 import { buildWorkoutDayDetailViews } from '@/utils/workout-record-details';
 
@@ -49,7 +47,7 @@ export const useWorkoutLog = () => {
   const hasHandledCompletedDate = ref(false);
   const recordsState = ref<PageState>('idle');
   const recordsError = ref('暂时无法读取训练记录，请稍后重试。');
-  const selectedPeriod = ref<WorkoutPeriod>('week');
+  const selectedMonthStart = ref(dayjs().startOf('month').format('YYYY-MM-DD'));
   const searchKeyword = ref('');
   const selectedFilterDateRange = ref<string[]>(DEFAULT_FILTER_RANGE);
   const selectedCompletionFilter = ref<WorkoutLogCompletionFilter>('all');
@@ -57,7 +55,9 @@ export const useWorkoutLog = () => {
 
   const summary = computed(() => calculateWorkoutSummary(dailyPoints.value));
   const trendSummary = computed(() => calculateWorkoutTrendSummary(dailyPoints.value));
-  const heatmapRows = computed(() => buildHeatmapRows(dailyPoints.value));
+  const currentMonthStart = computed(() => dayjs().startOf('month'));
+  const canNavigateToNextMonth = computed(() => dayjs(selectedMonthStart.value).isBefore(currentMonthStart.value, 'month'));
+  const heatmapPoints = computed(() => dailyPoints.value);
   const filteredRecordItems = computed<WorkoutLogRecordListItem[]>(() => {
     const keyword = searchKeyword.value.trim().toLowerCase();
     const [startDate, endDate] = selectedFilterDateRange.value;
@@ -157,10 +157,10 @@ export const useWorkoutLog = () => {
       actionLabel: '查看当天详情'
     };
   });
-  const periodTitle = computed(() => (selectedPeriod.value === 'month' ? '近 30 天' : '近 6 周'));
+  const periodTitle = computed(() => getNaturalMonthDateRange(selectedMonthStart.value).monthLabel);
   const dateRangeLabel = computed(() => {
     if (dailyPoints.value.length === 0) {
-      return getDateRangeByPeriod(selectedPeriod.value).label;
+      return getNaturalMonthDateRange(selectedMonthStart.value).label;
     }
 
     const start = dayjs(dailyPoints.value[0].date).format('MM.DD');
@@ -203,7 +203,7 @@ export const useWorkoutLog = () => {
           .filter((plan): plan is NonNullable<typeof plan> => Boolean(plan))
           .map((plan) => [plan.id as number, { title: plan.planJson.title, goalText: plan.goalText }])
       );
-      const { startDate, endDate, dates } = getDateRangeByPeriod(selectedPeriod.value);
+      const { startDate, endDate, dates } = getNaturalMonthDateRange(selectedMonthStart.value);
       const periodRecords = loaded.filter((record) => record.date >= startDate && record.date <= endDate);
       dailyPoints.value = buildDailyHeatmapPoints(periodRecords, dates);
       detailCacheByDate.value = {};
@@ -483,16 +483,26 @@ export const useWorkoutLog = () => {
     await router.push({ name: 'PlanGenerator' });
   };
 
-  const changePeriod = async (period: WorkoutPeriod): Promise<void> => {
-    if (selectedPeriod.value === period) {
+  const goToPreviousMonth = async (): Promise<void> => {
+    selectedMonthStart.value = dayjs(selectedMonthStart.value).subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+    await refreshRecords();
+  };
+
+  const goToNextMonth = async (): Promise<void> => {
+    if (!canNavigateToNextMonth.value) {
       return;
     }
 
-    selectedPeriod.value = period;
+    selectedMonthStart.value = dayjs(selectedMonthStart.value).add(1, 'month').startOf('month').format('YYYY-MM-DD');
     await refreshRecords();
   };
 
   onMounted(async () => {
+    const completedDate = completedDateTarget.value;
+    if (completedDate) {
+      selectedMonthStart.value = dayjs(completedDate).startOf('month').format('YYYY-MM-DD');
+    }
+
     await refreshRecords();
   });
 
@@ -544,7 +554,7 @@ export const useWorkoutLog = () => {
     filteredRecordsSummary,
     goHome,
     goToPlanGenerator,
-    heatmapRows,
+    heatmapPoints,
     handleCompletionBannerAction,
     openDayDetail,
     openRelatedPlan,
@@ -560,14 +570,16 @@ export const useWorkoutLog = () => {
     selectedCompletionFilter,
     selectedDurationFilter,
     selectedFilterDateRange,
-    selectedPeriod,
+    selectedMonthStart,
+    canNavigateToNextMonth,
     selectedDate,
     setCompletionFilter,
     setDurationFilter,
     summary,
     startEditingRecord,
     trendSummary,
-    changePeriod,
+    goToPreviousMonth,
+    goToNextMonth,
     cancelEditingRecord
   };
 };

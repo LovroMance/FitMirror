@@ -3,7 +3,7 @@ import {
   buildDailyHeatmapPoints,
   calculateWorkoutSummary,
   calculateWorkoutTrendSummary,
-  getDateRangeByPeriod
+  getNaturalMonthDateRange
 } from './workout-heatmap';
 
 describe('workout-heatmap utils', () => {
@@ -67,8 +67,15 @@ describe('workout-heatmap utils', () => {
     });
   });
 
-  it('returns expected date range sizes for supported periods', () => {
-    expect(getDateRangeByPeriod('week').dates).toHaveLength(42);
-    expect(getDateRangeByPeriod('month').dates).toHaveLength(30);
+  it('builds full natural month ranges', () => {
+    const aprilRange = getNaturalMonthDateRange('2026-04-18');
+    const febRange = getNaturalMonthDateRange('2026-02-03');
+
+    expect(aprilRange.startDate).toBe('2026-04-01');
+    expect(aprilRange.endDate).toBe('2026-04-30');
+    expect(aprilRange.dates).toHaveLength(30);
+    expect(febRange.startDate).toBe('2026-02-01');
+    expect(febRange.endDate).toBe('2026-02-28');
+    expect(febRange.dates).toHaveLength(28);
   });
 });
