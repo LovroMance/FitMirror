@@ -47,19 +47,19 @@
           <strong>{{ summary.streakDays }} 天连续</strong>
         </div>
 
-        <div class="home-view__metric-grid">
-          <article class="home-view__metric home-view__metric--warm">
+        <div class="home-view__metric-line">
+          <p class="home-view__metric-text">
             <span>训练天数</span>
-            <strong>{{ summary.trainingDays }}</strong>
-          </article>
-          <article class="home-view__metric home-view__metric--cool">
+            <strong class="home-view__metric-value home-view__metric-value--warm">{{ summary.trainingDays }}</strong>
+          </p>
+          <p class="home-view__metric-text">
             <span>总时长</span>
-            <strong>{{ summary.totalDuration }} min</strong>
-          </article>
-          <article class="home-view__metric home-view__metric--rose">
+            <strong class="home-view__metric-value home-view__metric-value--cool">{{ summary.totalDuration }} min</strong>
+          </p>
+          <p class="home-view__metric-text">
             <span>连续打卡</span>
-            <strong>{{ summary.streakDays }}D</strong>
-          </article>
+            <strong class="home-view__metric-value home-view__metric-value--rose">{{ summary.streakDays }}D</strong>
+          </p>
         </div>
 
         <StatePanel
@@ -319,43 +319,44 @@ const buildHeatmapTooltip = (date: string, count: number, totalDuration: number)
   white-space: nowrap;
 }
 
-.home-view__metric-grid {
+.home-view__metric-line {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  align-items: end;
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.home-view__metric {
+.home-view__metric-text {
+  margin: 0;
   display: grid;
   gap: 6px;
-  min-height: 84px;
-  padding: 12px 8px;
-  border-radius: 16px;
-  text-align: center;
+  text-align: left;
 }
 
-.home-view__metric span {
+.home-view__metric-text span {
   color: var(--color-text-secondary);
   font-size: 11px;
   line-height: 1.3;
 }
 
-.home-view__metric strong {
-  font-size: 20px;
+.home-view__metric-value {
+  font-size: 19px;
   line-height: 1.05;
-  color: var(--color-text-primary);
+  font-weight: 700;
 }
 
-.home-view__metric--warm {
-  background: rgba(245, 196, 81, 0.1);
+.home-view__metric-value--warm {
+  color: rgba(245, 196, 81, 0.92);
 }
 
-.home-view__metric--cool {
-  background: rgba(110, 140, 255, 0.1);
+.home-view__metric-value--cool {
+  color: rgba(133, 160, 255, 0.88);
 }
 
-.home-view__metric--rose {
-  background: rgba(255, 130, 160, 0.1);
+.home-view__metric-value--rose {
+  color: rgba(255, 152, 180, 0.9);
 }
 
 .home-view__heatmap-wrap {
@@ -507,17 +508,12 @@ const buildHeatmapTooltip = (date: string, count: number, totalDuration: number)
     font-size: 25px;
   }
 
-  .home-view__metric-grid {
+  .home-view__metric-line {
     gap: 8px;
   }
 
-  .home-view__metric {
-    min-height: 78px;
-    padding: 10px 6px;
-  }
-
-  .home-view__metric strong {
-    font-size: 18px;
+  .home-view__metric-value {
+    font-size: 17px;
   }
 
   .heatmap {
