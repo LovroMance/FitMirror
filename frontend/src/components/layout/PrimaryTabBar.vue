@@ -1,5 +1,5 @@
 <template>
-  <nav class="primary-tabbar" aria-label="主导航">
+  <nav class="primary-tabbar" aria-label="主导航" :style="tabbarStyle">
     <button
       v-for="item in primaryTabs"
       :key="item.routeName"
@@ -16,6 +16,12 @@
         <svg v-else-if="item.icon === 'train'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M4 10h4l2-3 4 10 2-4h4" />
           <path d="M4 18h16" />
+        </svg>
+        <svg v-else-if="item.icon === 'record'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="5" y="4" width="14" height="16" rx="2" />
+          <path d="M8 8h8" />
+          <path d="M8 12h8" />
+          <path d="M8 16h5" />
         </svg>
         <svg v-else-if="item.icon === 'nutrition'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M7 4v8" />
@@ -34,11 +40,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { primaryTabs } from '@/config/home';
 
 const router = useRouter();
 const route = useRoute();
+const tabbarStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${primaryTabs.length}, minmax(0, 1fr))`
+}));
 
 const handleNavigate = async (routeName: string): Promise<void> => {
   if (route.name === routeName) {
@@ -57,16 +67,16 @@ const handleNavigate = async (routeName: string): Promise<void> => {
   transform: translateX(-50%);
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  width: min(366px, calc(100% - 20px));
+  width: min(430px, calc(100% - 20px));
   padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(27, 34, 34, 0.08);
+  background: rgba(10, 14, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    0 12px 28px rgba(37, 39, 46, 0.12),
-    0 4px 10px rgba(37, 39, 46, 0.06);
+    0 18px 36px rgba(0, 0, 0, 0.28),
+    0 8px 18px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(12px);
 }
 
@@ -79,7 +89,7 @@ const handleNavigate = async (routeName: string): Promise<void> => {
   border: 0;
   border-radius: 16px;
   background: transparent;
-  color: #8f908f;
+  color: rgba(226, 232, 240, 0.62);
   font: inherit;
   cursor: pointer;
   transition:
@@ -89,8 +99,8 @@ const handleNavigate = async (routeName: string): Promise<void> => {
 }
 
 .primary-tabbar__item.is-active {
-  background: #f1efe9;
-  color: #202224;
+  background: rgba(50, 213, 131, 0.12);
+  color: var(--color-primary);
   transform: translateY(-1px);
 }
 

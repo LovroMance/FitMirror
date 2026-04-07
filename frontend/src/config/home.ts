@@ -8,8 +8,8 @@ export interface RecommendationItem {
 
 export interface BottomTabItem {
   label: string;
-  icon: 'home' | 'train' | 'nutrition' | 'me';
-  routeName: 'Home' | 'PlanGenerator' | 'Nutrition' | 'Profile';
+  icon: 'home' | 'train' | 'record' | 'nutrition' | 'me';
+  routeName: 'Home' | 'PlanGenerator' | 'WorkoutLog' | 'Nutrition' | 'Profile';
 }
 
 export const homeRecommendations: RecommendationItem[] = [
@@ -32,6 +32,7 @@ export const homeRecommendations: RecommendationItem[] = [
 export const primaryTabs: BottomTabItem[] = [
   { label: '首页', icon: 'home', routeName: 'Home' },
   { label: '训练计划', icon: 'train', routeName: 'PlanGenerator' },
+  { label: '记录', icon: 'record', routeName: 'WorkoutLog' },
   { label: '饮食计划', icon: 'nutrition', routeName: 'Nutrition' },
   { label: '个人资料', icon: 'me', routeName: 'Profile' }
 ];

@@ -101,7 +101,6 @@
               ></span>
             </div>
           </div>
-          <button type="button" class="home-view__inline-link" @click="router.push({ name: 'WorkoutLog' })">查看训练记录</button>
         </div>
       </section>
 
@@ -158,12 +157,10 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { useRouter } from 'vue-router';
 import StatePanel from '@/components/common/StatePanel.vue';
 import PrimaryTabBar from '@/components/layout/PrimaryTabBar.vue';
 import { useHomeDashboard } from '@/composables/home/useHomeDashboard';
 
-const router = useRouter();
 
 const {
   handleGeneratePlan,
